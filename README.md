@@ -2,7 +2,6 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/icoretech/wootty/ci.yml?branch=main&label=CI)](https://github.com/icoretech/wootty/actions/workflows/ci.yml)
 [![Release Please](https://img.shields.io/github/actions/workflow/status/icoretech/wootty/release-please.yml?branch=main&label=Release%20Please)](https://github.com/icoretech/wootty/actions/workflows/release-please.yml)
-[![Container Publish](https://img.shields.io/github/actions/workflow/status/icoretech/wootty/publish-image.yml?branch=main&label=Container)](https://github.com/icoretech/wootty/actions/workflows/publish-image.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/icoretech/wootty)](https://github.com/icoretech/wootty/releases)
 [![Node](https://img.shields.io/badge/node-%3E%3D24-3c873a)](https://nodejs.org/)
 [![License](https://img.shields.io/github/license/icoretech/wootty)](./LICENSE)
