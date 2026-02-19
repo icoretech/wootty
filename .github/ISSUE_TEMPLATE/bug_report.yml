@@ -1,5 +1,6 @@
 name: Bug report
-about: Report a reproducible problem in WooTTY
+description: Report a reproducible problem in WooTTY
+title: "[Bug] "
 labels: [bug]
 body:
   - type: textarea
