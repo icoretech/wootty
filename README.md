@@ -135,11 +135,11 @@ Status bar metrics:
 
 ```mermaid
 flowchart LR
-  B[Browser UI (React + xterm)] -- WebSocket --> S[WooTTY Server (Fastify)]
-  S -- PTY attach/input/resize --> P[Shell Process (@lydell/node-pty)]
-  P -- output stream --> S
-  S -- output + status events --> B
-  S -- session history buffer --> H[(In-memory replay buffer)]
+  B["Browser UI (React + xterm)"] -- "WebSocket" --> S["WooTTY Server (Fastify)"]
+  S -- "PTY attach/input/resize" --> P["Shell Process (@lydell/node-pty)"]
+  P -- "output stream" --> S
+  S -- "output + status events" --> B
+  S -- "session history buffer" --> H["In-memory replay buffer"]
 ```
 
 ## Testing and Quality
