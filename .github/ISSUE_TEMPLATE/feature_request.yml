@@ -1,5 +1,6 @@
 name: Feature request
-about: Propose an improvement for WooTTY
+description: Propose an improvement for WooTTY
+title: "[Feature] "
 labels: [enhancement]
 body:
   - type: textarea
