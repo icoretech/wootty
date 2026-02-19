@@ -1,0 +1,105 @@
+name: Publish Container Image
+
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (for example v0.1.0)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: Build and Publish GHCR Image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Prepare metadata
+        id: prepare
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag || '' }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || '' }}
+          RELEASE_PRERELEASE: ${{ github.event.release.prerelease || 'false' }}
+        run: |
+          set -euo pipefail
+
+          tag="${INPUT_TAG:-$RELEASE_TAG}"
+          tag="${tag#refs/tags/}"
+
+          if [[ -z "$tag" ]]; then
+            echo "Missing release tag. Provide workflow_dispatch input 'tag' or publish a GitHub release."
+            exit 1
+          fi
+
+          publish_latest=true
+          if [[ "$RELEASE_PRERELEASE" == "true" ]]; then
+            publish_latest=false
+          fi
+
+          push=true
+          platforms="linux/amd64,linux/arm64"
+          if [[ "${ACT:-}" == "true" ]]; then
+            push=false
+            platforms="linux/arm64"
+          fi
+
+          nov_tag="$tag"
+          has_v_prefix=false
+          if [[ "$tag" == v* ]]; then
+            nov_tag="${tag#v}"
+            has_v_prefix=true
+          fi
+
+          echo "version_tag=$tag" >>"$GITHUB_OUTPUT"
+          echo "noversion_tag=$nov_tag" >>"$GITHUB_OUTPUT"
+          echo "has_v_prefix=$has_v_prefix" >>"$GITHUB_OUTPUT"
+          echo "publish_latest=$publish_latest" >>"$GITHUB_OUTPUT"
+          echo "push=$push" >>"$GITHUB_OUTPUT"
+          echo "platforms=$platforms" >>"$GITHUB_OUTPUT"
+
+      - name: Set up QEMU
+        if: steps.prepare.outputs.push == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        if: steps.prepare.outputs.push == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ steps.prepare.outputs.version_tag }}
+            type=raw,value=${{ steps.prepare.outputs.noversion_tag }},enable=${{ steps.prepare.outputs.has_v_prefix == 'true' }}
+            type=raw,value=latest,enable=${{ steps.prepare.outputs.publish_latest == 'true' }}
+
+      - name: Build and publish image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: ${{ steps.prepare.outputs.platforms }}
+          push: ${{ steps.prepare.outputs.push == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

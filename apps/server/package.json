@@ -1,0 +1,32 @@
+{
+  "name": "@wootty/server",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/cli.js",
+  "types": "dist/cli.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/cli.ts run",
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:pty-smoke": "tsx scripts/pty-smoke.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@lydell/node-pty": "1.2.0-beta.3",
+    "@fastify/static": "^9.0.0",
+    "@fastify/websocket": "^11.2.0",
+    "fastify": "^5.7.4",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18",
+    "ws": "^8.19.0"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

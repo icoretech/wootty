@@ -1,0 +1,36 @@
+{
+  "name": "wootty",
+  "private": true,
+  "version": "0.1.0",
+  "description": "WooTTY: modern web terminal with resilient PTY sessions",
+  "packageManager": "pnpm@10.30.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c cyan,yellow \"pnpm --filter @wootty/server dev\" \"pnpm --filter @wootty/web dev\"",
+    "build": "pnpm -r build",
+    "ci": "pnpm lint && git diff --exit-code && pnpm test && pnpm build && pnpm test:e2e && PTY_SMOKE_STRICT=1 pnpm test:pty-smoke",
+    "ci:act:quality": "act pull_request -j quality",
+    "ci:act": "act pull_request -j e2e",
+    "format": "biome format --write .",
+    "format:check": "biome format --no-write .",
+    "lint": "biome check --write --assist-enabled=true . && pnpm typecheck",
+    "check": "biome check .",
+    "biome:ci": "biome ci .",
+    "test": "pnpm -r test",
+    "test:pty-smoke": "pnpm --filter @wootty/server test:pty-smoke",
+    "test:e2e": "pnpm --filter @wootty/web test:e2e",
+    "test:e2e:cross": "pnpm --filter @wootty/web test:e2e:cross",
+    "typecheck": "pnpm -r typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.2",
+    "concurrently": "^9.2.1"
+  }
+}

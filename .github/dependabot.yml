@@ -1,0 +1,58 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:00"
+      timezone: Europe/Rome
+    commit-message:
+      prefix: "chore"
+      include: scope
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "05:15"
+      timezone: Europe/Rome
+    open-pull-requests-limit: 10
+    versioning-strategy: increase-if-necessary
+    commit-message:
+      prefix: "chore"
+      include: scope
+    groups:
+      frontend-runtime:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@xterm/*"
+      frontend-tooling:
+        patterns:
+          - "@vitejs/*"
+          - "vite"
+          - "vitest"
+          - "@playwright/*"
+      server-runtime:
+        patterns:
+          - "fastify"
+          - "@fastify/*"
+          - "@lydell/node-pty"
+      qa-tooling:
+        patterns:
+          - "@biomejs/*"
+          - "typescript"
+          - "tsx"
+          - "concurrently"
+          - "zod"
+          - "ws"
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - "version-update:semver-major"
