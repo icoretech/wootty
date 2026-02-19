@@ -1,0 +1,9 @@
+node_modules/
+.DS_Store
+*.log
+*.tsbuildinfo
+apps/*/dist/
+apps/*/coverage/
+apps/web/test-results/
+apps/web/playwright-report/
+apps/server/woottyd

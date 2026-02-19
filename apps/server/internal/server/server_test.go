@@ -1,0 +1,273 @@
+package server
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/gorilla/websocket"
+
+	"github.com/icoretech/wootty/apps/server/internal/config"
+)
+
+func TestHealthAndFallbackRoot(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	healthResponse, err := http.Get(httpServer.URL + "/api/health")
+	if err != nil {
+		t.Fatalf("health request failed: %v", err)
+	}
+	defer healthResponse.Body.Close()
+
+	var healthPayload map[string]any
+	if err := json.NewDecoder(healthResponse.Body).Decode(&healthPayload); err != nil {
+		t.Fatalf("failed decoding health payload: %v", err)
+	}
+	if okValue, ok := healthPayload["ok"].(bool); !ok || !okValue {
+		t.Fatalf("unexpected health payload: %#v", healthPayload)
+	}
+
+	rootResponse, err := http.Get(httpServer.URL + "/")
+	if err != nil {
+		t.Fatalf("root request failed: %v", err)
+	}
+	defer rootResponse.Body.Close()
+
+	var rootPayload map[string]any
+	if err := json.NewDecoder(rootResponse.Body).Decode(&rootPayload); err != nil {
+		t.Fatalf("failed decoding fallback root payload: %v", err)
+	}
+	if service, _ := rootPayload["service"].(string); service != "wootty-server" {
+		t.Fatalf("unexpected fallback service payload: %#v", rootPayload)
+	}
+}
+
+func TestStaticServingAndTraversalProtection(t *testing.T) {
+	tempDir := t.TempDir()
+	staticDir := filepath.Join(tempDir, "static")
+	if err := os.MkdirAll(staticDir, 0o755); err != nil {
+		t.Fatalf("failed creating static dir: %v", err)
+	}
+
+	indexPath := filepath.Join(staticDir, "index.html")
+	assetPath := filepath.Join(staticDir, "asset.txt")
+	secretPath := filepath.Join(tempDir, "secret.txt")
+
+	if err := os.WriteFile(indexPath, []byte("INDEX"), 0o644); err != nil {
+		t.Fatalf("failed writing index: %v", err)
+	}
+	if err := os.WriteFile(assetPath, []byte("ASSET"), 0o644); err != nil {
+		t.Fatalf("failed writing asset: %v", err)
+	}
+	if err := os.WriteFile(secretPath, []byte("TOP-SECRET"), 0o644); err != nil {
+		t.Fatalf("failed writing secret: %v", err)
+	}
+
+	cfg := testRuntimeConfig(t, true, "sh", staticDir)
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	assetResponse, err := http.Get(httpServer.URL + "/asset.txt")
+	if err != nil {
+		t.Fatalf("asset request failed: %v", err)
+	}
+	defer assetResponse.Body.Close()
+	assetBody := readBody(t, assetResponse)
+	if !strings.Contains(assetBody, "ASSET") {
+		t.Fatalf("expected asset response, got %q", assetBody)
+	}
+
+	routeResponse, err := http.Get(httpServer.URL + "/nested/route")
+	if err != nil {
+		t.Fatalf("spa fallback request failed: %v", err)
+	}
+	defer routeResponse.Body.Close()
+	routeBody := readBody(t, routeResponse)
+	if !strings.Contains(routeBody, "INDEX") {
+		t.Fatalf("expected index fallback response, got %q", routeBody)
+	}
+
+	traversalResponse, err := http.Get(httpServer.URL + "/../secret.txt")
+	if err != nil {
+		t.Fatalf("traversal request failed: %v", err)
+	}
+	defer traversalResponse.Body.Close()
+	traversalBody := readBody(t, traversalResponse)
+	if strings.Contains(traversalBody, "TOP-SECRET") {
+		t.Fatalf("path traversal leak detected: %q", traversalBody)
+	}
+}
+
+func TestWebsocketProtocolFlow(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	wsConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer wsConn.Close()
+
+	if err := wsConn.WriteMessage(websocket.TextMessage, []byte("invalid-json")); err != nil {
+		t.Fatalf("failed writing invalid websocket payload: %v", err)
+	}
+	invalidMessage := waitForWSMessageType(t, wsConn, "error", 2*time.Second)
+	if !strings.Contains(stringField(invalidMessage, "message"), "Invalid message") {
+		t.Fatalf("expected invalid message error, got %#v", invalidMessage)
+	}
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "input", "data": "ls"}); err != nil {
+		t.Fatalf("failed writing input payload: %v", err)
+	}
+	attachFirstMessage := waitForWSMessageType(t, wsConn, "error", 2*time.Second)
+	if !strings.Contains(stringField(attachFirstMessage, "message"), "Attach first") {
+		t.Fatalf("expected attach first error, got %#v", attachFirstMessage)
+	}
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "cols": 120, "rows": 40}); err != nil {
+		t.Fatalf("failed writing attach payload: %v", err)
+	}
+	readyMessage := waitForWSMessageType(t, wsConn, "ready", 2*time.Second)
+	if stringField(readyMessage, "sessionId") == "" {
+		t.Fatalf("expected ready session id, got %#v", readyMessage)
+	}
+
+	outputMessage := waitForWSMessageType(t, wsConn, "output", 2*time.Second)
+	if !strings.Contains(stringField(outputMessage, "data"), "fake terminal ready") {
+		t.Fatalf("unexpected fake terminal output: %#v", outputMessage)
+	}
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "ping"}); err != nil {
+		t.Fatalf("failed writing ping payload: %v", err)
+	}
+	_ = waitForWSMessageType(t, wsConn, "pong", 2*time.Second)
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "resize", "cols": 100, "rows": 30}); err != nil {
+		t.Fatalf("failed writing resize payload: %v", err)
+	}
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "input", "data": "exit\r"}); err != nil {
+		t.Fatalf("failed writing exit input payload: %v", err)
+	}
+	_ = waitForWSMessageType(t, wsConn, "exit", 2*time.Second)
+}
+
+func TestWebsocketAttachFailureSurfacesError(t *testing.T) {
+	cfg := testRuntimeConfig(t, false, "/definitely/missing-command", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	wsConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer wsConn.Close()
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "cols": 80, "rows": 24}); err != nil {
+		t.Fatalf("failed writing attach payload: %v", err)
+	}
+
+	errorMessage := waitForWSMessageType(t, wsConn, "error", 2*time.Second)
+	if !strings.Contains(stringField(errorMessage, "message"), "Terminal attach failed") {
+		t.Fatalf("expected terminal attach failure message, got %#v", errorMessage)
+	}
+}
+
+func TestCleanPathRejectsTraversal(t *testing.T) {
+	baseDir := filepath.Join(t.TempDir(), "static")
+	if got := cleanPath(baseDir, "/../secret.txt"); got != "" {
+		t.Fatalf("expected traversal path to be rejected, got %q", got)
+	}
+	if got := cleanPath(baseDir, "/index.html"); got == "" {
+		t.Fatal("expected valid path to resolve")
+	}
+}
+
+func testRuntimeConfig(t *testing.T, fakePTY bool, command string, staticDir string) config.RuntimeConfig {
+	t.Helper()
+	return config.RuntimeConfig{
+		Host:             "127.0.0.1",
+		Port:             0,
+		ReconnectGraceMS: 100,
+		HistoryBytes:     4096,
+		FakePTY:          fakePTY,
+		Command:          command,
+		Args:             []string{},
+		Cwd:              t.TempDir(),
+		Env:              map[string]string{"TERM": "xterm-256color"},
+		StaticDir:        staticDir,
+	}
+}
+
+func dialTerminalWebsocket(t *testing.T, httpURL string) *websocket.Conn {
+	t.Helper()
+
+	wsURL := "ws" + strings.TrimPrefix(httpURL, "http") + "/api/terminal"
+	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+	if err != nil {
+		t.Fatalf("failed to dial terminal websocket: %v", err)
+	}
+	return conn
+}
+
+func waitForWSMessageType(t *testing.T, conn *websocket.Conn, messageType string, timeout time.Duration) map[string]any {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
+	for time.Now().Before(deadline) {
+		message := readWSMessageMap(t, conn, time.Until(deadline))
+		if message["type"] == messageType {
+			return message
+		}
+	}
+	t.Fatalf("timed out waiting for websocket message type %q", messageType)
+	return nil
+}
+
+func readWSMessageMap(t *testing.T, conn *websocket.Conn, timeout time.Duration) map[string]any {
+	t.Helper()
+	if timeout <= 0 {
+		timeout = time.Second
+	}
+	if err := conn.SetReadDeadline(time.Now().Add(timeout)); err != nil {
+		t.Fatalf("failed setting websocket read deadline: %v", err)
+	}
+	_, payload, err := conn.ReadMessage()
+	if err != nil {
+		t.Fatalf("failed reading websocket message: %v", err)
+	}
+
+	var message map[string]any
+	if err := json.Unmarshal(payload, &message); err != nil {
+		t.Fatalf("failed decoding websocket payload %q: %v", string(payload), err)
+	}
+	return message
+}
+
+func stringField(message map[string]any, key string) string {
+	value, _ := message[key].(string)
+	return value
+}
+
+func readBody(t *testing.T, response *http.Response) string {
+	t.Helper()
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("failed reading response body: %v", err)
+	}
+	return string(bodyBytes)
+}
