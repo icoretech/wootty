@@ -36,6 +36,7 @@ jobs:
       - name: Trigger publish-image workflow for released tag
         run: |
           gh workflow run publish-image.yml \
+            --repo "${{ github.repository }}" \
             --ref main \
             -f tag="${{ needs.release-please.outputs.tag_name }}"
         env:
