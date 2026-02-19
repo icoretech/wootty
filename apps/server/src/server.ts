@@ -168,7 +168,7 @@ export async function buildServer(options: BuildServerOptions) {
       ok: true,
       service: "wootty-server",
       message:
-        "Web app is not built yet. Run `pnpm --filter @wootty/web build`.",
+        "Web app is not built yet. Run `pnpm --filter @icoretech/wootty-web build`.",
     }));
   }
 
