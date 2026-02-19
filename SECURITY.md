@@ -14,6 +14,6 @@ Use GitHub Security Advisories for this repository:
 
 Or email:
 
-- opensource@icoretech.com
+- icoretech.inc@gmail.com
 
 Include reproduction details, impact, and any suggested remediation.
