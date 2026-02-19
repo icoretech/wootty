@@ -1,0 +1,35 @@
+{
+  "name": "wootty",
+  "private": true,
+  "version": "0.1.0",
+  "description": "WooTTY: modern web terminal with resilient PTY sessions",
+  "packageManager": "pnpm@10.30.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "concurrently -k -n server,web -c green,yellow \"cd apps/server && go run ./cmd/woottyd run\" \"pnpm --filter @icoretech/wootty-web dev\"",
+    "build": "pnpm --filter @icoretech/wootty-web build && cd apps/server && go build ./...",
+    "ci": "pnpm lint && git diff --exit-code && pnpm test && pnpm build && pnpm test:e2e",
+    "ci:act:quality": "act pull_request -j quality",
+    "ci:act": "act pull_request -j e2e",
+    "format": "biome format --write .",
+    "format:check": "biome format --no-write .",
+    "lint": "biome check --write --assist-enabled=true . && pnpm typecheck",
+    "check": "biome check .",
+    "biome:ci": "biome ci .",
+    "test": "pnpm --filter @icoretech/wootty-web test && cd apps/server && go test ./...",
+    "test:e2e": "pnpm --filter @icoretech/wootty-web test:e2e",
+    "test:e2e:cross": "pnpm --filter @icoretech/wootty-web test:e2e:cross",
+    "typecheck": "pnpm --filter @icoretech/wootty-web typecheck"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.2",
+    "concurrently": "^9.2.1"
+  }
+}
