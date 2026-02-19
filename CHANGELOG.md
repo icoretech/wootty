@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1](https://github.com/icoretech/wootty/compare/wootty-v0.2.0...wootty-v0.2.1) (2026-02-19)
+
+
+### Bug Fixes
+
+* restore GitHub issue form templates ([c200e46](https://github.com/icoretech/wootty/commit/c200e46420023d672158bc361c243a76523c7312))
+* restore GitHub issue form templates ([e8ee0aa](https://github.com/icoretech/wootty/commit/e8ee0aa8f486714d3bf37552e66b2c79556aaf8f))
+
 ## [0.2.0](https://github.com/icoretech/wootty/compare/wootty-v0.1.0...wootty-v0.2.0) (2026-02-19)
 
 
