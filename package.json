@@ -1,7 +1,7 @@
 {
   "name": "wootty",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "WooTTY: modern web terminal with resilient PTY sessions",
   "packageManager": "pnpm@10.30.0",
   "engines": {
