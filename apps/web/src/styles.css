@@ -1,0 +1,324 @@
+:root {
+  color-scheme: dark;
+  font-family: "Space Grotesk", "Sora", "JetBrains Mono", ui-sans-serif, system-ui, sans-serif;
+  --bg-0: #04090a;
+  --bg-1: #071117;
+  --ink-0: #ebf9ff;
+  --ink-1: #8cb3c1;
+  --line: #1f4a5f;
+  --line-soft: #173a4b;
+  --accent: #35d0bb;
+  --danger: #ff6f61;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 30% -20%, #0d2530, var(--bg-0) 52%);
+  color: var(--ink-0);
+}
+
+.shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.shell.is-fullscreen {
+  padding: 6px;
+  gap: 6px;
+}
+
+.shell__background {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 80% 8%, rgba(55, 161, 184, 0.2), transparent 40%),
+    radial-gradient(circle at 5% 100%, rgba(35, 76, 92, 0.4), transparent 45%),
+    linear-gradient(165deg, rgba(5, 11, 14, 0.98), rgba(6, 13, 18, 0.94));
+}
+
+.workspace {
+  position: relative;
+  min-height: 0;
+}
+
+.terminal-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #041017, #050e14);
+  box-shadow:
+    inset 0 0 0 1px rgba(78, 139, 162, 0.2),
+    0 18px 36px rgba(0, 0, 0, 0.35);
+}
+
+.terminal-wrap .xterm {
+  height: 100%;
+  padding: 8px;
+}
+
+.terminal-wrap .xterm-viewport {
+  background-color: #041017;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(53, 130, 156, 0.78) rgba(5, 14, 20, 0.96);
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-track {
+  background: rgba(5, 14, 20, 0.96);
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(53, 130, 156, 0.78);
+  border-radius: 999px;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.terminal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(3, 8, 11, 0.65), rgba(3, 8, 11, 0.8));
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.terminal-overlay p {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 620;
+}
+
+.terminal-overlay small {
+  color: var(--ink-1);
+  font-size: 0.74rem;
+}
+
+.controls-toggle {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  color: #cfeef8;
+  background: linear-gradient(180deg, #12303f, #0f2733);
+  cursor: pointer;
+}
+
+.floating-controls {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 6;
+  width: 44px;
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: linear-gradient(170deg, rgba(8, 23, 31, 0.94), rgba(8, 19, 27, 0.89));
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(8px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.floating-controls.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.floating-controls button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(71, 132, 154, 0.8);
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #184053, #143445);
+  color: #e4f8ff;
+  cursor: pointer;
+}
+
+.controls-toggle:hover,
+.floating-controls button:hover {
+  background: linear-gradient(180deg, #1c4c62, #184357);
+}
+
+.controls-toggle:disabled,
+.floating-controls button:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.statusbar-toggle {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border-color: rgba(52, 101, 121, 0.9);
+  background: linear-gradient(180deg, #153b4c, #123241);
+}
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(6, 18, 25, 0.92), rgba(7, 15, 22, 0.9));
+  font-size: 0.7rem;
+  color: var(--ink-1);
+}
+
+.statusbar__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.statusbar__group:last-child {
+  margin-left: auto;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--line), var(--accent) 20%);
+  color: #d5faff;
+  font-weight: 620;
+}
+
+.status-pill[data-status="connected"] {
+  border-color: color-mix(in oklab, var(--line), var(--accent) 34%);
+}
+
+.status-pill[data-status="error"] {
+  border-color: color-mix(in oklab, var(--line), var(--danger) 40%);
+  color: #ffd5cf;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(52, 101, 121, 0.7);
+  border-radius: 999px;
+  background: rgba(7, 18, 25, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.status-item strong {
+  color: #daf6ff;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 640;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 900px) {
+  .statusbar {
+    gap: 6px;
+    font-size: 0.66rem;
+  }
+
+  .status-item strong {
+    max-width: 130px;
+  }
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .floating-controls {
+    bottom: 8px;
+    left: 8px;
+  }
+
+  .statusbar {
+    justify-content: flex-start;
+    padding: 6px 8px;
+  }
+
+  .statusbar__group:last-child {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

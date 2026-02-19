@@ -1,0 +1,49 @@
+name: Bug report
+description: Report a reproducible problem in WooTTY
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Clear description of the observed issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: List exact commands, browser, and actions.
+      placeholder: |
+        1. Start server with ...
+        2. Open browser at ...
+        3. Resize window ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Paste relevant browser console/server logs and screenshots.
+
+  - type: input
+    id: version
+    attributes:
+      label: WooTTY version
+      placeholder: v0.1.0
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      placeholder: Node 24.x, Ubuntu 24.04, Chrome 122
