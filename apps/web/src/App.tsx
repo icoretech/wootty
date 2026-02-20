@@ -26,6 +26,7 @@ import {
   createOutbox,
   enqueueOutbox,
   flushOutbox,
+  formatBytes,
   formatLatency,
   LAST_SESSION_STORAGE_KEY,
   parseServerMessage,
@@ -42,7 +43,7 @@ const outputEncoder = new TextEncoder();
 const FONT_SIZE_STORAGE_KEY = "wootty.fontSize";
 const FONT_SIZE_MIN = 11;
 const FONT_SIZE_MAX = 22;
-const DEFAULT_FONT_SIZE = 14;
+const DEFAULT_FONT_SIZE = FONT_SIZE_MIN;
 const CLOSE_CODE_PONG_TIMEOUT = 4103;
 const CLOSE_CODE_MANUAL_RECONNECT = 4101;
 const CLOSE_CODE_NEW_SESSION = 4102;
@@ -1312,7 +1313,12 @@ export default function App() {
               }}
             >
               <span>Session</span>
-              <strong data-testid="session-value">{sessionDisplay}</strong>
+              <strong
+                className="status-session__value"
+                data-testid="session-value"
+              >
+                {sessionDisplay}
+              </strong>
               <ChevronDown size={12} aria-hidden="true" />
             </button>
           </div>
@@ -1325,13 +1331,16 @@ export default function App() {
             Reconnects <strong>{reconnectAttempt}</strong>
           </span>
           <span className="status-item">
-            Buffered <strong>{queuedInputBytes} B</strong>
+            Buffered <strong>{formatBytes(queuedInputBytes)}</strong>
           </span>
           <span className="status-item">
-            Dropped <strong>{droppedInputBytes} B</strong>
+            Dropped <strong>{formatBytes(droppedInputBytes)}</strong>
           </span>
           <span className="status-item">
-            Output <strong data-testid="output-value">{outputBytes} B</strong>
+            Output{" "}
+            <strong data-testid="output-value" data-bytes={outputBytes}>
+              {formatBytes(outputBytes)}
+            </strong>
           </span>
         </div>
       </footer>

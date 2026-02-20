@@ -6,6 +6,7 @@ import {
   createOutbox,
   enqueueOutbox,
   flushOutbox,
+  formatBytes,
   formatLatency,
   LAST_SESSION_STORAGE_KEY,
   parseServerMessage,
@@ -105,5 +106,13 @@ describe("terminal-session helpers", () => {
     expect(formatLatency(null)).toBe("-");
     expect(formatLatency(20)).toBe("20ms");
     expect(formatLatency(1_250)).toBe("1.3s");
+  });
+
+  it("formats bytes for compact human-readable badges", () => {
+    expect(formatBytes(0)).toBe("0 B");
+    expect(formatBytes(36)).toBe("36 B");
+    expect(formatBytes(1_024)).toBe("1.0 KiB");
+    expect(formatBytes(15_360)).toBe("15 KiB");
+    expect(formatBytes(1_572_864)).toBe("1.5 MiB");
   });
 });

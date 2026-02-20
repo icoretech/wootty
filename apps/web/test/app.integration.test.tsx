@@ -34,7 +34,7 @@ const runtime = vi.hoisted(() => {
 
     constructor(options: unknown) {
       const typedOptions = (options ?? {}) as { fontSize?: number };
-      this.options = { fontSize: typedOptions.fontSize ?? 14 };
+      this.options = { fontSize: typedOptions.fontSize ?? 11 };
       FakeTerminal.instances.push(this);
     }
 
@@ -451,21 +451,21 @@ describe("App integration", () => {
     });
 
     expect(localStorage.getItem("wootty.fontSize")).toBeNull();
-    expect(runtime.FakeTerminal.instances[0].options.fontSize).toBe(14);
+    expect(runtime.FakeTerminal.instances[0].options.fontSize).toBe(11);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("font-increase-button"));
     });
 
-    expect(localStorage.getItem("wootty.fontSize")).toBe("15");
-    expect(runtime.FakeTerminal.instances[0].options.fontSize).toBe(15);
+    expect(localStorage.getItem("wootty.fontSize")).toBe("12");
+    expect(runtime.FakeTerminal.instances[0].options.fontSize).toBe(12);
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("font-reset-button"));
     });
 
-    expect(localStorage.getItem("wootty.fontSize")).toBe("14");
-    expect(runtime.FakeTerminal.instances[0].options.fontSize).toBe(14);
+    expect(localStorage.getItem("wootty.fontSize")).toBe("11");
+    expect(runtime.FakeTerminal.instances[0].options.fontSize).toBe(11);
   });
 
   it("announces reconnect status changes for assistive tech", async () => {

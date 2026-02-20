@@ -208,3 +208,22 @@ export function formatLatency(latencyMs: number | null): string {
 
   return `${(latencyMs / 1_000).toFixed(1)}s`;
 }
+
+const BYTE_UNITS = ["B", "KiB", "MiB", "GiB", "TiB"];
+
+export function formatBytes(bytes: number): string {
+  const normalized = Math.max(0, Math.floor(bytes));
+  if (normalized < 1024) {
+    return `${normalized} B`;
+  }
+
+  let value = normalized;
+  let unitIndex = 0;
+  while (value >= 1024 && unitIndex < BYTE_UNITS.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  const precision = value < 10 ? 1 : 0;
+  return `${value.toFixed(precision)} ${BYTE_UNITS[unitIndex]}`;
+}
