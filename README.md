@@ -18,6 +18,7 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 - Terminal-first UI: maximum viewport, compact status bar, floating controls.
 - Reconnect-safe sessions: resume by `sessionId`, replay buffered output.
 - Tab-safe defaults: each browser tab starts its own live session unless the operator explicitly resumes one.
+- Explicit multi-session actions: `Resume` for controllable sessions, `Watch` for sessions already controlled elsewhere (read-only).
 - Resize fidelity: client and PTY stay in sync during rapid window changes.
 - Operational defaults: high scrollback, keyboard-first controls, low-friction deployment.
 - Modern stack: Go 1.26+, Node 24+, React 19 + compiler, xterm.js.
@@ -49,7 +50,7 @@ Then open `http://127.0.0.1:3000`.
 Pin by version:
 
 ```bash
-docker run --rm -it -p 3000:3000 ghcr.io/icoretech/wootty:v0.1.0
+docker run --rm -it -p 3000:3000 ghcr.io/icoretech/wootty:v0.2.0
 ```
 
 Run a custom command:
@@ -68,7 +69,7 @@ pnpm install
 pnpm dev
 ```
 
-- Web: `http://127.0.0.1:5173`
+- Web: `http://localhost:5173`
 - Server: `http://127.0.0.1:3000`
 
 Production-like local run:
@@ -110,15 +111,19 @@ Status bar metrics:
 - connection status and latency
 - session id
 - reconnect count
-- buffered/dropped input bytes
-- output bytes
+- buffered/dropped input size (humanized units)
+- output size (humanized units)
 
 Session controls:
 
 - click the `Session` badge in the status bar to open the session menu.
 - `New session`: start a fresh session in the current tab.
-- `Resume last` / list entries: explicitly reattach resumable session ids from local browser storage.
+- `Resume last`: reattach the last session id seen in this browser.
+- session list merges live server sessions (`/api/sessions`) and local history entries.
+- sessions already controlled in another tab/operator are shown as `Watch` (read-only attach).
+- resumable sessions are shown as `Resume` (full control attach).
 - tabs do not implicitly steal active sessions from each other.
+- terminal font starts at minimum (`11px`) by default and can be changed from controls/shortcuts.
 
 ## Configuration
 
@@ -138,7 +143,8 @@ Session controls:
 
 ```mermaid
 flowchart LR
-  B["Browser UI (React + xterm)"] -- "WebSocket" --> S["WooTTY Server (Go)"]
+  B["Browser UI (React + xterm)"] -- "WebSocket (/api/terminal)" --> S["WooTTY Server (Go)"]
+  B -- "HTTP (/api/sessions)" --> S
   S -- "PTY attach/input/resize" --> P["Shell Process (creack/pty)"]
   P -- "output stream" --> S
   S -- "output + status events" --> B
