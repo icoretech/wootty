@@ -1,4 +1,6 @@
-export const SESSION_STORAGE_KEY = "wootty.sessionId";
+export const ACTIVE_SESSION_STORAGE_KEY = "wootty.activeSessionId";
+export const LAST_SESSION_STORAGE_KEY = "wootty.lastSessionId";
+export const SESSION_HISTORY_STORAGE_KEY = "wootty.sessionHistory";
 export const OUTBOX_MAX_BYTES = 512 * 1024;
 
 export type ConnectionStatus =
@@ -9,7 +11,7 @@ export type ConnectionStatus =
   | "error";
 
 export type ServerMessage =
-  | { type: "ready"; sessionId: string }
+  | { type: "ready"; sessionId: string; readOnly: boolean }
   | { type: "output"; data: string }
   | { type: "exit"; code: number; signal: number }
   | { type: "error"; message: string }
@@ -54,7 +56,9 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
           typeof message.sessionId === "string" &&
           message.sessionId.length > 0
         ) {
-          return { type: "ready", sessionId: message.sessionId };
+          const readOnly =
+            typeof message.readOnly === "boolean" ? message.readOnly : false;
+          return { type: "ready", sessionId: message.sessionId, readOnly };
         }
         return null;
       case "output":
@@ -132,20 +136,65 @@ export function flushOutbox(
   return sentBytes;
 }
 
-export function readStoredSessionId(storage: Storage): string | undefined {
-  const sessionId = storage.getItem(SESSION_STORAGE_KEY);
+export function readStoredSessionId(
+  storage: Storage,
+  key: string,
+): string | undefined {
+  const sessionId = storage.getItem(key);
   if (!sessionId || sessionId.length === 0) {
     return undefined;
   }
   return sessionId;
 }
 
-export function storeSessionId(storage: Storage, sessionId: string): void {
-  storage.setItem(SESSION_STORAGE_KEY, sessionId);
+export function storeSessionId(
+  storage: Storage,
+  key: string,
+  sessionId: string,
+): void {
+  storage.setItem(key, sessionId);
 }
 
-export function clearStoredSessionId(storage: Storage): void {
-  storage.removeItem(SESSION_STORAGE_KEY);
+export function clearStoredSessionId(storage: Storage, key: string): void {
+  storage.removeItem(key);
+}
+
+export function readSessionHistory(storage: Storage): string[] {
+  const raw = storage.getItem(SESSION_HISTORY_STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+    return parsed
+      .filter((value): value is string => typeof value === "string")
+      .filter((value) => value.length > 0);
+  } catch {
+    return [];
+  }
+}
+
+export function writeSessionHistory(
+  storage: Storage,
+  sessions: string[],
+): void {
+  storage.setItem(SESSION_HISTORY_STORAGE_KEY, JSON.stringify(sessions));
+}
+
+export function pushSessionHistory(
+  sessions: string[],
+  sessionId: string,
+  maxEntries = 8,
+): string[] {
+  const unique = [
+    sessionId,
+    ...sessions.filter((value) => value !== sessionId),
+  ];
+  return unique.slice(0, maxEntries);
 }
 
 export function formatLatency(latencyMs: number | null): string {

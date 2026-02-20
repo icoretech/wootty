@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ACTIVE_SESSION_STORAGE_KEY,
   clearStoredSessionId,
   createOutbox,
   enqueueOutbox,
   flushOutbox,
   formatLatency,
+  LAST_SESSION_STORAGE_KEY,
   parseServerMessage,
   readStoredSessionId,
   reconnectDelayMs,
@@ -17,6 +19,14 @@ describe("terminal-session helpers", () => {
     expect(parseServerMessage('{"type":"ready","sessionId":"abc"}')).toEqual({
       type: "ready",
       sessionId: "abc",
+      readOnly: false,
+    });
+    expect(
+      parseServerMessage('{"type":"ready","sessionId":"abc","readOnly":true}'),
+    ).toEqual({
+      type: "ready",
+      sessionId: "abc",
+      readOnly: true,
     });
     expect(parseServerMessage('{"type":"output","data":"hello"}')).toEqual({
       type: "output",
@@ -71,14 +81,24 @@ describe("terminal-session helpers", () => {
       },
     } as Storage;
 
-    clearStoredSessionId(storage);
-    expect(readStoredSessionId(storage)).toBeUndefined();
+    clearStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY);
+    expect(
+      readStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY),
+    ).toBeUndefined();
 
-    storeSessionId(storage, "session-1");
-    expect(readStoredSessionId(storage)).toBe("session-1");
+    storeSessionId(storage, ACTIVE_SESSION_STORAGE_KEY, "session-1");
+    storeSessionId(storage, LAST_SESSION_STORAGE_KEY, "session-2");
+    expect(readStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY)).toBe(
+      "session-1",
+    );
+    expect(readStoredSessionId(storage, LAST_SESSION_STORAGE_KEY)).toBe(
+      "session-2",
+    );
 
-    clearStoredSessionId(storage);
-    expect(readStoredSessionId(storage)).toBeUndefined();
+    clearStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY);
+    expect(
+      readStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY),
+    ).toBeUndefined();
   });
 
   it("formats latency for UI", () => {

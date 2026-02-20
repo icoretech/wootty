@@ -18,6 +18,7 @@ type AttachMessage struct {
 	SessionID string
 	Cols      int
 	Rows      int
+	Watch     bool
 }
 
 func (AttachMessage) Type() string { return "attach" }
@@ -45,6 +46,7 @@ type envelope struct {
 	Cols      *int    `json:"cols,omitempty"`
 	Rows      *int    `json:"rows,omitempty"`
 	Data      *string `json:"data,omitempty"`
+	Watch     *bool   `json:"watch,omitempty"`
 }
 
 func ParseClientMessage(raw []byte) (ClientMessage, error) {
@@ -61,10 +63,15 @@ func ParseClientMessage(raw []byte) (ClientMessage, error) {
 		if !validDimension(*msg.Cols) || !validDimension(*msg.Rows) {
 			return nil, errors.New("Invalid message")
 		}
+		watch := false
+		if msg.Watch != nil {
+			watch = *msg.Watch
+		}
 		return AttachMessage{
 			SessionID: msg.SessionID,
 			Cols:      *msg.Cols,
 			Rows:      *msg.Rows,
+			Watch:     watch,
 		}, nil
 	case "input":
 		if msg.Data == nil {

@@ -167,6 +167,101 @@ func TestWebsocketProtocolFlow(t *testing.T) {
 	_ = waitForWSMessageType(t, wsConn, "exit", 2*time.Second)
 }
 
+func TestSessionsAPIListsActiveSessions(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	wsConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer wsConn.Close()
+
+	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "cols": 120, "rows": 40}); err != nil {
+		t.Fatalf("failed writing attach payload: %v", err)
+	}
+	readyMessage := waitForWSMessageType(t, wsConn, "ready", 2*time.Second)
+	sessionID := stringField(readyMessage, "sessionId")
+	if sessionID == "" {
+		t.Fatalf("expected ready session id, got %#v", readyMessage)
+	}
+
+	response, err := http.Get(httpServer.URL + "/api/sessions")
+	if err != nil {
+		t.Fatalf("sessions request failed: %v", err)
+	}
+	defer response.Body.Close()
+
+	var payload struct {
+		Sessions []struct {
+			ID            string `json:"id"`
+			HasController bool   `json:"hasController"`
+		} `json:"sessions"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
+		t.Fatalf("failed decoding sessions payload: %v", err)
+	}
+
+	if len(payload.Sessions) == 0 {
+		t.Fatal("expected active sessions to be listed")
+	}
+	if payload.Sessions[0].ID != sessionID {
+		t.Fatalf("expected session %q, got %#v", sessionID, payload.Sessions[0])
+	}
+	if !payload.Sessions[0].HasController {
+		t.Fatalf("expected active session to report controller: %#v", payload.Sessions[0])
+	}
+}
+
+func TestWatchModeIsReadOnly(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	controllerConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer controllerConn.Close()
+
+	if err := controllerConn.WriteJSON(map[string]any{"type": "attach", "cols": 80, "rows": 24}); err != nil {
+		t.Fatalf("failed writing controller attach payload: %v", err)
+	}
+	controllerReady := waitForWSMessageType(t, controllerConn, "ready", 2*time.Second)
+	sessionID := stringField(controllerReady, "sessionId")
+	if sessionID == "" {
+		t.Fatalf("expected session id in controller ready payload: %#v", controllerReady)
+	}
+
+	watchConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer watchConn.Close()
+
+	if err := watchConn.WriteJSON(map[string]any{
+		"type":      "attach",
+		"sessionId": sessionID,
+		"cols":      80,
+		"rows":      24,
+		"watch":     true,
+	}); err != nil {
+		t.Fatalf("failed writing watch attach payload: %v", err)
+	}
+
+	watchReady := waitForWSMessageType(t, watchConn, "ready", 2*time.Second)
+	readOnly, ok := watchReady["readOnly"].(bool)
+	if !ok || !readOnly {
+		t.Fatalf("expected read-only ready payload, got %#v", watchReady)
+	}
+
+	if err := watchConn.WriteJSON(map[string]any{"type": "input", "data": "whoami\r"}); err != nil {
+		t.Fatalf("failed writing watch input payload: %v", err)
+	}
+	errMessage := waitForWSMessageType(t, watchConn, "error", 2*time.Second)
+	if !strings.Contains(stringField(errMessage, "message"), "read-only") {
+		t.Fatalf("expected read-only error payload, got %#v", errMessage)
+	}
+}
+
 func TestWebsocketAttachFailureSurfacesError(t *testing.T) {
 	cfg := testRuntimeConfig(t, false, "/definitely/missing-command", filepath.Join(t.TempDir(), "missing-static"))
 	server := New(cfg)

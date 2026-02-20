@@ -12,8 +12,23 @@ func TestParseAttach(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected AttachMessage, got %T", msg)
 	}
-	if attach.SessionID != "abc" || attach.Cols != 120 || attach.Rows != 40 {
+	if attach.SessionID != "abc" || attach.Cols != 120 || attach.Rows != 40 || attach.Watch {
 		t.Fatalf("unexpected attach payload: %+v", attach)
+	}
+}
+
+func TestParseAttachWatch(t *testing.T) {
+	msg, err := ParseClientMessage([]byte(`{"type":"attach","sessionId":"abc","cols":120,"rows":40,"watch":true}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	attach, ok := msg.(AttachMessage)
+	if !ok {
+		t.Fatalf("expected AttachMessage, got %T", msg)
+	}
+	if !attach.Watch {
+		t.Fatalf("expected watch mode, got %+v", attach)
 	}
 }
 

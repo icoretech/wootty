@@ -17,6 +17,7 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 
 - Terminal-first UI: maximum viewport, compact status bar, floating controls.
 - Reconnect-safe sessions: resume by `sessionId`, replay buffered output.
+- Tab-safe defaults: each browser tab starts its own live session unless the operator explicitly resumes one.
 - Resize fidelity: client and PTY stay in sync during rapid window changes.
 - Operational defaults: high scrollback, keyboard-first controls, low-friction deployment.
 - Modern stack: Go 1.26+, Node 24+, React 19 + compiler, xterm.js.
@@ -111,6 +112,13 @@ Status bar metrics:
 - reconnect count
 - buffered/dropped input bytes
 - output bytes
+
+Session controls:
+
+- click the `Session` badge in the status bar to open the session menu.
+- `New session`: start a fresh session in the current tab.
+- `Resume last` / list entries: explicitly reattach resumable session ids from local browser storage.
+- tabs do not implicitly steal active sessions from each other.
 
 ## Configuration
 

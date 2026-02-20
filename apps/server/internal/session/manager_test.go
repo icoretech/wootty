@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -28,7 +29,7 @@ func TestManagerAttachWriteAndExit(t *testing.T) {
 	serverConn, clientConn, cleanup := newWebsocketPair(t)
 	defer cleanup()
 
-	attachResult, err := manager.Attach("", serverConn, 80, 24)
+	attachResult, err := manager.Attach("", serverConn, 80, 24, false)
 	if err != nil {
 		t.Fatalf("attach failed: %v", err)
 	}
@@ -79,7 +80,7 @@ func TestManagerReconnectReplaysHistory(t *testing.T) {
 	serverConnA, clientConnA, cleanupA := newWebsocketPair(t)
 	defer cleanupA()
 
-	firstAttach, err := manager.Attach("", serverConnA, 80, 24)
+	firstAttach, err := manager.Attach("", serverConnA, 80, 24, false)
 	if err != nil {
 		t.Fatalf("first attach failed: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestManagerReconnectReplaysHistory(t *testing.T) {
 	serverConnB, _, cleanupB := newWebsocketPair(t)
 	defer cleanupB()
 
-	secondAttach, err := manager.Attach(firstAttach.SessionID, serverConnB, 120, 40)
+	secondAttach, err := manager.Attach(firstAttach.SessionID, serverConnB, 120, 40, false)
 	if err != nil {
 		t.Fatalf("second attach failed: %v", err)
 	}
@@ -110,6 +111,79 @@ func TestManagerReconnectReplaysHistory(t *testing.T) {
 	}
 	if !strings.Contains(secondAttach.History, "abc") {
 		t.Fatalf("expected history replay to include typed input, got %q", secondAttach.History)
+	}
+}
+
+func TestManagerRejectsSecondActiveAttach(t *testing.T) {
+	manager := NewManager(ManagerOptions{
+		ReconnectGrace: 500 * time.Millisecond,
+		HistoryBytes:   4096,
+		FakePTY:        true,
+		ProcessOptions: ProcessOptions{
+			Command: "sh",
+			Args:    []string{},
+			Cwd:     t.TempDir(),
+			Env:     map[string]string{"TERM": "xterm-256color"},
+		},
+	})
+	defer manager.Shutdown()
+
+	serverConnA, _, cleanupA := newWebsocketPair(t)
+	defer cleanupA()
+
+	firstAttach, err := manager.Attach("", serverConnA, 80, 24, false)
+	if err != nil {
+		t.Fatalf("first attach failed: %v", err)
+	}
+
+	serverConnB, _, cleanupB := newWebsocketPair(t)
+	defer cleanupB()
+
+	_, err = manager.Attach(firstAttach.SessionID, serverConnB, 80, 24, false)
+	if !errors.Is(err, ErrSessionAlreadyAttached) {
+		t.Fatalf("expected ErrSessionAlreadyAttached, got %v", err)
+	}
+}
+
+func TestManagerWatchAttachIsReadOnly(t *testing.T) {
+	manager := NewManager(ManagerOptions{
+		ReconnectGrace: 500 * time.Millisecond,
+		HistoryBytes:   4096,
+		FakePTY:        true,
+		ProcessOptions: ProcessOptions{
+			Command: "sh",
+			Args:    []string{},
+			Cwd:     t.TempDir(),
+			Env:     map[string]string{"TERM": "xterm-256color"},
+		},
+	})
+	defer manager.Shutdown()
+
+	controllerServerConn, _, cleanupController := newWebsocketPair(t)
+	defer cleanupController()
+
+	controllerAttach, err := manager.Attach("", controllerServerConn, 80, 24, false)
+	if err != nil {
+		t.Fatalf("controller attach failed: %v", err)
+	}
+
+	watcherServerConn, _, cleanupWatcher := newWebsocketPair(t)
+	defer cleanupWatcher()
+
+	watchAttach, err := manager.Attach(controllerAttach.SessionID, watcherServerConn, 80, 24, true)
+	if err != nil {
+		t.Fatalf("watch attach failed: %v", err)
+	}
+	if !watchAttach.ReadOnly {
+		t.Fatalf("expected read-only watch attach, got %+v", watchAttach)
+	}
+
+	sessions := manager.ListSessions()
+	if len(sessions) != 1 {
+		t.Fatalf("expected single active session, got %#v", sessions)
+	}
+	if sessions[0].Watchers != 1 {
+		t.Fatalf("expected one watcher, got %#v", sessions[0])
 	}
 }
 
@@ -130,7 +204,7 @@ func TestManagerReconnectGraceExpiryCreatesNewSession(t *testing.T) {
 	serverConnA, _, cleanupA := newWebsocketPair(t)
 	defer cleanupA()
 
-	firstAttach, err := manager.Attach("", serverConnA, 80, 24)
+	firstAttach, err := manager.Attach("", serverConnA, 80, 24, false)
 	if err != nil {
 		t.Fatalf("first attach failed: %v", err)
 	}
@@ -141,7 +215,7 @@ func TestManagerReconnectGraceExpiryCreatesNewSession(t *testing.T) {
 	serverConnB, _, cleanupB := newWebsocketPair(t)
 	defer cleanupB()
 
-	secondAttach, err := manager.Attach(firstAttach.SessionID, serverConnB, 80, 24)
+	secondAttach, err := manager.Attach(firstAttach.SessionID, serverConnB, 80, 24, false)
 	if err != nil {
 		t.Fatalf("second attach failed: %v", err)
 	}
@@ -169,16 +243,16 @@ func TestManagerSendJSONAndShutdown(t *testing.T) {
 	serverConn, clientConn, cleanup := newWebsocketPair(t)
 	defer cleanup()
 
-	attachResult, err := manager.Attach("", serverConn, 80, 24)
+	attachResult, err := manager.Attach("", serverConn, 80, 24, false)
 	if err != nil {
 		t.Fatalf("attach failed: %v", err)
 	}
 
-	if err := manager.SendJSON("missing-session", map[string]string{"type": "pong"}); err == nil {
+	if err := manager.SendJSON("missing-session", serverConn, map[string]string{"type": "pong"}); err == nil {
 		t.Fatal("expected missing-session send to fail")
 	}
 
-	if err := manager.SendJSON(attachResult.SessionID, map[string]string{"type": "pong"}); err != nil {
+	if err := manager.SendJSON(attachResult.SessionID, serverConn, map[string]string{"type": "pong"}); err != nil {
 		t.Fatalf("expected send json to active session to succeed: %v", err)
 	}
 	_ = waitForMessageType(t, clientConn, "pong", 2*time.Second)
