@@ -9,7 +9,6 @@
   --line-soft: #173a4b;
   --accent: #35d0bb;
   --danger: #ff6f61;
-  --terminal-bg: #041018;
 }
 
 * {
@@ -67,22 +66,24 @@ body {
   min-height: 0;
   overflow: hidden;
   border: 0;
-  border-radius: 12px;
-  background: var(--terminal-bg);
+  border-radius: 0;
+  background: transparent;
 }
 
 .terminal-wrap .xterm {
   height: 100%;
   padding: 0;
+  background: transparent !important;
 }
 
 .terminal-wrap .xterm-screen,
-.terminal-wrap .xterm-screen canvas {
+.terminal-wrap .xterm-screen canvas,
+.terminal-wrap .xterm-scroll-area {
   background: transparent !important;
 }
 
 .terminal-wrap .xterm-viewport {
-  background-color: transparent;
+  background-color: transparent !important;
   scrollbar-width: thin;
   scrollbar-color: rgba(53, 130, 156, 0.78) transparent;
 }
@@ -337,10 +338,23 @@ body {
   min-width: 0;
 }
 
-.status-session__button strong {
+.status-session__button {
+  color: var(--ink-1);
+  font-size: 0.7rem;
+}
+
+.status-session__button svg {
+  color: var(--ink-1);
+}
+
+.status-session__button strong,
+.status-session__value {
   font-size: 0.7rem;
   font-weight: 640;
   font-variant-numeric: tabular-nums;
+  color: #daf6ff;
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 .session-popover-layer {

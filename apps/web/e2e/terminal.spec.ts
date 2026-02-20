@@ -133,8 +133,10 @@ test("handles long output bursts without dropping connection", async ({
   await expect
     .poll(
       async () => {
-        const outputText = await page.getByTestId("output-value").textContent();
-        return Number.parseInt(outputText ?? "0", 10);
+        const bytesRaw = await page
+          .getByTestId("output-value")
+          .getAttribute("data-bytes");
+        return Number.parseInt(bytesRaw ?? "0", 10);
       },
       { timeout: 12_000 },
     )
@@ -158,14 +160,14 @@ test("font size controls update terminal preference", async ({ page }) => {
     .poll(async () => {
       return page.evaluate(() => localStorage.getItem("wootty.fontSize"));
     })
-    .toBe("15");
+    .toBe("12");
 
   await page.getByTestId("font-decrease-button").click();
   await expect
     .poll(async () => {
       return page.evaluate(() => localStorage.getItem("wootty.fontSize"));
     })
-    .toBe("14");
+    .toBe("11");
 
   await page.getByTestId("font-increase-button").click();
   await page.getByTestId("font-reset-button").click();
@@ -173,5 +175,5 @@ test("font size controls update terminal preference", async ({ page }) => {
     .poll(async () => {
       return page.evaluate(() => localStorage.getItem("wootty.fontSize"));
     })
-    .toBe("14");
+    .toBe("11");
 });
