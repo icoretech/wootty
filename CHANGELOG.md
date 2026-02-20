@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2](https://github.com/icoretech/wootty/compare/wootty-v0.2.1...wootty-v0.2.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* clear terminal viewport when switching sessions ([9861330](https://github.com/icoretech/wootty/commit/98613304640c504d527c17b093c8363fb5556685))
+
 ## [0.2.1](https://github.com/icoretech/wootty/compare/wootty-v0.2.0...wootty-v0.2.1) (2026-02-20)
 
 
