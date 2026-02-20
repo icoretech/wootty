@@ -19,7 +19,7 @@ pnpm ci                 # local CI sequence (lint, test, build, e2e)
 ```
 Server-only loop:
 ```bash
-cd apps/server && go run ./cmd/woottyd run --host 127.0.0.1 --port 3000
+cd apps/server && go run ./cmd/woottyd run --host 127.0.0.1 --port 8080
 ```
 
 ## Coding Style & Naming Conventions

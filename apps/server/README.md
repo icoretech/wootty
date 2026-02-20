@@ -17,7 +17,7 @@ Implemented behavior:
 
 ```bash
 cd apps/server
-go run ./cmd/woottyd run --host 127.0.0.1 --port 3000
+go run ./cmd/woottyd run --host 127.0.0.1 --port 8080
 ```
 
 With frontend dev server:

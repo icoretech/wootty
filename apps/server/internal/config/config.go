@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultPort             = 3000
+	DefaultPort             = 8080
 	DefaultHistoryBytes     = 5 * 1024 * 1024
 	DefaultReconnectGraceMS = 30_000
 )
