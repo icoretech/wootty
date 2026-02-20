@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1](https://github.com/icoretech/wootty/compare/wootty-v0.2.0...wootty-v0.2.1) (2026-02-20)
+
+
+### Features
+
+* refine terminal UX and add watch sessions ([38da078](https://github.com/icoretech/wootty/commit/38da07855e37a8bc2f5a0022b30c467644f8fdc4))
+* tune terminal defaults and refresh docs screenshot ([b1b6ce0](https://github.com/icoretech/wootty/commit/b1b6ce0e7a1bc99c6b1508850465c2be1dc73591))
+
 ## [0.2.0](https://github.com/icoretech/wootty/compare/wootty-v0.1.1...wootty-v0.2.0) (2026-02-20)
 
 
