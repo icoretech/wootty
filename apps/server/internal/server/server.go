@@ -2,9 +2,12 @@ package server
 
 import (
 	"encoding/json"
+	"io/fs"
 	"log/slog"
+	"mime"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -15,6 +18,7 @@ import (
 	"github.com/icoretech/wootty/apps/server/internal/config"
 	"github.com/icoretech/wootty/apps/server/internal/protocol"
 	"github.com/icoretech/wootty/apps/server/internal/session"
+	"github.com/icoretech/wootty/apps/server/internal/webassets"
 )
 
 type Server struct {
@@ -188,21 +192,32 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) registerStaticRoutes(mux *http.ServeMux) {
 	staticDir := s.cfg.StaticDir
-	if staticDir == "" {
+	if staticDir != "" {
+		info, err := os.Stat(staticDir)
+		if err == nil && info.IsDir() {
+			registerDirectoryRoutes(mux, staticDir)
+			return
+		}
+	}
+
+	if embeddedAssets, ok := webassets.EmbeddedFS(); ok {
+		registerEmbeddedRoutes(mux, embeddedAssets)
 		return
 	}
 
-	info, err := os.Stat(staticDir)
-	if err != nil || !info.IsDir() {
-		mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
-			writeJSON(w, http.StatusOK, map[string]string{
-				"service": "wootty-server",
-				"message": "Web app is not built yet. Run `pnpm --filter @icoretech/wootty-web build`.",
-			})
+	registerFallbackRoute(mux)
+}
+
+func registerFallbackRoute(mux *http.ServeMux) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]string{
+			"service": "wootty-server",
+			"message": "Web app is not built yet. Run `pnpm --filter @icoretech/wootty-web build`.",
 		})
-		return
-	}
+	})
+}
 
+func registerDirectoryRoutes(mux *http.ServeMux, staticDir string) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			http.NotFound(w, r)
@@ -222,6 +237,76 @@ func (s *Server) registerStaticRoutes(mux *http.ServeMux) {
 
 		http.ServeFile(w, r, filepath.Join(staticDir, "index.html"))
 	})
+}
+
+func registerEmbeddedRoutes(mux *http.ServeMux, assets fs.FS) {
+	fileServer := http.FileServer(http.FS(assets))
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/") {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Method != http.MethodGet {
+			http.NotFound(w, r)
+			return
+		}
+
+		if assetPath := cleanEmbeddedPath(r.URL.Path); assetPath != "" && embeddedAssetExists(assets, assetPath) {
+			clone := cloneRequestWithPath(r, "/"+assetPath)
+			fileServer.ServeHTTP(w, clone)
+			return
+		}
+
+		serveEmbeddedAsset(w, assets, "index.html")
+	})
+}
+
+func cleanEmbeddedPath(requestPath string) string {
+	trimmed := strings.TrimPrefix(requestPath, "/")
+	cleaned := path.Clean(trimmed)
+	if cleaned == "." {
+		return ""
+	}
+	if cleaned == ".." || strings.HasPrefix(cleaned, "../") {
+		return ""
+	}
+	if strings.HasPrefix(cleaned, "/") {
+		return ""
+	}
+
+	return cleaned
+}
+
+func embeddedAssetExists(assets fs.FS, assetPath string) bool {
+	info, err := fs.Stat(assets, assetPath)
+	if err != nil {
+		return false
+	}
+	return !info.IsDir()
+}
+
+func cloneRequestWithPath(request *http.Request, requestPath string) *http.Request {
+	clone := request.Clone(request.Context())
+	urlCopy := *request.URL
+	clone.URL = &urlCopy
+	clone.URL.Path = requestPath
+	clone.URL.RawPath = requestPath
+	return clone
+}
+
+func serveEmbeddedAsset(w http.ResponseWriter, assets fs.FS, assetPath string) {
+	content, err := fs.ReadFile(assets, assetPath)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	if contentType := mime.TypeByExtension(path.Ext(assetPath)); contentType != "" {
+		w.Header().Set("Content-Type", contentType)
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(content)
 }
 
 func cleanPath(baseDir string, requestPath string) string {
