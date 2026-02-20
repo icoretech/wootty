@@ -21,6 +21,7 @@ COPY apps/server/go.mod apps/server/go.sum ./apps/server/
 RUN cd apps/server && go mod download
 
 COPY apps/server ./apps/server
+COPY --from=web-builder /app/apps/web/dist ./apps/server/internal/webassets/dist
 
 RUN cd apps/server && CGO_ENABLED=0 go build -o /out/woottyd ./cmd/woottyd
 
@@ -32,9 +33,10 @@ RUN apt-get update \
 
 WORKDIR /app/apps/server
 
-COPY --from=server-builder /out/woottyd ./woottyd
-COPY --from=web-builder /app/apps/web/dist /app/apps/web/dist
+COPY --from=server-builder /out/woottyd /usr/local/bin/wootty
+RUN ln -s /usr/local/bin/wootty /usr/local/bin/woottyd \
+  && ln -s /usr/local/bin/wootty /app/apps/server/woottyd
 
 EXPOSE 3000
 
-CMD ["./woottyd", "run", "bash"]
+CMD ["wootty", "run", "bash"]
