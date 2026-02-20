@@ -5,9 +5,11 @@ This directory contains the Go server implementation for WooTTY.
 Implemented behavior:
 
 - websocket protocol compatibility with the web app (`attach`, `input`, `resize`, `ping`)
+- `attach` supports watch mode (`watch: true`) for read-only observers
 - PTY-backed command execution (`creack/pty`)
 - reconnect-safe sessions with history replay
 - conflict-safe attach: active sessions cannot be silently hijacked by a second connection
+- live session listing endpoint: `GET /api/sessions`
 - optional deterministic fake PTY mode (`WOOTTY_FAKE_PTY=1`) for e2e tests
 - `/api/health` and static web serving fallback
 
