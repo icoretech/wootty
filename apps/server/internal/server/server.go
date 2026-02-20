@@ -55,6 +55,7 @@ func New(cfg config.RuntimeConfig) *Server {
 	}
 
 	mux.HandleFunc("/api/health", s.handleHealth)
+	mux.HandleFunc("/api/sessions", s.handleSessions)
 	mux.HandleFunc("/api/terminal", s.handleTerminal)
 	s.registerStaticRoutes(mux)
 
@@ -78,6 +79,17 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
 
+func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"sessions": s.sessions.ListSessions(),
+	})
+}
+
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(_ *http.Request) bool { return true },
 }
@@ -91,9 +103,10 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	defer conn.Close()
 
 	activeSessionID := ""
+	activeReadOnly := false
 	send := func(payload any) {
 		if activeSessionID != "" {
-			if err := s.sessions.SendJSON(activeSessionID, payload); err == nil {
+			if err := s.sessions.SendJSON(activeSessionID, conn, payload); err == nil {
 				return
 			}
 		}
@@ -117,7 +130,13 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 
 		switch message := msg.(type) {
 		case protocol.AttachMessage:
-			result, attachErr := s.sessions.Attach(message.SessionID, conn, message.Cols, message.Rows)
+			result, attachErr := s.sessions.Attach(
+				message.SessionID,
+				conn,
+				message.Cols,
+				message.Rows,
+				message.Watch,
+			)
 			if attachErr != nil {
 				s.log.Error("failed to attach terminal session", "err", attachErr)
 				send(map[string]string{
@@ -128,20 +147,22 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 			}
 
 			activeSessionID = result.SessionID
+			activeReadOnly = result.ReadOnly
 
-			_ = s.sessions.SendJSON(activeSessionID, map[string]string{
+			_ = s.sessions.SendJSON(activeSessionID, conn, map[string]any{
 				"type":      "ready",
 				"sessionId": result.SessionID,
+				"readOnly":  result.ReadOnly,
 			})
 
 			if result.History != "" {
-				_ = s.sessions.SendJSON(activeSessionID, map[string]string{
+				_ = s.sessions.SendJSON(activeSessionID, conn, map[string]string{
 					"type": "output",
 					"data": result.History,
 				})
 			}
 			if result.ExitInfo != nil {
-				_ = s.sessions.SendJSON(activeSessionID, map[string]any{
+				_ = s.sessions.SendJSON(activeSessionID, conn, map[string]any{
 					"type":   "exit",
 					"code":   result.ExitInfo.Code,
 					"signal": result.ExitInfo.Signal,
@@ -153,6 +174,13 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 				send(map[string]string{
 					"type":    "error",
 					"message": "Attach first",
+				})
+				continue
+			}
+			if activeReadOnly {
+				send(map[string]string{
+					"type":    "error",
+					"message": "Session is read-only",
 				})
 				continue
 			}
@@ -169,6 +197,9 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 					"type":    "error",
 					"message": "Attach first",
 				})
+				continue
+			}
+			if activeReadOnly {
 				continue
 			}
 			if ok := s.sessions.Resize(activeSessionID, message.Cols, message.Rows); !ok {

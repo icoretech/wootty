@@ -7,7 +7,10 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SESSION_STORAGE_KEY } from "../src/lib/terminal-session";
+import {
+  ACTIVE_SESSION_STORAGE_KEY,
+  LAST_SESSION_STORAGE_KEY,
+} from "../src/lib/terminal-session";
 
 const runtime = vi.hoisted(() => {
   class FakeFitAddon {
@@ -94,6 +97,8 @@ vi.mock("../src/lib/xterm-runtime", () => {
 
 import App from "../src/App";
 
+let fetchMock: ReturnType<typeof vi.fn>;
+
 type MessageListener = (event: { data?: string }) => void;
 type Listener = (event?: unknown) => void;
 
@@ -171,37 +176,68 @@ describe("App integration", () => {
     runtime.FakeTerminal.instances.length = 0;
     MockWebSocket.instances.length = 0;
 
-    const values = new Map<string, string>();
-    const storage = {
+    const localValues = new Map<string, string>();
+    const sessionValues = new Map<string, string>();
+    const localStorageRef = {
       getItem(key: string): string | null {
-        return values.get(key) ?? null;
+        return localValues.get(key) ?? null;
       },
       setItem(key: string, value: string): void {
-        values.set(key, value);
+        localValues.set(key, value);
       },
       removeItem(key: string): void {
-        values.delete(key);
+        localValues.delete(key);
       },
       clear(): void {
-        values.clear();
+        localValues.clear();
       },
       key(index: number): string | null {
-        return [...values.keys()][index] ?? null;
+        return [...localValues.keys()][index] ?? null;
       },
       get length(): number {
-        return values.size;
+        return localValues.size;
+      },
+    } as Storage;
+    const sessionStorageRef = {
+      getItem(key: string): string | null {
+        return sessionValues.get(key) ?? null;
+      },
+      setItem(key: string, value: string): void {
+        sessionValues.set(key, value);
+      },
+      removeItem(key: string): void {
+        sessionValues.delete(key);
+      },
+      clear(): void {
+        sessionValues.clear();
+      },
+      key(index: number): string | null {
+        return [...sessionValues.keys()][index] ?? null;
+      },
+      get length(): number {
+        return sessionValues.size;
       },
     } as Storage;
 
-    vi.stubGlobal("localStorage", storage);
+    vi.stubGlobal("localStorage", localStorageRef);
+    vi.stubGlobal("sessionStorage", sessionStorageRef);
     Object.defineProperty(window, "localStorage", {
       configurable: true,
-      value: storage,
+      value: localStorageRef,
+    });
+    Object.defineProperty(window, "sessionStorage", {
+      configurable: true,
+      value: sessionStorageRef,
     });
     vi.stubGlobal("WebSocket", MockWebSocket as unknown as typeof WebSocket);
+    fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ sessions: [] }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("connects and stores ready session id", async () => {
+  it("connects and stores ready session id in tab and resume storage", async () => {
     render(<App />);
 
     await waitFor(() => {
@@ -233,7 +269,10 @@ describe("App integration", () => {
     expect(screen.getByTestId("session-value").textContent).toContain(
       "session-a",
     );
-    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBe("session-a");
+    expect(localStorage.getItem(LAST_SESSION_STORAGE_KEY)).toBe("session-a");
+    expect(sessionStorage.getItem(ACTIVE_SESSION_STORAGE_KEY)).toBe(
+      "session-a",
+    );
   });
 
   it("buffers input while disconnected and flushes after reconnect", async () => {
@@ -283,8 +322,9 @@ describe("App integration", () => {
     );
   });
 
-  it("starts a fresh session without reusing stored session id", async () => {
-    localStorage.setItem(SESSION_STORAGE_KEY, "session-old");
+  it("starts a fresh session without reusing active tab session id", async () => {
+    sessionStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, "session-old");
+    localStorage.setItem(LAST_SESSION_STORAGE_KEY, "session-old");
 
     render(<App />);
 
@@ -305,7 +345,11 @@ describe("App integration", () => {
     expect(attachFirst?.sessionId).toBe("session-old");
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId("new-session-button"));
+      fireEvent.click(screen.getByTestId("session-menu-button"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("session-menu-new"));
     });
 
     await waitFor(
@@ -336,7 +380,61 @@ describe("App integration", () => {
     expect(screen.getByTestId("session-value").textContent).toContain(
       "session-new",
     );
-    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBe("session-new");
+    expect(localStorage.getItem(LAST_SESSION_STORAGE_KEY)).toBe("session-new");
+    expect(sessionStorage.getItem(ACTIVE_SESSION_STORAGE_KEY)).toBe(
+      "session-new",
+    );
+  });
+
+  it("resumes previous session only via explicit resume action", async () => {
+    localStorage.setItem(LAST_SESSION_STORAGE_KEY, "session-old");
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1);
+    });
+
+    const ws1 = MockWebSocket.instances[0];
+    await act(async () => {
+      ws1.triggerOpen();
+    });
+
+    await waitFor(() => {
+      const attachFirst = sentMessages(ws1).find(
+        (message) => message.type === "attach",
+      );
+      expect(attachFirst).toBeDefined();
+      expect(attachFirst).not.toHaveProperty("sessionId");
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("session-menu-button"));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("session-menu-resume-last"));
+    });
+
+    await waitFor(
+      () => {
+        expect(MockWebSocket.instances.length).toBe(2);
+      },
+      { timeout: 1_500 },
+    );
+
+    const ws2 = MockWebSocket.instances[1];
+    await act(async () => {
+      ws2.triggerOpen();
+    });
+
+    await waitFor(() => {
+      const attachSecond = sentMessages(ws2).find(
+        (message) => message.type === "attach",
+      );
+      expect(attachSecond).toBeDefined();
+      expect(attachSecond?.sessionId).toBe("session-old");
+    });
   });
 
   it("updates font size controls and persists preference", async () => {
@@ -396,5 +494,78 @@ describe("App integration", () => {
         "Reconnecting. Attempt 1.",
       );
     });
+  });
+
+  it("attaches in watch mode for sessions already controlled elsewhere", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        sessions: [
+          {
+            id: "session-watch",
+            hasController: true,
+            watchers: 0,
+            createdAtMs: Date.now() - 10_000,
+            lastActivityMs: Date.now() - 3_000,
+            command: "sh",
+          },
+        ],
+      }),
+    });
+
+    render(<App />);
+
+    await waitFor(() => {
+      expect(MockWebSocket.instances.length).toBe(1);
+    });
+
+    const ws1 = MockWebSocket.instances[0];
+    await act(async () => {
+      ws1.triggerOpen();
+      ws1.triggerMessage({ type: "ready", sessionId: "session-own" });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("session-menu-button"));
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("session-menu-watch-item"));
+    });
+
+    await waitFor(
+      () => {
+        expect(MockWebSocket.instances.length).toBe(2);
+      },
+      { timeout: 1_500 },
+    );
+
+    const ws2 = MockWebSocket.instances[1];
+    await act(async () => {
+      ws2.triggerOpen();
+    });
+
+    await waitFor(() => {
+      const attachSecond = sentMessages(ws2).find(
+        (message) => message.type === "attach",
+      );
+      expect(attachSecond).toBeDefined();
+      expect(attachSecond?.sessionId).toBe("session-watch");
+      expect(attachSecond?.watch).toBe(true);
+    });
+
+    await act(async () => {
+      ws2.triggerMessage({
+        type: "ready",
+        sessionId: "session-watch",
+        readOnly: true,
+      });
+    });
+
+    expect(screen.getByText("Read-only").textContent).toBe("Read-only");
   });
 });

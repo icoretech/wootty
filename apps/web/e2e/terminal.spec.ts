@@ -39,10 +39,36 @@ test("new session rotates session id", async ({ page }) => {
   const session = page.getByTestId("session-value");
   const previousSession = (await session.textContent())?.trim() ?? "";
 
-  await page.getByTestId("new-session-button").click();
+  await page.getByTestId("session-menu-button").click();
+  await expect(page.getByTestId("session-menu")).toBeVisible();
+  await page.getByTestId("session-menu-new").click();
   await waitUntilConnected(page);
 
   await expect(session).not.toHaveText(previousSession, { timeout: 20_000 });
+});
+
+test("new tab starts a distinct active session by default", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await waitUntilConnected(page);
+
+  const firstSession =
+    (await page.getByTestId("session-value").textContent())?.trim() ?? "";
+  expect(firstSession.length).toBeGreaterThan(0);
+  expect(firstSession).not.toBe("pending");
+
+  const secondPage = await page.context().newPage();
+  await secondPage.goto("/");
+  await waitUntilConnected(secondPage);
+
+  const secondSession =
+    (await secondPage.getByTestId("session-value").textContent())?.trim() ?? "";
+  expect(secondSession.length).toBeGreaterThan(0);
+  expect(secondSession).not.toBe("pending");
+  expect(secondSession).not.toBe(firstSession);
+
+  await secondPage.close();
 });
 
 test("stays stable through viewport resizes", async ({ page }) => {
