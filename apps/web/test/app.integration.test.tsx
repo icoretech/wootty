@@ -29,6 +29,7 @@ const runtime = vi.hoisted(() => {
     cols = 80;
     rows = 24;
     options: { fontSize: number };
+    clearCalls = 0;
 
     private dataHandlers = new Set<(data: string) => void>();
 
@@ -55,7 +56,7 @@ const runtime = vi.hoisted(() => {
     }
 
     clear(): void {
-      // no-op for tests
+      this.clearCalls += 1;
     }
 
     dispose(): void {
@@ -337,7 +338,14 @@ describe("App integration", () => {
     await act(async () => {
       ws1.triggerOpen();
       ws1.triggerMessage({ type: "ready", sessionId: "session-old" });
+      ws1.triggerMessage({ type: "output", data: "hello\n" });
     });
+
+    expect(screen.getByTestId("output-value").getAttribute("data-bytes")).toBe(
+      "6",
+    );
+    const terminal = runtime.FakeTerminal.instances[0];
+    expect(terminal.clearCalls).toBe(0);
 
     const attachFirst = sentMessages(ws1).find(
       (message) => message.type === "attach",
@@ -351,6 +359,11 @@ describe("App integration", () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId("session-menu-new"));
     });
+
+    expect(screen.getByTestId("output-value").getAttribute("data-bytes")).toBe(
+      "0",
+    );
+    expect(terminal.clearCalls).toBe(1);
 
     await waitFor(
       () => {
@@ -415,6 +428,9 @@ describe("App integration", () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId("session-menu-resume-last"));
     });
+
+    const terminal = runtime.FakeTerminal.instances[0];
+    expect(terminal.clearCalls).toBe(1);
 
     await waitFor(
       () => {

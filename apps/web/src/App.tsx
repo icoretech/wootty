@@ -703,7 +703,24 @@ export default function App() {
     term.clear();
   }, []);
 
+  const prepareSessionSwitch = useCallback(() => {
+    const term = termRef.current;
+    if (term) {
+      term.clear();
+    }
+
+    outboxRef.current.chunks.length = 0;
+    outboxRef.current.bytes = 0;
+    outboxRef.current.droppedBytes = 0;
+    pendingResizeRef.current = null;
+
+    setOutputBytes(0);
+    setQueuedInputBytes(0);
+    setDroppedInputBytes(0);
+  }, []);
+
   const startFreshSession = useCallback(() => {
+    prepareSessionSwitch();
     setSessionMode("control");
     sessionIdRef.current = undefined;
     setSessionId("");
@@ -733,7 +750,7 @@ export default function App() {
     }
 
     connect();
-  }, [connect, setSessionMode]);
+  }, [connect, prepareSessionSwitch, setSessionMode]);
 
   const resumeSession = useCallback(
     (targetSessionId: string, mode: AttachMode = "control") => {
@@ -741,6 +758,7 @@ export default function App() {
         return;
       }
 
+      prepareSessionSwitch();
       setSessionMode(mode);
       sessionIdRef.current = targetSessionId;
       setSessionId(targetSessionId);
@@ -753,7 +771,7 @@ export default function App() {
 
       reconnectNow();
     },
-    [reconnectNow, setSessionMode],
+    [prepareSessionSwitch, reconnectNow, setSessionMode],
   );
 
   const resumePreviousSession = useCallback(() => {
