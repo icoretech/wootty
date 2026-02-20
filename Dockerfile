@@ -37,6 +37,6 @@ COPY --from=server-builder /out/woottyd /usr/local/bin/wootty
 RUN ln -s /usr/local/bin/wootty /usr/local/bin/woottyd \
   && ln -s /usr/local/bin/wootty /app/apps/server/woottyd
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD ["wootty", "run", "bash"]

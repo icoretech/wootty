@@ -42,21 +42,21 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 Stable image from GitHub Container Registry:
 
 ```bash
-docker run --rm -it -p 3000:3000 ghcr.io/icoretech/wootty:latest
+docker run --rm -it -p 8080:8080 ghcr.io/icoretech/wootty:latest
 ```
 
-Then open `http://127.0.0.1:3000`.
+Then open `http://127.0.0.1:8080`.
 
 Pin by version:
 
 ```bash
-docker run --rm -it -p 3000:3000 ghcr.io/icoretech/wootty:v0.2.0
+docker run --rm -it -p 8080:8080 ghcr.io/icoretech/wootty:v0.2.0
 ```
 
 Run a custom command:
 
 ```bash
-docker run --rm -it -p 3000:3000 \
+docker run --rm -it -p 8080:8080 \
   -e WOOTTY_COMMAND=/bin/bash \
   -e WOOTTY_COMMAND_ARGS="-l" \
   ghcr.io/icoretech/wootty:latest
@@ -70,14 +70,14 @@ pnpm dev
 ```
 
 - Web: `http://localhost:5173`
-- Server: `http://127.0.0.1:3000`
+- Server: `http://127.0.0.1:8080`
 
 Production-like local run:
 
 ```bash
 pnpm build
 cd apps/server
-go run ./cmd/woottyd run --port 3000 bash
+go run ./cmd/woottyd run --port 8080 bash
 ```
 
 ## Run with Docker
@@ -86,7 +86,7 @@ Build locally:
 
 ```bash
 docker build -t wootty:dev .
-docker run --rm -it -p 3000:3000 wootty:dev
+docker run --rm -it -p 8080:8080 wootty:dev
 ```
 
 The container serves:
@@ -130,7 +130,7 @@ Session controls:
 | Variable | Default | Description |
 | --- | --- | --- |
 | `WOOTTY_HOST` | `0.0.0.0` | Bind address |
-| `WOOTTY_PORT` | `3000` | HTTP/WebSocket port |
+| `WOOTTY_PORT` | `8080` | HTTP/WebSocket port |
 | `WOOTTY_RECONNECT_GRACE_MS` | `30000` | Session retention window while reconnecting |
 | `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
 | `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command |
