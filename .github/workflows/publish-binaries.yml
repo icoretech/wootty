@@ -1,0 +1,124 @@
+name: Publish Release Binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish (for example wootty-v0.2.2 or v0.2.2)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  publish-binaries:
+    name: Build and Attach Multi-Arch Binaries
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare metadata
+        id: prepare
+        env:
+          INPUT_TAG: ${{ github.event.inputs.tag || '' }}
+        run: |
+          set -euo pipefail
+
+          tag="${INPUT_TAG}"
+          tag="${tag#refs/tags/}"
+
+          if [[ -z "$tag" ]]; then
+            echo "Missing release tag. Provide workflow_dispatch input 'tag'."
+            exit 1
+          fi
+
+          release_tag="$tag"
+          semver_tag="$tag"
+          if [[ "$release_tag" != wootty-* && "$release_tag" == v* ]]; then
+            release_tag="wootty-$release_tag"
+          fi
+          if [[ "$release_tag" == wootty-v* ]]; then
+            semver_tag="${release_tag#wootty-}"
+          fi
+
+          version_no_v="$semver_tag"
+          if [[ "$version_no_v" == v* ]]; then
+            version_no_v="${version_no_v#v}"
+          fi
+
+          echo "release_tag=$release_tag" >>"$GITHUB_OUTPUT"
+          echo "checkout_ref=refs/tags/$release_tag" >>"$GITHUB_OUTPUT"
+          echo "version_tag=$semver_tag" >>"$GITHUB_OUTPUT"
+          echo "version_no_v=$version_no_v" >>"$GITHUB_OUTPUT"
+
+      - name: Checkout release tag
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.prepare.outputs.checkout_ref }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: apps/server/go.mod
+          cache-dependency-path: apps/server/go.sum
+
+      - name: Build archives
+        run: |
+          set -euo pipefail
+
+          mkdir -p dist
+          VERSION="${{ steps.prepare.outputs.version_no_v }}"
+
+          targets=(
+            "linux amd64"
+            "linux arm64"
+            "darwin amd64"
+            "darwin arm64"
+            "windows amd64"
+            "windows arm64"
+          )
+
+          for target in "${targets[@]}"; do
+            read -r goos goarch <<<"$target"
+
+            out_dir="dist/woottyd_${VERSION}_${goos}_${goarch}"
+            archive_base="woottyd_${VERSION}_${goos}_${goarch}"
+            mkdir -p "$out_dir"
+
+            bin_name="woottyd"
+            archive_ext=".tar.gz"
+            if [[ "$goos" == "windows" ]]; then
+              bin_name="woottyd.exe"
+              archive_ext=".zip"
+            fi
+
+            CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
+              go build -trimpath -ldflags="-s -w" \
+              -o "$out_dir/$bin_name" ./apps/server/cmd/woottyd
+
+            cp README.md LICENSE "$out_dir/"
+
+            if [[ "$archive_ext" == ".zip" ]]; then
+              (
+                cd "$out_dir"
+                zip -q "../${archive_base}${archive_ext}" "$bin_name" README.md LICENSE
+              )
+            else
+              tar -C "$out_dir" -czf "dist/${archive_base}${archive_ext}" "$bin_name" README.md LICENSE
+            fi
+          done
+
+          (
+            cd dist
+            sha256sum woottyd_* > woottyd_checksums.txt
+          )
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          assets=(dist/woottyd_*.tar.gz dist/woottyd_*.zip dist/woottyd_checksums.txt)
+          gh release upload "${{ steps.prepare.outputs.release_tag }}" "${assets[@]}" --repo "${{ github.repository }}" --clobber
