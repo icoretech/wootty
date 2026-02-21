@@ -115,7 +115,7 @@ jobs:
 
           (
             cd dist
-            sha256sum woottyd_* > woottyd_checksums.txt
+            sha256sum woottyd_*.tar.gz woottyd_*.zip > woottyd_checksums.txt
           )
 
       - name: Upload release assets
