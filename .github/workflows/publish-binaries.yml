@@ -67,6 +67,7 @@ jobs:
         run: |
           set -euo pipefail
 
+          ROOT_DIR="$PWD"
           mkdir -p dist
           VERSION="${{ steps.prepare.outputs.version_no_v }}"
 
@@ -93,9 +94,12 @@ jobs:
               archive_ext=".zip"
             fi
 
-            CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
-              go build -trimpath -ldflags="-s -w" \
-              -o "$out_dir/$bin_name" ./apps/server/cmd/woottyd
+            (
+              cd apps/server
+              CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
+                go build -trimpath -ldflags="-s -w" \
+                -o "$ROOT_DIR/$out_dir/$bin_name" ./cmd/woottyd
+            )
 
             cp README.md LICENSE "$out_dir/"
 
