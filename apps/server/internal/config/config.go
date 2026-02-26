@@ -12,13 +12,15 @@ import (
 const (
 	DefaultPort             = 8080
 	DefaultHistoryBytes     = 5 * 1024 * 1024
-	DefaultReconnectGraceMS = 30_000
+	DefaultReconnectGraceMS = 0
+	DefaultDetachedTTLMS    = 86_400_000
 )
 
 type RuntimeConfig struct {
 	Host             string
 	Port             int
 	ReconnectGraceMS int
+	DetachedTTLMS    int
 	HistoryBytes     int
 	FakePTY          bool
 	Command          string
@@ -36,7 +38,8 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 
 	host := getOrDefault(env["WOOTTY_HOST"], "0.0.0.0")
 	port := parsePositiveInt(env["WOOTTY_PORT"], DefaultPort)
-	reconnectGraceMS := parsePositiveInt(env["WOOTTY_RECONNECT_GRACE_MS"], DefaultReconnectGraceMS)
+	reconnectGraceMS := parseNonNegativeInt(env["WOOTTY_RECONNECT_GRACE_MS"], DefaultReconnectGraceMS)
+	detachedTTLMS := parseNonNegativeInt(env["WOOTTY_DETACHED_TTL_MS"], DefaultDetachedTTLMS)
 	historyBytes := parsePositiveInt(env["WOOTTY_HISTORY_BYTES"], DefaultHistoryBytes)
 
 	commandParts := make([]string, 0)
@@ -62,7 +65,13 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		case "--reconnect-grace-ms":
 			i++
 			if i < len(args) {
-				reconnectGraceMS = parsePositiveInt(args[i], reconnectGraceMS)
+				reconnectGraceMS = parseNonNegativeInt(args[i], reconnectGraceMS)
+			}
+			continue
+		case "--detached-ttl-ms":
+			i++
+			if i < len(args) {
+				detachedTTLMS = parseNonNegativeInt(args[i], detachedTTLMS)
 			}
 			continue
 		case "--history-bytes":
@@ -111,6 +120,7 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		Host:             host,
 		Port:             port,
 		ReconnectGraceMS: reconnectGraceMS,
+		DetachedTTLMS:    detachedTTLMS,
 		HistoryBytes:     historyBytes,
 		FakePTY:          env["WOOTTY_FAKE_PTY"] == "1",
 		Command:          commandParts[0],
@@ -137,6 +147,19 @@ func parsePositiveInt(value string, fallback int) int {
 
 	parsed, err := strconv.Atoi(value)
 	if err != nil || parsed <= 0 {
+		return fallback
+	}
+
+	return parsed
+}
+
+func parseNonNegativeInt(value string, fallback int) int {
+	if strings.TrimSpace(value) == "" {
+		return fallback
+	}
+
+	parsed, err := strconv.Atoi(value)
+	if err != nil || parsed < 0 {
 		return fallback
 	}
 

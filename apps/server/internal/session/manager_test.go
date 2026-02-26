@@ -187,9 +187,43 @@ func TestManagerWatchAttachIsReadOnly(t *testing.T) {
 	}
 }
 
-func TestManagerReconnectGraceExpiryCreatesNewSession(t *testing.T) {
+func TestManagerReconnectGraceExpiryRemovesSession(t *testing.T) {
 	manager := NewManager(ManagerOptions{
 		ReconnectGrace: 30 * time.Millisecond,
+		HistoryBytes:   4096,
+		FakePTY:        true,
+		ProcessOptions: ProcessOptions{
+			Command: "sh",
+			Args:    []string{},
+			Cwd:     t.TempDir(),
+			Env:     map[string]string{"TERM": "xterm-256color"},
+		},
+	})
+	defer manager.Shutdown()
+
+	serverConnA, _, cleanupA := newWebsocketPair(t)
+	defer cleanupA()
+
+	firstAttach, err := manager.Attach("", serverConnA, 80, 24, false)
+	if err != nil {
+		t.Fatalf("first attach failed: %v", err)
+	}
+
+	manager.Detach(firstAttach.SessionID, serverConnA)
+	time.Sleep(80 * time.Millisecond)
+
+	serverConnB, _, cleanupB := newWebsocketPair(t)
+	defer cleanupB()
+
+	_, err = manager.Attach(firstAttach.SessionID, serverConnB, 80, 24, false)
+	if !errors.Is(err, ErrSessionNotFound) {
+		t.Fatalf("expected ErrSessionNotFound after reconnect grace expiry, got %v", err)
+	}
+}
+
+func TestManagerDetachedSessionPersistsWhenGraceDisabled(t *testing.T) {
+	manager := NewManager(ManagerOptions{
+		ReconnectGrace: 0,
 		HistoryBytes:   4096,
 		FakePTY:        true,
 		ProcessOptions: ProcessOptions{
@@ -219,11 +253,46 @@ func TestManagerReconnectGraceExpiryCreatesNewSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second attach failed: %v", err)
 	}
-	if !secondAttach.Created {
-		t.Fatal("expected expired session to be recreated")
+	if secondAttach.Created {
+		t.Fatal("expected detached session to remain resumable when grace is disabled")
 	}
-	if secondAttach.SessionID == firstAttach.SessionID {
-		t.Fatal("expected a new session id after reconnect grace expiry")
+	if secondAttach.SessionID != firstAttach.SessionID {
+		t.Fatalf("expected session id %q, got %q", firstAttach.SessionID, secondAttach.SessionID)
+	}
+}
+
+func TestManagerDetachedSessionExpiresWithDetachedTTL(t *testing.T) {
+	manager := NewManager(ManagerOptions{
+		ReconnectGrace: 0,
+		DetachedTTL:    30 * time.Millisecond,
+		HistoryBytes:   4096,
+		FakePTY:        true,
+		ProcessOptions: ProcessOptions{
+			Command: "sh",
+			Args:    []string{},
+			Cwd:     t.TempDir(),
+			Env:     map[string]string{"TERM": "xterm-256color"},
+		},
+	})
+	defer manager.Shutdown()
+
+	serverConnA, _, cleanupA := newWebsocketPair(t)
+	defer cleanupA()
+
+	firstAttach, err := manager.Attach("", serverConnA, 80, 24, false)
+	if err != nil {
+		t.Fatalf("first attach failed: %v", err)
+	}
+
+	manager.Detach(firstAttach.SessionID, serverConnA)
+	time.Sleep(80 * time.Millisecond)
+
+	serverConnB, _, cleanupB := newWebsocketPair(t)
+	defer cleanupB()
+
+	_, err = manager.Attach(firstAttach.SessionID, serverConnB, 80, 24, false)
+	if !errors.Is(err, ErrSessionNotFound) {
+		t.Fatalf("expected ErrSessionNotFound after detached ttl expiry, got %v", err)
 	}
 }
 

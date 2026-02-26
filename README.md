@@ -119,9 +119,10 @@ Session controls:
 - click the `Session` badge in the status bar to open the session menu.
 - `New session`: start a fresh session in the current tab.
 - `Resume last`: reattach the last session id seen in this browser.
-- session list merges live server sessions (`/api/sessions`) and local history entries.
+- session menu separates `Live sessions` (running on server) from `Recent session ids` (browser memory only).
 - sessions already controlled in another tab/operator are shown as `Watch` (read-only attach).
 - resumable sessions are shown as `Resume` (full control attach).
+- recent ids that are not running are shown as unavailable.
 - tabs do not implicitly steal active sessions from each other.
 - terminal font starts at minimum (`11px`) by default and can be changed from controls/shortcuts.
 
@@ -131,13 +132,39 @@ Session controls:
 | --- | --- | --- |
 | `WOOTTY_HOST` | `0.0.0.0` | Bind address |
 | `WOOTTY_PORT` | `8080` | HTTP/WebSocket port |
-| `WOOTTY_RECONNECT_GRACE_MS` | `30000` | Session retention window while reconnecting |
+| `WOOTTY_RECONNECT_GRACE_MS` | `0` | Legacy detached-session cleanup timeout in ms (used only when `WOOTTY_DETACHED_TTL_MS=0`) |
+| `WOOTTY_DETACHED_TTL_MS` | `86400000` | Hard TTL for running detached sessions (24h). `0` disables this TTL |
 | `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
 | `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command |
 | `WOOTTY_COMMAND_ARGS` | _empty_ | Space-separated command args |
 | `WOOTTY_CWD` | current directory | Process working directory |
 | `WOOTTY_STATIC_DIR` | auto-detected | Directory with built web assets |
 | `WOOTTY_FAKE_PTY` | `0` | Set to `1` for deterministic fake PTY mode |
+
+CLI equivalents are available for key timing controls: `--reconnect-grace-ms` and `--detached-ttl-ms`.
+
+### Session Retention Model
+
+- Session metadata and PTY state are in-memory only.
+- If a terminal process exits, the session is removed immediately.
+- If a terminal process is still running but no client is attached, the session is retained for `WOOTTY_DETACHED_TTL_MS`.
+- If `WOOTTY_DETACHED_TTL_MS=0`, cleanup falls back to `WOOTTY_RECONNECT_GRACE_MS` behavior.
+- Server restart clears all sessions because there is no persistent session store.
+
+Recommended for long-running jobs with occasional reconnects:
+
+```bash
+WOOTTY_RECONNECT_GRACE_MS=0
+WOOTTY_DETACHED_TTL_MS=259200000  # 72h
+```
+
+Example in Compose:
+
+```yaml
+environment:
+  WOOTTY_RECONNECT_GRACE_MS: "0"
+  WOOTTY_DETACHED_TTL_MS: "259200000"
+```
 
 ## Architecture
 

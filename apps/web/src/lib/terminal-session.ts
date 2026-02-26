@@ -14,7 +14,7 @@ export type ServerMessage =
   | { type: "ready"; sessionId: string; readOnly: boolean }
   | { type: "output"; data: string }
   | { type: "exit"; code: number; signal: number }
-  | { type: "error"; message: string }
+  | { type: "error"; message: string; code?: string }
   | { type: "pong" };
 
 export interface OutboxState {
@@ -76,7 +76,11 @@ export function parseServerMessage(raw: unknown): ServerMessage | null {
         return null;
       case "error":
         if (typeof message.message === "string") {
-          return { type: "error", message: message.message };
+          const code =
+            typeof message.code === "string" && message.code.length > 0
+              ? message.code
+              : undefined;
+          return { type: "error", message: message.message, code };
         }
         return null;
       case "pong":

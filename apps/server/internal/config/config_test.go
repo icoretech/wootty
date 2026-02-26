@@ -16,6 +16,9 @@ func TestParseRunConfigDefaults(t *testing.T) {
 	if cfg.Port != DefaultPort {
 		t.Fatalf("expected default port %d, got %d", DefaultPort, cfg.Port)
 	}
+	if cfg.DetachedTTLMS != DefaultDetachedTTLMS {
+		t.Fatalf("expected default detached ttl %d, got %d", DefaultDetachedTTLMS, cfg.DetachedTTLMS)
+	}
 	if cfg.Command != "bash" {
 		t.Fatalf("expected default shell command bash, got %q", cfg.Command)
 	}
@@ -27,7 +30,7 @@ func TestParseRunConfigWithFlagsAndCommand(t *testing.T) {
 		"SHELL":       "/bin/zsh",
 	}
 	cfg, err := ParseRunConfig(
-		[]string{"run", "-p", "4444", "--host", "127.0.0.1", "sh", "-lc", "echo ok"},
+		[]string{"run", "-p", "4444", "--host", "127.0.0.1", "--detached-ttl-ms", "0", "sh", "-lc", "echo ok"},
 		env,
 		"/tmp/wootty/apps/server",
 	)
@@ -43,6 +46,9 @@ func TestParseRunConfigWithFlagsAndCommand(t *testing.T) {
 	}
 	if cfg.Command != "sh" {
 		t.Fatalf("expected command sh, got %q", cfg.Command)
+	}
+	if cfg.DetachedTTLMS != 0 {
+		t.Fatalf("expected detached ttl override 0, got %d", cfg.DetachedTTLMS)
 	}
 	if len(cfg.Args) != 2 {
 		t.Fatalf("expected 2 args, got %d", len(cfg.Args))
@@ -60,9 +66,10 @@ func TestParseRunConfigUsesEnvCommandArgsAndFakePTY(t *testing.T) {
 	cfg, err := ParseRunConfig(
 		[]string{"run"},
 		map[string]string{
-			"WOOTTY_COMMAND":      "/bin/bash",
-			"WOOTTY_COMMAND_ARGS": "-lc echo-ok",
-			"WOOTTY_FAKE_PTY":     "1",
+			"WOOTTY_COMMAND":         "/bin/bash",
+			"WOOTTY_COMMAND_ARGS":    "-lc echo-ok",
+			"WOOTTY_FAKE_PTY":        "1",
+			"WOOTTY_DETACHED_TTL_MS": "0",
 		},
 		"/tmp/wootty/apps/server",
 	)
@@ -81,5 +88,8 @@ func TestParseRunConfigUsesEnvCommandArgsAndFakePTY(t *testing.T) {
 	}
 	if !cfg.FakePTY {
 		t.Fatal("expected fake PTY to be enabled from env")
+	}
+	if cfg.DetachedTTLMS != 0 {
+		t.Fatalf("expected detached ttl from env 0, got %d", cfg.DetachedTTLMS)
 	}
 }

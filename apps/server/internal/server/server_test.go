@@ -262,6 +262,44 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 	}
 }
 
+func TestAttachMissingSessionReturnsSessionNotFoundCode(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	wsConnA := dialTerminalWebsocket(t, httpServer.URL)
+	if err := wsConnA.WriteJSON(map[string]any{"type": "attach", "cols": 80, "rows": 24}); err != nil {
+		t.Fatalf("failed writing initial attach payload: %v", err)
+	}
+	readyMessage := waitForWSMessageType(t, wsConnA, "ready", 2*time.Second)
+	sessionID := stringField(readyMessage, "sessionId")
+	if sessionID == "" {
+		t.Fatalf("expected session id in ready payload, got %#v", readyMessage)
+	}
+	wsConnA.Close()
+
+	time.Sleep(150 * time.Millisecond)
+
+	wsConnB := dialTerminalWebsocket(t, httpServer.URL)
+	defer wsConnB.Close()
+	if err := wsConnB.WriteJSON(map[string]any{
+		"type":      "attach",
+		"sessionId": sessionID,
+		"cols":      80,
+		"rows":      24,
+	}); err != nil {
+		t.Fatalf("failed writing stale attach payload: %v", err)
+	}
+
+	errorMessage := waitForWSMessageType(t, wsConnB, "error", 2*time.Second)
+	if stringField(errorMessage, "code") != "session_not_found" {
+		t.Fatalf("expected session_not_found code, got %#v", errorMessage)
+	}
+}
+
 func TestWebsocketAttachFailureSurfacesError(t *testing.T) {
 	cfg := testRuntimeConfig(t, false, "/definitely/missing-command", filepath.Join(t.TempDir(), "missing-static"))
 	server := New(cfg)
@@ -299,6 +337,7 @@ func testRuntimeConfig(t *testing.T, fakePTY bool, command string, staticDir str
 		Host:             "127.0.0.1",
 		Port:             0,
 		ReconnectGraceMS: 100,
+		DetachedTTLMS:    0,
 		HistoryBytes:     4096,
 		FakePTY:          fakePTY,
 		Command:          command,
