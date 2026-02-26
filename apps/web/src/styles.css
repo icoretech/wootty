@@ -409,6 +409,24 @@ body {
   overflow: auto;
 }
 
+.session-menu__section-title {
+  margin: 2px 2px 0;
+  color: #9fc4d1;
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.session-menu__notice {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(182, 116, 92, 0.8);
+  border-radius: 8px;
+  background: rgba(64, 29, 20, 0.6);
+  color: #ffd6c8;
+  font-size: 0.64rem;
+}
+
 .session-menu__resume {
   min-height: 44px;
   width: 100%;
@@ -474,6 +492,16 @@ body {
 .session-menu__resume:disabled {
   opacity: 0.56;
   cursor: not-allowed;
+}
+
+.session-menu__resume--inactive {
+  cursor: default;
+  border-color: rgba(58, 85, 96, 0.75);
+  background: rgba(8, 19, 25, 0.85);
+}
+
+.session-menu__resume--inactive strong {
+  color: #e0a8a8;
 }
 
 .session-menu__empty {

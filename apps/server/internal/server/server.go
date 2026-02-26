@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"io/fs"
 	"log/slog"
 	"mime"
@@ -33,6 +34,7 @@ func New(cfg config.RuntimeConfig) *Server {
 
 	manager := session.NewManager(session.ManagerOptions{
 		ReconnectGrace: time.Duration(cfg.ReconnectGraceMS) * time.Millisecond,
+		DetachedTTL:    time.Duration(cfg.DetachedTTLMS) * time.Millisecond,
 		HistoryBytes:   cfg.HistoryBytes,
 		FakePTY:        cfg.FakePTY,
 		ProcessOptions: session.ProcessOptions{
@@ -138,8 +140,16 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 				message.Watch,
 			)
 			if attachErr != nil {
+				errorCode := "attach_failed"
+				switch {
+				case errors.Is(attachErr, session.ErrSessionNotFound):
+					errorCode = "session_not_found"
+				case errors.Is(attachErr, session.ErrSessionAlreadyAttached):
+					errorCode = "session_busy"
+				}
 				s.log.Error("failed to attach terminal session", "err", attachErr)
 				send(map[string]string{
+					"code":    errorCode,
 					"type":    "error",
 					"message": "Terminal attach failed: " + attachErr.Error(),
 				})

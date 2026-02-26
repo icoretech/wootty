@@ -145,7 +145,6 @@ interface SessionSnapshot {
 interface SessionCandidate {
   readonly id: string;
   readonly action: "resume" | "watch";
-  readonly source: "live" | "history";
   readonly command: string;
   readonly watchers: number;
   readonly lastActivityMs: number;
@@ -327,6 +326,7 @@ export default function App() {
   const [sessionMenuOpen, setSessionMenuOpen] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [attachMode, setAttachMode] = useState<AttachMode>("control");
+  const [sessionNotice, setSessionNotice] = useState<string>("");
 
   const fontSizeRef = useRef<number>(initialFontSize);
 
@@ -514,6 +514,7 @@ export default function App() {
       if (parsed.type === "ready") {
         const nextMode: AttachMode = parsed.readOnly ? "watch" : "control";
         setSessionMode(nextMode);
+        setSessionNotice("");
         sessionIdRef.current = parsed.sessionId;
         setSessionId(parsed.sessionId);
         setStatus("connected");
@@ -568,6 +569,21 @@ export default function App() {
 
       if (parsed.type === "error") {
         term.writeln(`\r\n\x1b[31m[server error] ${parsed.message}\x1b[0m`);
+        if (parsed.code === "session_not_found") {
+          setSessionNotice(
+            "Selected session is no longer running on the server. Start a new session.",
+          );
+          const sessionStorageRef = getSessionStorage();
+          if (sessionStorageRef) {
+            clearStoredSessionId(sessionStorageRef, ACTIVE_SESSION_STORAGE_KEY);
+          }
+          sessionIdRef.current = undefined;
+          setSessionId("");
+          setSessionMode("control");
+          setStatus("closed");
+          void refreshLiveSessions();
+          return;
+        }
         setStatus("error");
         return;
       }
@@ -721,6 +737,7 @@ export default function App() {
 
   const startFreshSession = useCallback(() => {
     prepareSessionSwitch();
+    setSessionNotice("");
     setSessionMode("control");
     sessionIdRef.current = undefined;
     setSessionId("");
@@ -759,6 +776,7 @@ export default function App() {
       }
 
       prepareSessionSwitch();
+      setSessionNotice("");
       setSessionMode(mode);
       sessionIdRef.current = targetSessionId;
       setSessionId(targetSessionId);
@@ -1011,7 +1029,8 @@ export default function App() {
       : lastSessionId
         ? [lastSessionId]
         : [];
-  const sessionCandidatesDisplay: SessionCandidate[] = [];
+  const liveSessionCandidates: SessionCandidate[] = [];
+  const historySessionCandidates: string[] = [];
   const seenSessionIds = new Set<string>();
 
   for (const live of [...liveSessions].sort(
@@ -1021,10 +1040,9 @@ export default function App() {
       continue;
     }
     seenSessionIds.add(live.id);
-    sessionCandidatesDisplay.push({
+    liveSessionCandidates.push({
       id: live.id,
       action: live.hasController ? "watch" : "resume",
-      source: "live",
       command: live.command,
       watchers: live.watchers,
       lastActivityMs: live.lastActivityMs,
@@ -1040,14 +1058,7 @@ export default function App() {
       continue;
     }
     seenSessionIds.add(historical);
-    sessionCandidatesDisplay.push({
-      id: historical,
-      action: "resume",
-      source: "history",
-      command: "",
-      watchers: 0,
-      lastActivityMs: 0,
-    });
+    historySessionCandidates.push(historical);
   }
 
   const modeLabel = attachMode === "watch" ? "Read-only watch" : "Control";
@@ -1223,11 +1234,22 @@ export default function App() {
                 <History size={14} aria-hidden="true" />
                 Resume last
               </button>
+              {sessionNotice && (
+                <p
+                  className="session-menu__notice"
+                  data-testid="session-menu-notice"
+                >
+                  {sessionNotice}
+                </p>
+              )}
+              <p className="session-menu__section-title">Live sessions</p>
               <div className="session-menu__list">
-                {sessionCandidatesDisplay.length === 0 ? (
-                  <p className="session-menu__empty">No resumable sessions</p>
+                {liveSessionCandidates.length === 0 ? (
+                  <p className="session-menu__empty">
+                    No live resumable sessions
+                  </p>
                 ) : (
-                  sessionCandidatesDisplay.map((candidate) => {
+                  liveSessionCandidates.map((candidate) => {
                     const actionLabel =
                       candidate.action === "watch" ? "Watch" : "Resume";
                     const secondaryParts = [
@@ -1239,13 +1261,10 @@ export default function App() {
                         `${candidate.watchers} watcher${candidate.watchers === 1 ? "" : "s"}`,
                       );
                     }
-                    if (candidate.source === "history") {
-                      secondaryParts.push("from history");
-                    }
 
                     return (
                       <button
-                        key={`${candidate.source}:${candidate.id}`}
+                        key={`live:${candidate.id}`}
                         type="button"
                         className="session-menu__resume"
                         data-testid={
@@ -1283,6 +1302,28 @@ export default function App() {
                       </button>
                     );
                   })
+                )}
+              </div>
+              <p className="session-menu__section-title">Recent session ids</p>
+              <div className="session-menu__list">
+                {historySessionCandidates.length === 0 ? (
+                  <p className="session-menu__empty">No recent sessions</p>
+                ) : (
+                  historySessionCandidates.map((historySessionId) => (
+                    <div
+                      key={`history:${historySessionId}`}
+                      className="session-menu__resume session-menu__resume--inactive"
+                      data-testid="session-menu-history-item"
+                    >
+                      <span className="session-menu__primary">
+                        {shortSessionId(historySessionId)}
+                      </span>
+                      <span className="session-menu__secondary">
+                        Not currently running on server
+                      </span>
+                      <strong>Unavailable</strong>
+                    </div>
+                  ))
                 )}
               </div>
             </div>

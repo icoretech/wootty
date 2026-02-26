@@ -19,6 +19,7 @@ var (
 
 type ManagerOptions struct {
 	ReconnectGrace time.Duration
+	DetachedTTL    time.Duration
 	HistoryBytes   int
 	FakePTY        bool
 	ProcessOptions ProcessOptions
@@ -119,6 +120,9 @@ func (m *Manager) Attach(sessionID string, conn *websocket.Conn, cols, rows int,
 			m.mu.Unlock()
 			return AttachResult{}, ErrSessionNotFound
 		}
+
+		m.mu.Unlock()
+		return AttachResult{}, ErrSessionNotFound
 	}
 
 	id := uuid.NewString()
@@ -228,11 +232,26 @@ func (m *Manager) Detach(sessionID string, conn *websocket.Conn) {
 	}
 	delete(session.watchers, conn)
 
-	delay := m.options.ReconnectGrace
-	if session.exitInfo != nil {
-		delay = time.Millisecond
+	if session.reconnectTimer != nil {
+		session.reconnectTimer.Stop()
+		session.reconnectTimer = nil
 	}
-	m.scheduleCleanupLocked(sessionID, delay)
+
+	if session.exitInfo != nil {
+		m.scheduleCleanupLocked(sessionID, time.Millisecond)
+		m.mu.Unlock()
+		return
+	}
+
+	// Running detached sessions are retained for DetachedTTL.
+	// ReconnectGrace acts as a legacy fallback when DetachedTTL is disabled.
+	delay := m.options.DetachedTTL
+	if delay <= 0 {
+		delay = m.options.ReconnectGrace
+	}
+	if delay > 0 {
+		m.scheduleCleanupLocked(sessionID, delay)
+	}
 	m.mu.Unlock()
 }
 
