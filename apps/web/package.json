@@ -3,11 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build",
-    "test": "vitest run",
-    "test:e2e": "pnpm --dir ../.. build && playwright test --config playwright.config.ts",
-    "test:e2e:cross": "pnpm --dir ../.. build && WOOTTY_E2E_CROSS=1 playwright test --config playwright.config.ts",
+    "dev": "vite --config config/build/vite.config.ts",
+    "build": "tsc -p tsconfig.json --noEmit && vite build --config config/build/vite.config.ts",
+    "test": "vitest run --config config/test/vitest.config.ts",
+    "test:e2e": "pnpm --dir ../.. build && playwright test --config config/e2e/playwright.config.ts",
+    "test:e2e:cross": "pnpm --dir ../.. build && WOOTTY_E2E_CROSS=1 playwright test --config config/e2e/playwright.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

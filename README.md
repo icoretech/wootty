@@ -178,6 +178,55 @@ flowchart LR
   S -- "session history buffer" --> H["In-memory replay buffer"]
 ```
 
+Frontend module ownership:
+
+- `apps/web/src/App.tsx`: composition entrypoint that mounts the terminal feature app.
+- `apps/web/src/features/terminal/app/TerminalApp.tsx`: terminal orchestration (transport/session/runtime wiring).
+- `apps/web/src/features/terminal/contracts/*`: shared terminal contracts (session + transport types and ready-state constants).
+- `apps/web/src/features/terminal/components/*`: presentational controls, status bar, and session menu UI.
+- `apps/web/src/features/terminal/components/presenters/*`: UI-facing presentation mapping for menu/session copy.
+- `apps/web/src/features/terminal/notifications/*`: user-facing terminal notice mapping.
+- `apps/web/src/features/terminal/session/domain/*`: session payload parsing and candidate derivation.
+- `apps/web/src/features/terminal/session/persistence/*`: storage adapters and storage key ownership.
+- `apps/web/src/features/terminal/lib/*`: terminal-only utility helpers (formatting, outbox buffering).
+- `apps/web/src/features/terminal/protocol/*` and `apps/web/src/features/terminal/runtime/*`: protocol parsing and xterm runtime loading owned by the terminal feature.
+
+### Client Protocol Contract
+
+`apps/web/src/features/terminal/protocol/terminal-protocol.ts` is the client-side source of truth for websocket payload parsing.
+
+- Supported inbound message `type` values: `ready`, `output`, `exit`, `error`, `pong`.
+- Required fields:
+  - `ready`: `sessionId` (string), optional `readOnly` (boolean)
+  - `output`: `data` (string)
+  - `exit`: `code` (number), `signal` (number)
+  - `error`: `message` (string), optional `code` (string)
+  - `pong`: no additional fields
+- Compatibility policy:
+  - Additive fields are allowed and ignored by older clients.
+  - Unknown message `type` values are treated as unsupported and surfaced as a user notice.
+  - Invalid payload shapes are dropped by the parser and do not mutate terminal state.
+
+### Transport Lifecycle Contract
+
+Transport responsibilities are split by contract:
+
+- `apps/web/src/features/terminal/contracts/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
+- `apps/web/src/features/terminal/contracts/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
+
+- Canonical ready states:
+  - `TRANSPORT_READY_STATE.CONNECTING` (`0`)
+  - `TRANSPORT_READY_STATE.OPEN` (`1`)
+  - `TRANSPORT_READY_STATE.CLOSING` (`2`)
+  - `TRANSPORT_READY_STATE.CLOSED` (`3`)
+- Heartbeat policy:
+  - Client sends `ping` every `12s` while connected.
+  - Missing `pong` for `12s` triggers close code `4103` (`pong timeout`) and reconnect flow.
+- Close/reconnect policy:
+  - Manual reconnect closes with `4101`.
+  - Starting a fresh session closes old transport with `4102`.
+  - Backoff uses `reconnectDelayMs(attempt)` (`300ms * 1.8^attempt`, capped at `5000ms`).
+
 ## Testing and Quality
 
 Standard quality gates:
@@ -199,6 +248,10 @@ Notes:
 
 - `pnpm lint` applies Biome fixes and then runs typecheck.
 - CI enforces zero formatting drift (`git diff --exit-code`).
+- Test environment ownership:
+  - Browser test polyfills and setup wiring live under `apps/web/test/support/`.
+  - E2E URL/port defaults live under `apps/web/config/e2e/e2e-env.ts`.
+  - App integration harness composition lives in `apps/web/test/integration/app/harness/`.
 
 ## Contributing
 
