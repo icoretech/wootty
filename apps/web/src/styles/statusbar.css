@@ -1,0 +1,151 @@
+.statusbar-toggle {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border-color: rgba(52, 101, 121, 0.9);
+  background: linear-gradient(180deg, #153b4c, #123241);
+}
+
+.statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(6, 18, 25, 0.92), rgba(7, 15, 22, 0.9));
+  font-size: 0.7rem;
+  color: var(--ink-1);
+}
+
+.statusbar__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.statusbar__group:last-child {
+  margin-left: auto;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--line), var(--accent) 20%);
+  color: #d5faff;
+  font-weight: 620;
+}
+
+.status-pill[data-status="connected"] {
+  border-color: color-mix(in oklab, var(--line), var(--accent) 34%);
+}
+
+.status-pill[data-status="error"] {
+  border-color: color-mix(in oklab, var(--line), var(--danger) 40%);
+  color: #ffd5cf;
+}
+
+.status-pill__latency {
+  padding-left: 4px;
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-pill[data-latency="good"] .status-pill__latency {
+  color: #8cf0dd;
+}
+
+.status-pill[data-latency="warn"] .status-pill__latency {
+  color: #ffd37f;
+}
+
+.status-pill[data-latency="bad"] .status-pill__latency {
+  color: #ff9d95;
+}
+
+.status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid rgba(52, 101, 121, 0.7);
+  border-radius: 999px;
+  background: rgba(7, 18, 25, 0.55);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.status-item--button {
+  cursor: pointer;
+}
+
+.status-session {
+  min-width: 0;
+}
+
+.status-session__button {
+  color: var(--ink-1);
+  font-size: 0.7rem;
+}
+
+.status-session__button svg {
+  color: var(--ink-1);
+}
+
+.status-session__button strong,
+.status-session__value {
+  font-size: 0.7rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+  color: #daf6ff;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.status-item strong {
+  color: #daf6ff;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 640;
+  font-size: 0.7rem;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.status-item[data-mode="watch"] {
+  border-color: rgba(84, 149, 172, 0.86);
+  color: #c8f3ff;
+}
+
+@media (max-width: 900px) {
+  .statusbar {
+    gap: 6px;
+    font-size: 0.66rem;
+  }
+
+  .status-item strong {
+    max-width: 130px;
+  }
+}
+
+@media (max-width: 640px) {
+  .statusbar {
+    justify-content: flex-start;
+    padding: 6px 8px;
+  }
+
+  .statusbar__group:last-child {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,59 @@
+:root {
+  color-scheme: dark;
+  font-family: "Space Grotesk", "Sora", "JetBrains Mono", ui-sans-serif, system-ui, sans-serif;
+  --bg-0: #04090a;
+  --bg-1: #071117;
+  --ink-0: #ebf9ff;
+  --ink-1: #8cb3c1;
+  --line: #1f4a5f;
+  --line-soft: #173a4b;
+  --accent: #35d0bb;
+  --danger: #ff6f61;
+  --terminal-bg: #00000000;
+  --terminal-fg: #dcf8ff;
+  --terminal-cursor: #ffcc66;
+  --terminal-selection: #2b5e68;
+  --terminal-black: #0a171c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: radial-gradient(circle at 30% -20%, #0d2530, var(--bg-0) 52%);
+  color: var(--ink-0);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

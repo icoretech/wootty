@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  ACTIVE_SESSION_STORAGE_KEY,
-  clearStoredSessionId,
   createOutbox,
   enqueueOutbox,
   flushOutbox,
-  formatBytes,
-  formatLatency,
+} from "../src/lib/terminal-outbox";
+import { formatBytes, formatLatency } from "../src/lib/terminal-format";
+import { parseServerMessage, reconnectDelayMs } from "../src/lib/terminal-protocol";
+import {
+  ACTIVE_SESSION_STORAGE_KEY,
+  clearStoredSessionId,
   LAST_SESSION_STORAGE_KEY,
-  parseServerMessage,
   readStoredSessionId,
-  reconnectDelayMs,
   storeSessionId,
-} from "../src/lib/terminal-session";
+} from "../src/lib/session-storage";
 
 describe("terminal-session helpers", () => {
   it("parses valid server messages and rejects invalid payloads", () => {

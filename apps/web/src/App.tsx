@@ -1,42 +1,35 @@
 import type { FitAddon } from "@xterm/addon-fit";
 import type { IDisposable, Terminal } from "@xterm/xterm";
-import {
-  ChevronDown,
-  Eraser,
-  Eye,
-  History,
-  Maximize2,
-  Minimize2,
-  Minus,
-  Play,
-  Plus,
-  RefreshCcw,
-  RotateCcw,
-  SlidersHorizontal,
-  SquareTerminal,
-  Wifi,
-  WifiOff,
-} from "lucide-react";
+import { SquareTerminal } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { FloatingControls } from "./features/terminal/components/FloatingControls";
+import { SessionMenu } from "./features/terminal/components/SessionMenu";
+import { StatusBar } from "./features/terminal/components/StatusBar";
 import {
-  ACTIVE_SESSION_STORAGE_KEY,
   type ConnectionStatus,
-  clearStoredSessionId,
+  parseServerMessage,
+  reconnectDelayMs,
+} from "./lib/terminal-protocol";
+import {
   createOutbox,
   enqueueOutbox,
   flushOutbox,
+} from "./lib/terminal-outbox";
+import {
   formatBytes,
   formatLatency,
+} from "./lib/terminal-format";
+import {
+  ACTIVE_SESSION_STORAGE_KEY,
+  clearStoredSessionId,
   LAST_SESSION_STORAGE_KEY,
-  parseServerMessage,
   pushSessionHistory,
   readSessionHistory,
   readStoredSessionId,
-  reconnectDelayMs,
   storeSessionId,
   writeSessionHistory,
-} from "./lib/terminal-session";
+} from "./lib/session-storage";
 import { loadXtermRuntime } from "./lib/xterm-runtime";
 
 const outputEncoder = new TextEncoder();
@@ -127,6 +120,30 @@ function addMediaQueryChangeListener(
   legacyMediaQuery.addListener?.(callback);
   return () => {
     legacyMediaQuery.removeListener?.(callback);
+  };
+}
+
+function readCssColorVariable(variableName: string, fallback: string): string {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  const value = getComputedStyle(document.documentElement)
+    .getPropertyValue(variableName)
+    .trim();
+  return value.length > 0 ? value : fallback;
+}
+
+function readTerminalTheme() {
+  return {
+    background: readCssColorVariable("--terminal-bg", "transparent"),
+    foreground: readCssColorVariable("--terminal-fg", "aliceblue"),
+    cursor: readCssColorVariable("--terminal-cursor", "gold"),
+    selectionBackground: readCssColorVariable(
+      "--terminal-selection",
+      "cadetblue",
+    ),
+    black: readCssColorVariable("--terminal-black", "black"),
   };
 }
 
@@ -252,6 +269,7 @@ export default function App() {
   const reconnectTimerRef = useRef<number | null>(null);
   const pingTimerRef = useRef<number | null>(null);
   const pongTimeoutRef = useRef<number | null>(null);
+  const sessionNoticeTimerRef = useRef<number | null>(null);
   const pingSentAtRef = useRef<number | null>(null);
   const reconnectAttemptRef = useRef(0);
   const closedByUserRef = useRef(false);
@@ -345,6 +363,19 @@ export default function App() {
     setAttachMode(mode);
   }, []);
 
+  const publishSessionNotice = useCallback((message: string) => {
+    setSessionNotice(message);
+
+    if (sessionNoticeTimerRef.current) {
+      window.clearTimeout(sessionNoticeTimerRef.current);
+    }
+
+    sessionNoticeTimerRef.current = window.setTimeout(() => {
+      setSessionNotice("");
+      sessionNoticeTimerRef.current = null;
+    }, 4_000);
+  }, []);
+
   const refreshLiveSessions = useCallback(async () => {
     try {
       const response = await fetch("/api/sessions", {
@@ -358,9 +389,9 @@ export default function App() {
       const payload = (await response.json()) as unknown;
       setLiveSessions(parseSessionsResponse(payload));
     } catch {
-      // Keep existing session list if the endpoint is unavailable.
+      publishSessionNotice("Unable to refresh live sessions.");
     }
-  }, []);
+  }, [publishSessionNotice]);
 
   const sendNow = useCallback((payload: object): boolean => {
     const ws = wsRef.current;
@@ -386,6 +417,11 @@ export default function App() {
     if (reconnectTimerRef.current) {
       window.clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
+    }
+
+    if (sessionNoticeTimerRef.current) {
+      window.clearTimeout(sessionNoticeTimerRef.current);
+      sessionNoticeTimerRef.current = null;
     }
   }, []);
 
@@ -462,6 +498,114 @@ export default function App() {
     [sendNow],
   );
 
+  const handleReadyMessage = useCallback(
+    (nextSessionId: string, readOnly: boolean) => {
+      const nextMode: AttachMode = readOnly ? "watch" : "control";
+      setSessionMode(nextMode);
+      setSessionNotice("");
+      sessionIdRef.current = nextSessionId;
+      setSessionId(nextSessionId);
+      setStatus("connected");
+
+      const localStorageRef = getLocalStorage();
+      if (localStorageRef) {
+        storeSessionId(
+          localStorageRef,
+          LAST_SESSION_STORAGE_KEY,
+          nextSessionId,
+        );
+        const nextHistory = pushSessionHistory(
+          readSessionHistory(localStorageRef),
+          nextSessionId,
+        );
+        writeSessionHistory(localStorageRef, nextHistory);
+        setResumableSessions(nextHistory);
+      }
+      setLastSessionId(nextSessionId);
+
+      const sessionStorageRef = getSessionStorage();
+      if (sessionStorageRef) {
+        storeSessionId(
+          sessionStorageRef,
+          ACTIVE_SESSION_STORAGE_KEY,
+          nextSessionId,
+        );
+      }
+
+      flushQueuedInput();
+      flushPendingResize();
+      void refreshLiveSessions();
+      setSessionMenuOpen(false);
+    },
+    [
+      flushPendingResize,
+      flushQueuedInput,
+      refreshLiveSessions,
+      setSessionMode,
+    ],
+  );
+
+  const handleOutputMessage = useCallback((data: string) => {
+    const term = termRef.current;
+    if (!term) {
+      return;
+    }
+
+    term.write(data);
+    setOutputBytes((previous) => previous + outputEncoder.encode(data).length);
+  }, []);
+
+  const handleExitMessage = useCallback((code: number, signal: number) => {
+    const term = termRef.current;
+    if (!term) {
+      return;
+    }
+
+    term.writeln(
+      `\r\n\x1b[33m[session ended: code=${code} signal=${signal}]\x1b[0m`,
+    );
+    setStatus("closed");
+  }, []);
+
+  const handleErrorMessage = useCallback(
+    (message: string, code?: string) => {
+      const term = termRef.current;
+      if (term) {
+        term.writeln(`\r\n\x1b[31m[server error] ${message}\x1b[0m`);
+      }
+
+      if (code === "session_not_found") {
+        publishSessionNotice(
+          "Selected session is no longer running on the server. Start a new session.",
+        );
+        const sessionStorageRef = getSessionStorage();
+        if (sessionStorageRef) {
+          clearStoredSessionId(sessionStorageRef, ACTIVE_SESSION_STORAGE_KEY);
+        }
+        sessionIdRef.current = undefined;
+        setSessionId("");
+        setSessionMode("control");
+        setStatus("closed");
+        void refreshLiveSessions();
+        return;
+      }
+
+      setStatus("error");
+    },
+    [publishSessionNotice, refreshLiveSessions, setSessionMode],
+  );
+
+  const handlePongMessage = useCallback(() => {
+    if (pongTimeoutRef.current) {
+      window.clearTimeout(pongTimeoutRef.current);
+      pongTimeoutRef.current = null;
+    }
+
+    if (pingSentAtRef.current !== null) {
+      setLatencyMs(Date.now() - pingSentAtRef.current);
+    }
+  }, []);
+
   const connect = useCallback(() => {
     if (wsRef.current && wsRef.current.readyState <= WebSocket.OPEN) {
       return;
@@ -501,102 +645,31 @@ export default function App() {
     });
 
     ws.addEventListener("message", (event) => {
-      const term = termRef.current;
-      if (!term) {
-        return;
-      }
-
       const parsed = parseServerMessage(event.data);
       if (!parsed) {
+        publishSessionNotice("Received an unsupported server message.");
         return;
       }
 
-      if (parsed.type === "ready") {
-        const nextMode: AttachMode = parsed.readOnly ? "watch" : "control";
-        setSessionMode(nextMode);
-        setSessionNotice("");
-        sessionIdRef.current = parsed.sessionId;
-        setSessionId(parsed.sessionId);
-        setStatus("connected");
-
-        const localStorageRef = getLocalStorage();
-        if (localStorageRef) {
-          storeSessionId(
-            localStorageRef,
-            LAST_SESSION_STORAGE_KEY,
-            parsed.sessionId,
-          );
-          const nextHistory = pushSessionHistory(
-            readSessionHistory(localStorageRef),
-            parsed.sessionId,
-          );
-          writeSessionHistory(localStorageRef, nextHistory);
-          setResumableSessions(nextHistory);
-        }
-        setLastSessionId(parsed.sessionId);
-
-        const sessionStorageRef = getSessionStorage();
-        if (sessionStorageRef) {
-          storeSessionId(
-            sessionStorageRef,
-            ACTIVE_SESSION_STORAGE_KEY,
-            parsed.sessionId,
-          );
-        }
-
-        flushQueuedInput();
-        flushPendingResize();
-        void refreshLiveSessions();
-        setSessionMenuOpen(false);
-        return;
-      }
-
-      if (parsed.type === "output") {
-        term.write(parsed.data);
-        setOutputBytes(
-          (prev) => prev + outputEncoder.encode(parsed.data).length,
-        );
-        return;
-      }
-
-      if (parsed.type === "exit") {
-        term.writeln(
-          `\r\n\x1b[33m[session ended: code=${parsed.code} signal=${parsed.signal}]\x1b[0m`,
-        );
-        setStatus("closed");
-        return;
-      }
-
-      if (parsed.type === "error") {
-        term.writeln(`\r\n\x1b[31m[server error] ${parsed.message}\x1b[0m`);
-        if (parsed.code === "session_not_found") {
-          setSessionNotice(
-            "Selected session is no longer running on the server. Start a new session.",
-          );
-          const sessionStorageRef = getSessionStorage();
-          if (sessionStorageRef) {
-            clearStoredSessionId(sessionStorageRef, ACTIVE_SESSION_STORAGE_KEY);
-          }
-          sessionIdRef.current = undefined;
-          setSessionId("");
-          setSessionMode("control");
-          setStatus("closed");
-          void refreshLiveSessions();
+      switch (parsed.type) {
+        case "ready":
+          handleReadyMessage(parsed.sessionId, parsed.readOnly);
           return;
-        }
-        setStatus("error");
-        return;
-      }
-
-      if (parsed.type === "pong") {
-        if (pongTimeoutRef.current) {
-          window.clearTimeout(pongTimeoutRef.current);
-          pongTimeoutRef.current = null;
-        }
-
-        if (pingSentAtRef.current !== null) {
-          setLatencyMs(Date.now() - pingSentAtRef.current);
-        }
+        case "output":
+          handleOutputMessage(parsed.data);
+          return;
+        case "exit":
+          handleExitMessage(parsed.code, parsed.signal);
+          return;
+        case "error":
+          handleErrorMessage(parsed.message, parsed.code);
+          return;
+        case "pong":
+          handlePongMessage();
+          return;
+        default:
+          publishSessionNotice("Received an unsupported server message.");
+          return;
       }
     });
 
@@ -640,11 +713,13 @@ export default function App() {
     });
   }, [
     attach,
-    flushPendingResize,
-    flushQueuedInput,
-    refreshLiveSessions,
+    handleErrorMessage,
+    handleExitMessage,
+    handleOutputMessage,
+    handlePongMessage,
+    handleReadyMessage,
+    publishSessionNotice,
     sendNow,
-    setSessionMode,
     wsUrl,
   ]);
 
@@ -940,13 +1015,7 @@ export default function App() {
         fontFamily:
           "JetBrains Mono, Iosevka, Fira Code, ui-monospace, SFMono-Regular, Menlo, monospace",
         fontSize: fontSizeRef.current,
-        theme: {
-          background: "#00000000",
-          foreground: "#dcf8ff",
-          cursor: "#ffcc66",
-          selectionBackground: "#2b5e68",
-          black: "#0a171c",
-        },
+        theme: readTerminalTheme(),
       });
 
       const fitAddon = new runtime.FitAddon();
@@ -1068,8 +1137,6 @@ export default function App() {
       : `Connection status ${statusText}. ${modeLabel} mode.`
     : "Loading terminal runtime.";
 
-  const statusIcon = status === "connected" ? Wifi : WifiOff;
-  const StatusIcon = statusIcon;
   const tone = latencyTone(status, latencyMs);
 
   return (
@@ -1114,295 +1181,61 @@ export default function App() {
           )}
         </section>
 
-        <aside
-          className={`floating-controls ${controlsOpen ? "is-open" : ""}`}
-          aria-label="Terminal controls"
-        >
-          <div className="floating-controls__item">
-            <button
-              type="button"
-              onClick={reconnectNow}
-              data-testid="reconnect-button"
-              disabled={!terminalReady}
-              aria-keyshortcuts="Control+Shift+R Meta+Shift+R"
-              aria-label="Reconnect terminal session"
-            >
-              <RotateCcw size={16} />
-            </button>
-            <span className="floating-controls__tooltip">Reconnect</span>
-          </div>
-          <div className="floating-controls__item">
-            <button
-              type="button"
-              onClick={clearTerminal}
-              data-testid="clear-button"
-              disabled={!terminalReady}
-              aria-keyshortcuts="Control+Shift+K Meta+Shift+K"
-              aria-label="Clear terminal viewport"
-            >
-              <Eraser size={16} />
-            </button>
-            <span className="floating-controls__tooltip">Clear</span>
-          </div>
-          <div className="floating-controls__item">
-            <button
-              type="button"
-              onClick={() => {
-                applyFontSize(fontSize - 1);
-              }}
-              data-testid="font-decrease-button"
-              disabled={!terminalReady || fontSize <= FONT_SIZE_MIN}
-              aria-keyshortcuts="Control+Shift+- Meta+Shift+-"
-              aria-label="Decrease terminal font size"
-            >
-              <Minus size={16} />
-            </button>
-            <span className="floating-controls__tooltip">Font down</span>
-          </div>
-          <div className="floating-controls__item">
-            <button
-              type="button"
-              onClick={() => {
-                applyFontSize(fontSize + 1);
-              }}
-              data-testid="font-increase-button"
-              disabled={!terminalReady || fontSize >= FONT_SIZE_MAX}
-              aria-keyshortcuts="Control+Shift+= Meta+Shift+="
-              aria-label="Increase terminal font size"
-            >
-              <Plus size={16} />
-            </button>
-            <span className="floating-controls__tooltip">Font up</span>
-          </div>
-          <div className="floating-controls__item">
-            <button
-              type="button"
-              onClick={() => {
-                applyFontSize(DEFAULT_FONT_SIZE);
-              }}
-              data-testid="font-reset-button"
-              disabled={!terminalReady || fontSize === DEFAULT_FONT_SIZE}
-              aria-keyshortcuts="Control+Shift+0 Meta+Shift+0"
-              aria-label="Reset terminal font size"
-            >
-              <RefreshCcw size={16} />
-            </button>
-            <span className="floating-controls__tooltip">Reset font</span>
-          </div>
-          <div className="floating-controls__item">
-            <button
-              type="button"
-              onClick={() => {
-                void toggleFullscreen();
-              }}
-              data-testid="fullscreen-button"
-              disabled={!terminalReady}
-              aria-label={
-                isFullscreen
-                  ? "Exit fullscreen terminal"
-                  : "Enter fullscreen terminal"
-              }
-            >
-              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-            <span className="floating-controls__tooltip">
-              {isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            </span>
-          </div>
-        </aside>
+        <FloatingControls
+          controlsOpen={controlsOpen}
+          terminalReady={terminalReady}
+          fontSize={fontSize}
+          fontSizeMin={FONT_SIZE_MIN}
+          fontSizeMax={FONT_SIZE_MAX}
+          defaultFontSize={DEFAULT_FONT_SIZE}
+          isFullscreen={isFullscreen}
+          onReconnect={reconnectNow}
+          onClearTerminal={clearTerminal}
+          onApplyFontSize={applyFontSize}
+          onToggleFullscreen={toggleFullscreen}
+        />
 
         {sessionMenuOpen && (
           <div className="session-popover-layer" ref={sessionMenuRef}>
-            <div className="session-menu" data-testid="session-menu">
-              <button
-                type="button"
-                className="session-menu__action"
-                data-testid="session-menu-new"
-                onClick={startFreshSession}
-                disabled={!terminalReady}
-              >
-                <Plus size={14} aria-hidden="true" />
-                New session
-              </button>
-              <button
-                type="button"
-                className="session-menu__action"
-                data-testid="session-menu-resume-last"
-                onClick={resumePreviousSession}
-                disabled={!terminalReady || !lastSessionId}
-              >
-                <History size={14} aria-hidden="true" />
-                Resume last
-              </button>
-              {sessionNotice && (
-                <p
-                  className="session-menu__notice"
-                  data-testid="session-menu-notice"
-                >
-                  {sessionNotice}
-                </p>
-              )}
-              <p className="session-menu__section-title">Live sessions</p>
-              <div className="session-menu__list">
-                {liveSessionCandidates.length === 0 ? (
-                  <p className="session-menu__empty">
-                    No live resumable sessions
-                  </p>
-                ) : (
-                  liveSessionCandidates.map((candidate) => {
-                    const actionLabel =
-                      candidate.action === "watch" ? "Watch" : "Resume";
-                    const secondaryParts = [
-                      candidate.command || "interactive shell",
-                      ageLabel(candidate.lastActivityMs),
-                    ];
-                    if (candidate.watchers > 0) {
-                      secondaryParts.push(
-                        `${candidate.watchers} watcher${candidate.watchers === 1 ? "" : "s"}`,
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={`live:${candidate.id}`}
-                        type="button"
-                        className="session-menu__resume"
-                        data-testid={
-                          candidate.action === "watch"
-                            ? "session-menu-watch-item"
-                            : "session-menu-resume-item"
-                        }
-                        onClick={() => {
-                          resumeSession(
-                            candidate.id,
-                            candidate.action === "watch" ? "watch" : "control",
-                          );
-                        }}
-                        disabled={!terminalReady}
-                      >
-                        <span className="session-menu__primary">
-                          {shortSessionId(candidate.id)}
-                        </span>
-                        <span className="session-menu__secondary">
-                          {secondaryParts.join(" · ")}
-                        </span>
-                        <strong>
-                          {candidate.action === "watch" ? (
-                            <>
-                              <Eye size={12} aria-hidden="true" />
-                              {actionLabel}
-                            </>
-                          ) : (
-                            <>
-                              <Play size={12} aria-hidden="true" />
-                              {actionLabel}
-                            </>
-                          )}
-                        </strong>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-              <p className="session-menu__section-title">Recent session ids</p>
-              <div className="session-menu__list">
-                {historySessionCandidates.length === 0 ? (
-                  <p className="session-menu__empty">No recent sessions</p>
-                ) : (
-                  historySessionCandidates.map((historySessionId) => (
-                    <div
-                      key={`history:${historySessionId}`}
-                      className="session-menu__resume session-menu__resume--inactive"
-                      data-testid="session-menu-history-item"
-                    >
-                      <span className="session-menu__primary">
-                        {shortSessionId(historySessionId)}
-                      </span>
-                      <span className="session-menu__secondary">
-                        Not currently running on server
-                      </span>
-                      <strong>Unavailable</strong>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <SessionMenu
+              open={sessionMenuOpen}
+              terminalReady={terminalReady}
+              lastSessionId={lastSessionId}
+              sessionNotice={sessionNotice}
+              liveSessionCandidates={liveSessionCandidates}
+              historySessionCandidates={historySessionCandidates}
+              onStartFreshSession={startFreshSession}
+              onResumePreviousSession={resumePreviousSession}
+              onResumeSession={resumeSession}
+              formatSessionId={shortSessionId}
+              formatAgeLabel={ageLabel}
+            />
           </div>
         )}
       </section>
 
-      <footer className="statusbar">
-        <div className="statusbar__group">
-          <button
-            type="button"
-            className="controls-toggle statusbar-toggle"
-            data-testid="controls-toggle"
-            aria-expanded={controlsOpen}
-            aria-label={
-              controlsOpen ? "Hide terminal controls" : "Show terminal controls"
-            }
-            onClick={() => {
-              setControlsOpen((previous) => !previous);
-            }}
-          >
-            <SlidersHorizontal size={14} aria-hidden="true" />
-          </button>
-
-          <span
-            className="status-pill"
-            data-status={status}
-            data-latency={tone}
-          >
-            <StatusIcon size={13} aria-hidden="true" />
-            <span data-testid="status-label">{statusText}</span>
-            <span className="status-pill__latency" data-testid="latency-value">
-              {formatLatency(latencyMs)}
-            </span>
-          </span>
-
-          <div className="status-session" ref={sessionButtonRef}>
-            <button
-              type="button"
-              className="status-item status-item--button status-session__button"
-              data-testid="session-menu-button"
-              aria-expanded={sessionMenuOpen}
-              aria-label="Open session menu"
-              onClick={() => {
-                setSessionMenuOpen((previous) => !previous);
-              }}
-            >
-              <span>Session</span>
-              <strong
-                className="status-session__value"
-                data-testid="session-value"
-              >
-                {sessionDisplay}
-              </strong>
-              <ChevronDown size={12} aria-hidden="true" />
-            </button>
-          </div>
-          <span className="status-item" data-mode={attachMode}>
-            {attachMode === "watch" ? "Read-only" : "Control"}
-          </span>
-        </div>
-        <div className="statusbar__group">
-          <span className="status-item">
-            Reconnects <strong>{reconnectAttempt}</strong>
-          </span>
-          <span className="status-item">
-            Buffered <strong>{formatBytes(queuedInputBytes)}</strong>
-          </span>
-          <span className="status-item">
-            Dropped <strong>{formatBytes(droppedInputBytes)}</strong>
-          </span>
-          <span className="status-item">
-            Output{" "}
-            <strong data-testid="output-value" data-bytes={outputBytes}>
-              {formatBytes(outputBytes)}
-            </strong>
-          </span>
-        </div>
-      </footer>
+      <StatusBar
+        controlsOpen={controlsOpen}
+        sessionMenuOpen={sessionMenuOpen}
+        status={status}
+        latencyTone={tone}
+        statusText={statusText}
+        latencyText={formatLatency(latencyMs)}
+        sessionDisplay={sessionDisplay}
+        attachMode={attachMode}
+        reconnectAttempt={reconnectAttempt}
+        queuedInputText={formatBytes(queuedInputBytes)}
+        droppedInputText={formatBytes(droppedInputBytes)}
+        outputText={formatBytes(outputBytes)}
+        outputBytes={outputBytes}
+        sessionButtonRef={sessionButtonRef}
+        onToggleControls={() => {
+          setControlsOpen((previous) => !previous);
+        }}
+        onToggleSessionMenu={() => {
+          setSessionMenuOpen((previous) => !previous);
+        }}
+      />
     </main>
   );
 }

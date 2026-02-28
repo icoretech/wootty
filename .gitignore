@@ -7,3 +7,6 @@ apps/*/coverage/
 apps/web/test-results/
 apps/web/playwright-report/
 apps/server/woottyd
+.desloppify/
+findings.json
+scorecard.png
