@@ -1,41 +1,33 @@
 import { Eye, History, Play, Plus } from "lucide-react";
+import type { AttachMode } from "../contracts/session";
 
-type SessionCandidate = {
-  id: string;
-  action: "resume" | "watch";
-  command: string;
-  watchers: number;
-  lastActivityMs: number;
+export type SessionMenuAction =
+  | { type: "startFresh" }
+  | { type: "resumeLast" }
+  | { type: "attach"; sessionId: string; mode: AttachMode };
+
+export type SessionMenuModel = {
+  sessionMenuOpen: boolean;
+  terminalReady: boolean;
+  canResumeLast: boolean;
+  sessionNotice: string;
+  liveRows: Array<{
+    id: string;
+    mode: AttachMode;
+    primaryText: string;
+    secondaryText: string;
+    actionLabel: string;
+  }>;
+  historyRows: Array<{ id: string; primaryText: string }>;
 };
 
 type SessionMenuProps = {
-  open: boolean;
-  terminalReady: boolean;
-  lastSessionId: string;
-  sessionNotice: string;
-  liveSessionCandidates: SessionCandidate[];
-  historySessionCandidates: string[];
-  onStartFreshSession: () => void;
-  onResumePreviousSession: () => void;
-  onResumeSession: (sessionId: string, mode: "control" | "watch") => void;
-  formatSessionId: (value: string) => string;
-  formatAgeLabel: (timestampMs: number) => string;
+  model: SessionMenuModel;
+  dispatch: (action: SessionMenuAction) => void;
 };
 
-export function SessionMenu({
-  open,
-  terminalReady,
-  lastSessionId,
-  sessionNotice,
-  liveSessionCandidates,
-  historySessionCandidates,
-  onStartFreshSession,
-  onResumePreviousSession,
-  onResumeSession,
-  formatSessionId,
-  formatAgeLabel,
-}: SessionMenuProps) {
-  if (!open) {
+export function SessionMenu({ model, dispatch }: SessionMenuProps) {
+  if (!model.sessionMenuOpen) {
     return null;
   }
 
@@ -45,8 +37,10 @@ export function SessionMenu({
         type="button"
         className="session-menu__action"
         data-testid="session-menu-new"
-        onClick={onStartFreshSession}
-        disabled={!terminalReady}
+        onClick={() => {
+          dispatch({ type: "startFresh" });
+        }}
+        disabled={!model.terminalReady}
       >
         <Plus size={14} aria-hidden="true" />
         New session
@@ -55,68 +49,58 @@ export function SessionMenu({
         type="button"
         className="session-menu__action"
         data-testid="session-menu-resume-last"
-        onClick={onResumePreviousSession}
-        disabled={!terminalReady || !lastSessionId}
+        onClick={() => {
+          dispatch({ type: "resumeLast" });
+        }}
+        disabled={!model.terminalReady || !model.canResumeLast}
       >
         <History size={14} aria-hidden="true" />
         Resume last
       </button>
-      {sessionNotice && (
+      {model.sessionNotice && (
         <p className="session-menu__notice" data-testid="session-menu-notice">
-          {sessionNotice}
+          {model.sessionNotice}
         </p>
       )}
       <p className="session-menu__section-title">Live sessions</p>
       <div className="session-menu__list">
-        {liveSessionCandidates.length === 0 ? (
+        {model.liveRows.length === 0 ? (
           <p className="session-menu__empty">No live resumable sessions</p>
         ) : (
-          liveSessionCandidates.map((candidate) => {
-            const actionLabel = candidate.action === "watch" ? "Watch" : "Resume";
-            const secondaryParts = [
-              candidate.command || "interactive shell",
-              formatAgeLabel(candidate.lastActivityMs),
-            ];
-            if (candidate.watchers > 0) {
-              secondaryParts.push(
-                `${candidate.watchers} watcher${candidate.watchers === 1 ? "" : "s"}`,
-              );
-            }
-
+          model.liveRows.map((row) => {
             return (
               <button
-                key={`live:${candidate.id}`}
+                key={`live:${row.id}`}
                 type="button"
                 className="session-menu__resume"
                 data-testid={
-                  candidate.action === "watch"
+                  row.mode === "watch"
                     ? "session-menu-watch-item"
                     : "session-menu-resume-item"
                 }
                 onClick={() => {
-                  onResumeSession(
-                    candidate.id,
-                    candidate.action === "watch" ? "watch" : "control",
-                  );
+                  dispatch({
+                    type: "attach",
+                    sessionId: row.id,
+                    mode: row.mode,
+                  });
                 }}
-                disabled={!terminalReady}
+                disabled={!model.terminalReady}
               >
-                <span className="session-menu__primary">
-                  {formatSessionId(candidate.id)}
-                </span>
+                <span className="session-menu__primary">{row.primaryText}</span>
                 <span className="session-menu__secondary">
-                  {secondaryParts.join(" · ")}
+                  {row.secondaryText}
                 </span>
                 <strong>
-                  {candidate.action === "watch" ? (
+                  {row.mode === "watch" ? (
                     <>
                       <Eye size={12} aria-hidden="true" />
-                      {actionLabel}
+                      {row.actionLabel}
                     </>
                   ) : (
                     <>
                       <Play size={12} aria-hidden="true" />
-                      {actionLabel}
+                      {row.actionLabel}
                     </>
                   )}
                 </strong>
@@ -127,17 +111,17 @@ export function SessionMenu({
       </div>
       <p className="session-menu__section-title">Recent session ids</p>
       <div className="session-menu__list">
-        {historySessionCandidates.length === 0 ? (
+        {model.historyRows.length === 0 ? (
           <p className="session-menu__empty">No recent sessions</p>
         ) : (
-          historySessionCandidates.map((historySessionId) => (
+          model.historyRows.map((historyRow) => (
             <div
-              key={`history:${historySessionId}`}
+              key={`history:${historyRow.id}`}
               className="session-menu__resume session-menu__resume--inactive"
               data-testid="session-menu-history-item"
             >
               <span className="session-menu__primary">
-                {formatSessionId(historySessionId)}
+                {historyRow.primaryText}
               </span>
               <span className="session-menu__secondary">
                 Not currently running on server

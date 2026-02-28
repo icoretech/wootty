@@ -7,8 +7,15 @@ import {
   RefreshCcw,
   RotateCcw,
 } from "lucide-react";
+export type FloatingControlsAction =
+  | { type: "reconnect" }
+  | { type: "clear" }
+  | { type: "decreaseFont" }
+  | { type: "increaseFont" }
+  | { type: "resetFont" }
+  | { type: "toggleFullscreen" };
 
-type FloatingControlsProps = {
+export type FloatingControlsModel = {
   controlsOpen: boolean;
   terminalReady: boolean;
   fontSize: number;
@@ -16,36 +23,27 @@ type FloatingControlsProps = {
   fontSizeMax: number;
   defaultFontSize: number;
   isFullscreen: boolean;
-  onReconnect: () => void;
-  onClearTerminal: () => void;
-  onApplyFontSize: (next: number) => void;
-  onToggleFullscreen: () => Promise<void>;
 };
 
-export function FloatingControls({
-  controlsOpen,
-  terminalReady,
-  fontSize,
-  fontSizeMin,
-  fontSizeMax,
-  defaultFontSize,
-  isFullscreen,
-  onReconnect,
-  onClearTerminal,
-  onApplyFontSize,
-  onToggleFullscreen,
-}: FloatingControlsProps) {
+type FloatingControlsProps = {
+  model: FloatingControlsModel;
+  dispatch: (action: FloatingControlsAction) => void;
+};
+
+export function FloatingControls({ model, dispatch }: FloatingControlsProps) {
   return (
     <aside
-      className={`floating-controls ${controlsOpen ? "is-open" : ""}`}
+      className={`floating-controls ${model.controlsOpen ? "is-open" : ""}`}
       aria-label="Terminal controls"
     >
       <div className="floating-controls__item">
         <button
           type="button"
-          onClick={onReconnect}
+          onClick={() => {
+            dispatch({ type: "reconnect" });
+          }}
           data-testid="reconnect-button"
-          disabled={!terminalReady}
+          disabled={!model.terminalReady}
           aria-keyshortcuts="Control+Shift+R Meta+Shift+R"
           aria-label="Reconnect terminal session"
         >
@@ -56,9 +54,11 @@ export function FloatingControls({
       <div className="floating-controls__item">
         <button
           type="button"
-          onClick={onClearTerminal}
+          onClick={() => {
+            dispatch({ type: "clear" });
+          }}
           data-testid="clear-button"
-          disabled={!terminalReady}
+          disabled={!model.terminalReady}
           aria-keyshortcuts="Control+Shift+K Meta+Shift+K"
           aria-label="Clear terminal viewport"
         >
@@ -70,10 +70,10 @@ export function FloatingControls({
         <button
           type="button"
           onClick={() => {
-            onApplyFontSize(fontSize - 1);
+            dispatch({ type: "decreaseFont" });
           }}
           data-testid="font-decrease-button"
-          disabled={!terminalReady || fontSize <= fontSizeMin}
+          disabled={!model.terminalReady || model.fontSize <= model.fontSizeMin}
           aria-keyshortcuts="Control+Shift+- Meta+Shift+-"
           aria-label="Decrease terminal font size"
         >
@@ -85,10 +85,10 @@ export function FloatingControls({
         <button
           type="button"
           onClick={() => {
-            onApplyFontSize(fontSize + 1);
+            dispatch({ type: "increaseFont" });
           }}
           data-testid="font-increase-button"
-          disabled={!terminalReady || fontSize >= fontSizeMax}
+          disabled={!model.terminalReady || model.fontSize >= model.fontSizeMax}
           aria-keyshortcuts="Control+Shift+= Meta+Shift+="
           aria-label="Increase terminal font size"
         >
@@ -100,10 +100,12 @@ export function FloatingControls({
         <button
           type="button"
           onClick={() => {
-            onApplyFontSize(defaultFontSize);
+            dispatch({ type: "resetFont" });
           }}
           data-testid="font-reset-button"
-          disabled={!terminalReady || fontSize === defaultFontSize}
+          disabled={
+            !model.terminalReady || model.fontSize === model.defaultFontSize
+          }
           aria-keyshortcuts="Control+Shift+0 Meta+Shift+0"
           aria-label="Reset terminal font size"
         >
@@ -115,18 +117,24 @@ export function FloatingControls({
         <button
           type="button"
           onClick={() => {
-            void onToggleFullscreen();
+            dispatch({ type: "toggleFullscreen" });
           }}
           data-testid="fullscreen-button"
-          disabled={!terminalReady}
+          disabled={!model.terminalReady}
           aria-label={
-            isFullscreen ? "Exit fullscreen terminal" : "Enter fullscreen terminal"
+            model.isFullscreen
+              ? "Exit fullscreen terminal"
+              : "Enter fullscreen terminal"
           }
         >
-          {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          {model.isFullscreen ? (
+            <Minimize2 size={16} />
+          ) : (
+            <Maximize2 size={16} />
+          )}
         </button>
         <span className="floating-controls__tooltip">
-          {isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          {model.isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         </span>
       </div>
     </aside>
