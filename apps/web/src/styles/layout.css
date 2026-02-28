@@ -1,0 +1,128 @@
+.shell {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  gap: 8px;
+  padding: 8px;
+  overflow: hidden;
+}
+
+.shell.is-fullscreen {
+  padding: 6px;
+  gap: 6px;
+}
+
+.shell__background {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 80% 8%, rgba(55, 161, 184, 0.2), transparent 40%),
+    radial-gradient(circle at 5% 100%, rgba(35, 76, 92, 0.4), transparent 45%),
+    linear-gradient(165deg, rgba(5, 11, 14, 0.98), rgba(6, 13, 18, 0.94));
+}
+
+.workspace {
+  position: relative;
+  min-height: 0;
+}
+
+.terminal-wrap {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.terminal-wrap .xterm {
+  height: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.terminal-wrap .xterm-screen,
+.terminal-wrap .xterm-screen canvas,
+.terminal-wrap .xterm-scroll-area {
+  background: transparent !important;
+}
+
+.terminal-wrap .xterm-viewport {
+  background-color: transparent !important;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(53, 130, 156, 0.78) transparent;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(53, 130, 156, 0.78);
+  border-radius: 999px;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.terminal-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(3, 8, 11, 0.62), rgba(3, 8, 11, 0.78));
+  display: grid;
+  place-content: center;
+  pointer-events: none;
+}
+
+.empty-state {
+  min-width: min(420px, 88vw);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border: 1px solid rgba(58, 111, 133, 0.7);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(10, 25, 35, 0.9), rgba(7, 18, 26, 0.94));
+  text-align: center;
+}
+
+.empty-state__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(83, 151, 177, 0.75);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #91e5d7;
+  background: linear-gradient(180deg, rgba(17, 56, 72, 0.9), rgba(13, 42, 57, 0.9));
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 620;
+}
+
+.empty-state small {
+  color: var(--ink-1);
+  font-size: 0.74rem;
+}
+
+@media (max-width: 640px) {
+  .shell {
+    padding: 6px;
+    gap: 6px;
+  }
+}
