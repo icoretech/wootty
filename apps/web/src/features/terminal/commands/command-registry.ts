@@ -1,8 +1,9 @@
-import { COMMAND_CATALOG } from "./catalog";
+import { COMMAND_MANIFEST } from "./definitions/command-manifest";
 import type { TerminalRuntimeCommand } from "./runtime-commands";
 import type { ShortcutAction } from "./shortcut-actions";
+import type { ViewportUiCommand } from "./viewport-commands";
 
-type CommandHandlerKind = (typeof COMMAND_CATALOG)[number]["handler"];
+type CommandHandlerKind = (typeof COMMAND_MANIFEST)[number]["handler"];
 
 type CommandRegistry = {
   commandByShortcutCode: Map<string, ShortcutAction>;
@@ -13,7 +14,7 @@ function buildCommandRegistry(): CommandRegistry {
   const commandByShortcutCode = new Map<string, ShortcutAction>();
   const handlerByCommand = new Map<ShortcutAction, CommandHandlerKind>();
 
-  for (const command of COMMAND_CATALOG) {
+  for (const command of COMMAND_MANIFEST) {
     if (commandByShortcutCode.has(command.shortcutCode)) {
       throw new Error(
         `Duplicate shortcut descriptor for key code '${command.shortcutCode}'.`,
@@ -54,4 +55,20 @@ export function isRuntimeCommand(
   command: ShortcutAction,
 ): command is TerminalRuntimeCommand {
   return handlerForCommand(command) === "runtime";
+}
+
+type CommandDispatchHandlers = {
+  runtime: Record<TerminalRuntimeCommand, () => void>;
+  viewport: Record<ViewportUiCommand, () => void>;
+};
+
+export function dispatchCommand(
+  command: ShortcutAction,
+  handlers: CommandDispatchHandlers,
+): void {
+  if (handlerForCommand(command) === "runtime") {
+    handlers.runtime[command as TerminalRuntimeCommand]();
+    return;
+  }
+  handlers.viewport[command as ViewportUiCommand]();
 }
