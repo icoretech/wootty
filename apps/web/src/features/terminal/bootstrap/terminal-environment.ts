@@ -31,12 +31,20 @@ function createPlatformEnvironment(
     documentRef: readDocument(),
     windowRef,
     scheduler: browserScheduler,
-    resolveBackendEndpoints: (targetWindowRef) =>
-      resolveTerminalBackendEndpoints(
+    resolveBackendEndpoints: (targetWindowRef) => {
+      const tokenResolution = authTokenProvider();
+      if (tokenResolution.issue) {
+        return {
+          ok: false as const,
+          issue: tokenResolution.issue,
+        };
+      }
+      return resolveTerminalBackendEndpoints(
         targetWindowRef,
         envSocketUrl,
-        authTokenProvider().token,
-      ),
+        tokenResolution.token,
+      );
+    },
     fetchSessionsPayload: createBrowserSessionsClient(authTokenProvider),
   };
 }

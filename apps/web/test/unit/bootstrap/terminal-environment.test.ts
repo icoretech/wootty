@@ -75,6 +75,21 @@ describe("terminal environment backend endpoint resolution", () => {
     });
   });
 
+  it("returns typed issue when auth token injection receives malformed websocket URL", () => {
+    const resolved = resolveTerminalBackendEndpoints(
+      createWindowLikeRef(`${HTTPS_PROTOCOL}//${APP_HOST}`),
+      "ws://[::1",
+      "secret-token",
+    );
+
+    expect(resolved).toMatchObject({
+      ok: false,
+      issue: {
+        code: "socket_url_invalid_format",
+      },
+    });
+  });
+
   it("retains token already present in configured websocket URL", () => {
     const configuredSocketUrl = `${WSS_PROTOCOL}//${WS_HOST}/api/terminal?token=config-token`;
     const resolved = resolveTerminalBackendEndpoints(
