@@ -18,10 +18,13 @@ import {
 import { createRuntimeLoader } from "./runtime-loader";
 import { createBrowserSessionsClient } from "./sessions-client";
 
-const ENV_SOCKET_URL = import.meta.env.VITE_WOOTTY_WS_URL as string | undefined;
+type TerminalEnvironmentOptions = {
+  socketUrl?: string;
+};
 
 function createPlatformEnvironment(
   authTokenProvider: AuthTokenProvider,
+  envSocketUrl?: string,
 ): TerminalPlatformEnvironment {
   const windowRef = readWindow();
   return {
@@ -31,7 +34,7 @@ function createPlatformEnvironment(
     resolveBackendEndpoints: (targetWindowRef) =>
       resolveTerminalBackendEndpoints(
         targetWindowRef,
-        ENV_SOCKET_URL,
+        envSocketUrl,
         authTokenProvider().token,
       ),
     fetchSessionsPayload: createBrowserSessionsClient(authTokenProvider),
@@ -48,9 +51,14 @@ function createDomainEnvironment(): TerminalDomainEnvironment {
   };
 }
 
-export function createTerminalAppEnvironment(): TerminalAppEnvironment {
-  const authTokenProvider = createBrowserAuthTokenProvider(ENV_SOCKET_URL);
-  const platform = createPlatformEnvironment(authTokenProvider);
+export function createTerminalAppEnvironment(
+  options: TerminalEnvironmentOptions = {},
+): TerminalAppEnvironment {
+  const envSocketUrl =
+    options.socketUrl ??
+    (import.meta.env.VITE_WOOTTY_WS_URL as string | undefined);
+  const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
+  const platform = createPlatformEnvironment(authTokenProvider, envSocketUrl);
   const domain = createDomainEnvironment();
   return {
     platform,

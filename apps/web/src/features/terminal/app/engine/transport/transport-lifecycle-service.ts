@@ -54,6 +54,9 @@ type TransportLifecycleServiceDeps = {
 };
 
 type TimerHandle = SchedulerTimerHandle | null;
+type WsEndpointResolution =
+  | { ok: true; wsUrl: string }
+  | { ok: false; reason: string };
 
 function socketFailureContext(
   source: SocketFailureSource,
@@ -70,18 +73,24 @@ function socketFailureContext(
   return contextParts.join(" ");
 }
 
-function invalidEndpointReason(endpoint: string | null): string | null {
+function resolveWsEndpoint(endpoint: string | null): WsEndpointResolution {
   if (typeof endpoint !== "string" || endpoint.trim().length === 0) {
-    return "websocket endpoint unavailable";
+    return { ok: false, reason: "websocket endpoint unavailable" };
   }
   try {
     const parsed = new URL(endpoint);
     if (parsed.protocol === "ws:" || parsed.protocol === "wss:") {
-      return null;
+      return { ok: true, wsUrl: endpoint };
     }
-    return `invalid websocket endpoint protocol '${parsed.protocol}'`;
+    return {
+      ok: false,
+      reason: `invalid websocket endpoint protocol '${parsed.protocol}'`,
+    };
   } catch {
-    return `invalid websocket endpoint '${endpoint}'`;
+    return {
+      ok: false,
+      reason: `invalid websocket endpoint '${endpoint}'`,
+    };
   }
 }
 
@@ -139,33 +148,21 @@ export class TransportLifecycleService {
       reconnecting: this.deps.hasSessionContext(),
     });
 
-    const wsUrl = this.deps.getWsUrl();
-    const endpointError = invalidEndpointReason(wsUrl);
-    if (endpointError) {
-      this.reportSocketFailure("error", undefined, endpointError);
-      this.deps.dispatchEvent({ type: "socket-error" });
-      return;
-    }
-    if (typeof wsUrl !== "string") {
-      this.reportSocketFailure(
-        "error",
-        undefined,
-        "websocket endpoint unavailable",
-      );
-      this.deps.dispatchEvent({ type: "socket-error" });
+    const endpointResolution = resolveWsEndpoint(this.deps.getWsUrl());
+    if (!endpointResolution.ok) {
+      this.failConnectionBootstrap(endpointResolution.reason);
       return;
     }
 
     let ws: TerminalTransport;
     try {
-      ws = this.deps.createTransport(wsUrl);
+      ws = this.deps.createTransport(endpointResolution.wsUrl);
     } catch (error) {
       const reason =
         error instanceof Error && error.message.length > 0
           ? error.message
           : "transport bootstrap failed";
-      this.reportSocketFailure("error", undefined, reason);
-      this.deps.dispatchEvent({ type: "socket-error" });
+      this.failConnectionBootstrap(reason);
       return;
     }
     this.ws = ws;
@@ -217,6 +214,29 @@ export class TransportLifecycleService {
       this.ws.close(TERMINAL_CLOSE_CODE.MANUAL_RECONNECT, "manual reconnect");
       return;
     }
+    this.connect();
+  }
+
+  reconnectWithEndpointChange(): void {
+    this.closedByUser = false;
+    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
+    this.clearLifecycleTimers();
+
+    const previousSocket = this.ws;
+    if (
+      previousSocket &&
+      previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
+    ) {
+      // Detach before reconnect so connect() is not blocked by the old socket state.
+      this.ws = null;
+      this.connect();
+      previousSocket.close(
+        TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+        "endpoint changed",
+      );
+      return;
+    }
+
     this.connect();
   }
 
@@ -324,6 +344,11 @@ export class TransportLifecycleService {
 
   private setCloseIntent(intent: SocketCloseIntent): void {
     this.deps.dispatchEvent({ type: "set-close-intent", intent });
+  }
+
+  private failConnectionBootstrap(reason: string): void {
+    this.reportSocketFailure("error", undefined, reason);
+    this.deps.dispatchEvent({ type: "socket-error" });
   }
 
   private reportSocketFailure(

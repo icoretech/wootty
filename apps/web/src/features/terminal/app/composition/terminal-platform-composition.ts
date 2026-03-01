@@ -50,9 +50,7 @@ export function useTerminalPlatformContext(
   const scheduler = useMemo(() => {
     return environment.scheduler;
   }, [environment.scheduler]);
-  const backendResolution = useMemo(() => {
-    return environment.resolveBackendEndpoints(windowRef);
-  }, [environment.resolveBackendEndpoints, windowRef]);
+  const backendResolution = environment.resolveBackendEndpoints(windowRef);
   const fetchSessions = useFetchSessions(environment, backendResolution);
   return {
     windowRef,
