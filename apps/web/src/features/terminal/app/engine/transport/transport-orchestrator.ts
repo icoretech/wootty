@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   TerminalTransport,
   TerminalTransportFailureCode,
@@ -52,20 +52,13 @@ export function useTransportOrchestrator({
   scheduler,
   onSocketFailure,
 }: UseTransportOrchestratorArgs): TransportOrchestrator {
-  const [state, dispatch] = useReducer(
-    reduceTransportState,
-    initialTransportState,
-  );
-  const stateRef = useRef(state);
+  const [state, setState] = useState(initialTransportState);
+  const stateRef = useRef(initialTransportState);
   const createTransportRef = useRef(createTransport);
   const hasSessionContextRef = useRef(hasSessionContext);
   const onSocketFailureRef = useRef(onSocketFailure);
   const handlersRef = useRef(handlers);
   const wsUrlRef = useRef(wsUrl);
-
-  useEffect(() => {
-    stateRef.current = state;
-  }, [state]);
 
   useEffect(() => {
     handlersRef.current = handlers;
@@ -88,8 +81,9 @@ export function useTransportOrchestrator({
   }, [wsUrl]);
 
   const dispatchEvent = useCallback((event: TransportEvent) => {
-    stateRef.current = reduceTransportState(stateRef.current, event);
-    dispatch(event);
+    const nextState = reduceTransportState(stateRef.current, event);
+    stateRef.current = nextState;
+    setState(nextState);
   }, []);
 
   const lifecycleService = useMemo(
