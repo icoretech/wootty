@@ -47,7 +47,7 @@ type TerminalPresentationModel = {
   statusBarModel: StatusBarModel;
 };
 
-export function useTerminalPresentationModel({
+export function buildTerminalPresentationModel({
   uiState,
   sessionState,
   connectionRuntime,

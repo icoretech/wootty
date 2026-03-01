@@ -8,7 +8,8 @@
     "test": "vitest run --config config/test/vitest.config.ts",
     "test:e2e": "pnpm --dir ../.. build && playwright test --config config/e2e/playwright.config.ts",
     "test:e2e:cross": "pnpm --dir ../.. build && WOOTTY_E2E_CROSS=1 playwright test --config config/e2e/playwright.config.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:contracts": "tsc -p tsconfig.contract-tests.json --noEmit"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
@@ -20,6 +21,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/node": "^24.6.2",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

@@ -9,7 +9,7 @@ import type { SessionMenuModel } from "../view-models/session-menu-model";
 import type { StatusBarModel } from "../view-models/status-bar-model";
 import { useTerminalDomainController } from "./composition/terminal-domain-composition";
 import { useTerminalPlatformContext } from "./composition/terminal-platform-composition";
-import { useTerminalPresentationModel } from "./terminal-presentation";
+import { buildTerminalPresentationModel } from "./terminal-presentation";
 
 type TerminalController = {
   appViewportRef: RefObject<HTMLElement | null>;
@@ -45,7 +45,7 @@ export function useTerminalController(
     sessionMenuRef,
     sessionButtonRef,
   });
-  const presentation = useTerminalPresentationModel(domain);
+  const presentation = buildTerminalPresentationModel(domain);
 
   return {
     appViewportRef,

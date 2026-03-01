@@ -34,18 +34,22 @@ export type TerminalProtocolFailureReason =
   | "unsupported_type"
   | "incompatible_version";
 
+export const TERMINAL_PROTOCOL_FAILURE_DETAILS = [
+  "non_text_frame",
+  "json_parse_error",
+  "payload_not_object",
+  "invalid_message_type",
+  "unsupported_message_type",
+  "missing_ready_session_id",
+  "invalid_ready_read_only",
+  "invalid_output_data",
+  "invalid_exit_payload",
+  "missing_error_message",
+  "wire_version_mismatch",
+] as const;
+
 export type TerminalProtocolFailureDetail =
-  | "non_text_frame"
-  | "json_parse_error"
-  | "payload_not_object"
-  | "invalid_message_type"
-  | "unsupported_message_type"
-  | "missing_ready_session_id"
-  | "invalid_ready_read_only"
-  | "invalid_output_data"
-  | "invalid_exit_payload"
-  | "missing_error_message"
-  | "wire_version_mismatch";
+  (typeof TERMINAL_PROTOCOL_FAILURE_DETAILS)[number];
 
 export type TerminalProtocolFailure = {
   reason: TerminalProtocolFailureReason;
@@ -74,10 +78,16 @@ function parseReadyMessage(
   message: Record<string, unknown>,
 ): ServerMessageParseResult {
   if (typeof message.sessionId !== "string" || message.sessionId.length === 0) {
-    return malformedPayload("missing_ready_session_id");
+    return malformedPayload("missing_ready_session_id", {
+      field: "sessionId",
+      value: message.sessionId,
+    });
   }
   if (typeof message.readOnly !== "boolean") {
-    return malformedPayload("invalid_ready_read_only");
+    return malformedPayload("invalid_ready_read_only", {
+      field: "readOnly",
+      value: message.readOnly,
+    });
   }
   if (message.version !== TERMINAL_WIRE_CONTRACT_VERSION) {
     return {
@@ -147,19 +157,28 @@ function parseKnownMessage(
     const parsed = parseOutputMessage(message);
     return parsed
       ? { message: parsed }
-      : malformedPayload("invalid_output_data");
+      : malformedPayload("invalid_output_data", {
+          field: "data",
+          value: message.data,
+        });
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.EXIT) {
     const parsed = parseExitMessage(message);
     return parsed
       ? { message: parsed }
-      : malformedPayload("invalid_exit_payload");
+      : malformedPayload("invalid_exit_payload", {
+          field: "code|signal",
+          value: { code: message.code, signal: message.signal },
+        });
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.ERROR) {
     const parsed = parseErrorMessage(message);
     return parsed
       ? { message: parsed }
-      : malformedPayload("missing_error_message");
+      : malformedPayload("missing_error_message", {
+          field: "message",
+          value: message.message,
+        });
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.PONG) {
     return { message: { type: TERMINAL_SERVER_MESSAGE_TYPE.PONG } };
@@ -172,7 +191,10 @@ function parseKnownMessage(
       },
     };
   }
-  return malformedPayload("invalid_message_type");
+  return malformedPayload("invalid_message_type", {
+    field: "type",
+    value: type,
+  });
 }
 
 function parseServerErrorCode(value: unknown): {

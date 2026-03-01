@@ -1,19 +1,12 @@
-export const NOTICE_PROTOCOL_FAILURE_DETAILS = [
-  "non_text_frame",
-  "json_parse_error",
-  "payload_not_object",
-  "invalid_message_type",
-  "unsupported_message_type",
-  "missing_ready_session_id",
-  "invalid_ready_read_only",
-  "invalid_output_data",
-  "invalid_exit_payload",
-  "missing_error_message",
-  "wire_version_mismatch",
-] as const;
+import {
+  TERMINAL_PROTOCOL_FAILURE_DETAILS,
+  type TerminalProtocolFailureDetail,
+} from "../../protocol/terminal-protocol";
 
-export type NoticeProtocolFailureDetail =
-  (typeof NOTICE_PROTOCOL_FAILURE_DETAILS)[number];
+export const NOTICE_PROTOCOL_FAILURE_DETAILS =
+  TERMINAL_PROTOCOL_FAILURE_DETAILS;
+
+export type NoticeProtocolFailureDetail = TerminalProtocolFailureDetail;
 
 export type ProtocolNotice =
   | { context: "protocol"; reason: "unsupported_type" }

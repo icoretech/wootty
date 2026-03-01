@@ -1,20 +1,13 @@
 import type { TerminalProtocolFailure } from "../../protocol/terminal-protocol";
-import {
-  NOTICE_PROTOCOL_FAILURE_DETAILS,
-  type NoticeProtocolFailureDetail,
-  type ProtocolNotice,
+import type {
+  NoticeProtocolFailureDetail,
+  ProtocolNotice,
 } from "../contracts/protocol-notice";
 
 function toNoticeProtocolFailureDetail(
   detail: TerminalProtocolFailure["detail"],
 ): NoticeProtocolFailureDetail | undefined {
-  if (!detail) {
-    return undefined;
-  }
-  if ((NOTICE_PROTOCOL_FAILURE_DETAILS as readonly string[]).includes(detail)) {
-    return detail;
-  }
-  return undefined;
+  return detail;
 }
 
 export function toProtocolFailureNotice(

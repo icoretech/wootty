@@ -64,7 +64,7 @@ describe("sessions contract parity", () => {
     if (!parsed.ok) {
       throw new Error("expected valid session payload");
     }
-    const snapshot = parsed.sessions[0] as Record<string, unknown>;
+    const snapshot = parsed.sessions[0];
     const expectedKeys = [
       ...SESSION_SNAPSHOT_REQUIRED_FIELDS,
       ...SESSION_SNAPSHOT_OPTIONAL_FIELDS,

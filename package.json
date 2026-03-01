@@ -25,7 +25,7 @@
     "test": "pnpm --filter @icoretech/wootty-web test && cd apps/server && go test ./...",
     "test:e2e": "pnpm --filter @icoretech/wootty-web test:e2e",
     "test:e2e:cross": "pnpm --filter @icoretech/wootty-web test:e2e:cross",
-    "typecheck": "pnpm --filter @icoretech/wootty-web typecheck"
+    "typecheck": "pnpm --filter @icoretech/wootty-web typecheck && pnpm --filter @icoretech/wootty-web typecheck:contracts"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
