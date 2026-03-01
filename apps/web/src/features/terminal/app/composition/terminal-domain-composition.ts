@@ -47,11 +47,15 @@ export function useTerminalDomainController({
     attachMode: session.sessionState.attachMode,
     hasActiveSession: session.sessionState.hasActiveSession,
     transportEnabled: platform.backendResolution.ok,
-    publishNotice: session.publishNotice,
+    publishConnectionNotice:
+      session.sessionActions.publishConnectionNoticeDetails,
+    publishRuntimeNotice: session.sessionActions.publishRuntimeNoticeDetails,
+    publishTransportNotice:
+      session.sessionActions.publishTransportNoticeDetails,
     setSessionMode: session.sessionActions.setSessionMode,
     applyReadySession: session.sessionActions.applyReadySession,
     clearMissingSession: session.sessionActions.clearMissingSession,
-    refreshLiveSessions: session.sessionActions.refreshLiveSessions,
+    requestSessionRefresh: session.sessionActions.requestSessionRefresh,
     scheduler: platform.scheduler,
   });
   const commands = useUiBindingsController({

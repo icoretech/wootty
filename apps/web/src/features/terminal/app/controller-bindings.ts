@@ -28,7 +28,7 @@ type UseControllerBindingsArgs = {
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
   closeSessionMenu: () => void;
-  refreshLiveSessions: (
+  requestSessionRefresh: (
     request: SessionRefreshRequest,
   ) => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
@@ -50,7 +50,7 @@ export function useControllerBindings({
   sessionMenuRef,
   sessionButtonRef,
   closeSessionMenu,
-  refreshLiveSessions,
+  requestSessionRefresh,
   scheduler,
   attachMode,
   sessionId,
@@ -90,7 +90,7 @@ export function useControllerBindings({
   useSessionRefreshBinding({
     sessionMenuOpen,
     windowRef,
-    refreshLiveSessions,
+    requestSessionRefresh,
     scheduler,
     onRefreshCircuitOpen: handleRefreshCircuitOpen,
   });

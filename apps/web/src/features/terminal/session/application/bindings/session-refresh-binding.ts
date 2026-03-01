@@ -17,7 +17,7 @@ import type {
 type SessionRefreshBindingArgs = {
   sessionMenuOpen: boolean;
   windowRef: Window | null;
-  refreshLiveSessions: (
+  requestSessionRefresh: (
     request: SessionRefreshRequest,
   ) => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
@@ -27,7 +27,7 @@ type SessionRefreshBindingArgs = {
 export function useSessionRefreshBinding({
   sessionMenuOpen,
   windowRef,
-  refreshLiveSessions,
+  requestSessionRefresh,
   scheduler,
   onRefreshCircuitOpen,
 }: SessionRefreshBindingArgs): void {
@@ -92,7 +92,7 @@ export function useSessionRefreshBinding({
       const refreshController = new AbortController();
       activeRefreshController = refreshController;
       try {
-        const refreshResult = await refreshLiveSessions({
+        const refreshResult = await requestSessionRefresh({
           trigger: "poll",
           signal: refreshController.signal,
         });
@@ -136,5 +136,5 @@ export function useSessionRefreshBinding({
         scheduler.clearTimeout(refreshTimer);
       }
     };
-  }, [refreshLiveSessions, scheduler, sessionMenuOpen, windowRef]);
+  }, [requestSessionRefresh, scheduler, sessionMenuOpen, windowRef]);
 }

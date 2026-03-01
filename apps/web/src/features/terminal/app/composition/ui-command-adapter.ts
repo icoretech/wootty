@@ -2,7 +2,7 @@ import { type RefObject, useCallback } from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
-import type { NoticePublisher } from "../../notifications/notice-contract";
+import type { RuntimeNoticePublisher } from "../../notifications/notice-contract";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,
@@ -21,11 +21,11 @@ type CommandDispatchers = {
 function useFullscreenCommand({
   appViewportRef,
   documentRef,
-  publishNotice,
+  publishRuntimeNotice,
 }: {
   appViewportRef: RefObject<HTMLElement | null>;
   documentRef: Document | null;
-  publishNotice: NoticePublisher;
+  publishRuntimeNotice: RuntimeNoticePublisher;
 }): () => Promise<void> {
   return useCallback(async () => {
     const host = appViewportRef.current;
@@ -39,9 +39,9 @@ function useFullscreenCommand({
       }
       await host.requestFullscreen();
     } catch (error) {
-      publishNotice({ context: "fullscreen", cause: error });
+      publishRuntimeNotice({ context: "fullscreen", cause: error });
     }
-  }, [appViewportRef, documentRef, publishNotice]);
+  }, [appViewportRef, documentRef, publishRuntimeNotice]);
 }
 
 function useApplyFontSizeAction({
@@ -85,7 +85,7 @@ export function useUiBindingsController({
   const toggleFullscreen = useFullscreenCommand({
     appViewportRef,
     documentRef: platform.documentRef,
-    publishNotice: session.publishNotice,
+    publishRuntimeNotice: session.sessionActions.publishRuntimeNoticeDetails,
   });
 
   const { dispatchSessionMenu } = useSessionMenuActions({
@@ -129,7 +129,7 @@ export function useUiBindingsController({
     sessionMenuRef,
     sessionButtonRef,
     closeSessionMenu,
-    refreshLiveSessions: session.sessionActions.refreshLiveSessions,
+    requestSessionRefresh: session.sessionActions.requestSessionRefresh,
     scheduler: platform.scheduler,
     attachMode: session.sessionState.attachMode,
     sessionId: session.sessionState.sessionId,
@@ -137,7 +137,7 @@ export function useUiBindingsController({
     terminalReady: connection.runtime.terminalReady,
     terminalElementRef: connection.runtime.terminalElementRef,
     runShortcutAction: dispatchShortcutAction,
-    publishNotice: session.publishNotice,
+    publishNotice: session.sessionActions.publishSessionNoticeDetails,
   });
 
   return {
