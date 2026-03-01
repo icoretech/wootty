@@ -256,6 +256,32 @@ func TestSessionsAPIRequiresTokenWhenConfigured(t *testing.T) {
 	if authorizedResp.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 for authorized sessions request, got %d", authorizedResp.StatusCode)
 	}
+
+	queryAuthorizedResp, err := http.Get(httpServer.URL + "/api/sessions?token=secret-token")
+	if err != nil {
+		t.Fatalf("query-auth sessions request failed: %v", err)
+	}
+	defer queryAuthorizedResp.Body.Close()
+	if queryAuthorizedResp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for query-token sessions request, got %d", queryAuthorizedResp.StatusCode)
+	}
+
+	cookieAuthorizedReq, err := http.NewRequest(http.MethodGet, httpServer.URL+"/api/sessions", nil)
+	if err != nil {
+		t.Fatalf("failed building cookie-authorized sessions request: %v", err)
+	}
+	cookieAuthorizedReq.AddCookie(&http.Cookie{
+		Name:  "wootty_auth",
+		Value: "secret-token",
+	})
+	cookieAuthorizedResp, err := http.DefaultClient.Do(cookieAuthorizedReq)
+	if err != nil {
+		t.Fatalf("cookie-authorized sessions request failed: %v", err)
+	}
+	defer cookieAuthorizedResp.Body.Close()
+	if cookieAuthorizedResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for cookie-authorized sessions request, got %d", cookieAuthorizedResp.StatusCode)
+	}
 }
 
 func TestStaticRoutesRequireTokenWhenConfigured(t *testing.T) {
@@ -320,9 +346,13 @@ func TestTerminalWebsocketRequiresTokenWhenConfigured(t *testing.T) {
 		)
 	}
 
-	authorizedConn := dialTerminalWebsocketWithHeaders(t, httpServer.URL, http.Header{
-		"Authorization": []string{"Bearer secret-token"},
-	})
+	authorizedConn, _, err := websocket.DefaultDialer.Dial(
+		websocketURL(httpServer.URL)+"?token=secret-token",
+		nil,
+	)
+	if err != nil {
+		t.Fatalf("failed to dial terminal websocket with query token: %v", err)
+	}
 	defer authorizedConn.Close()
 
 	if err := authorizedConn.WriteJSON(map[string]any{
@@ -334,6 +364,42 @@ func TestTerminalWebsocketRequiresTokenWhenConfigured(t *testing.T) {
 		t.Fatalf("failed writing attach payload with auth token: %v", err)
 	}
 	_ = waitForWSMessageType(t, authorizedConn, "ready", 2*time.Second)
+
+	headerAuthorizedConn, headerAuthorizedResponse, err := websocket.DefaultDialer.Dial(
+		websocketURL(httpServer.URL),
+		http.Header{"Authorization": []string{"Bearer secret-token"}},
+	)
+	if headerAuthorizedConn != nil {
+		headerAuthorizedConn.Close()
+	}
+	if err == nil {
+		t.Fatal("expected websocket dial with Authorization header to fail")
+	}
+	if headerAuthorizedResponse == nil || headerAuthorizedResponse.StatusCode != http.StatusUnauthorized {
+		t.Fatalf(
+			"expected 401 for websocket upgrade using Authorization header, got response=%#v err=%v",
+			headerAuthorizedResponse,
+			err,
+		)
+	}
+
+	cookieAuthorizedConn, _, err := websocket.DefaultDialer.Dial(
+		websocketURL(httpServer.URL),
+		http.Header{"Cookie": []string{"wootty_auth=secret-token"}},
+	)
+	if err != nil {
+		t.Fatalf("failed to dial terminal websocket with auth cookie: %v", err)
+	}
+	defer cookieAuthorizedConn.Close()
+	if err := cookieAuthorizedConn.WriteJSON(map[string]any{
+		"type":    "attach",
+		"version": 1,
+		"cols":    80,
+		"rows":    24,
+	}); err != nil {
+		t.Fatalf("failed writing attach payload with auth cookie: %v", err)
+	}
+	_ = waitForWSMessageType(t, cookieAuthorizedConn, "ready", 2*time.Second)
 }
 
 func TestTerminalWebsocketRejectsDisallowedOrigin(t *testing.T) {
@@ -426,8 +492,8 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 	if !strings.Contains(stringField(errMessage, "message"), "read-only") {
 		t.Fatalf("expected read-only error payload, got %#v", errMessage)
 	}
-	if stringField(errMessage, "code") != "read_only_forbidden" {
-		t.Fatalf("expected read_only_forbidden code for watch input, got %#v", errMessage)
+	if stringField(errMessage, "code") != "session_not_writable" {
+		t.Fatalf("expected session_not_writable code for watch input, got %#v", errMessage)
 	}
 
 	if err := watchConn.WriteJSON(map[string]any{"type": "resize", "cols": 120, "rows": 40}); err != nil {
@@ -437,8 +503,8 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 	if !strings.Contains(stringField(resizeErrorMessage, "message"), "read-only") {
 		t.Fatalf("expected read-only resize error payload, got %#v", resizeErrorMessage)
 	}
-	if stringField(resizeErrorMessage, "code") != "read_only_forbidden" {
-		t.Fatalf("expected read_only_forbidden code for watch resize, got %#v", resizeErrorMessage)
+	if stringField(resizeErrorMessage, "code") != "session_not_resizable" {
+		t.Fatalf("expected session_not_resizable code for watch resize, got %#v", resizeErrorMessage)
 	}
 }
 

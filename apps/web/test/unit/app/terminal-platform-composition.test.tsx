@@ -1,11 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useTerminalPlatformContext } from "../../../src/features/terminal/app/composition/terminal-platform-composition";
-import type {
-  SessionsFetchResult,
-  TerminalAppEnvironment,
-} from "../../../src/features/terminal/environment/terminal-environment-contract";
+import type { TerminalAppEnvironment } from "../../../src/features/terminal/environment/terminal-environment-contract";
 import { browserScheduler } from "../../../src/features/terminal/platform/scheduler";
+import type { SessionsFetchResult } from "../../../src/features/terminal/session/protocol/sessions-fetch-contract";
 
 type PlatformProbeProps = {
   environment: TerminalAppEnvironment;
@@ -33,18 +31,38 @@ function PlatformProbe({ environment }: PlatformProbeProps) {
 }
 
 function createEnvironment(
-  fetchSessionsPayload: (url: string) => Promise<SessionsFetchResult>,
+  fetchSessionsPayload: (
+    url: string,
+    options?: {
+      signal?: AbortSignal;
+    },
+  ) => Promise<SessionsFetchResult>,
+  backendResolution:
+    | {
+        ok: true;
+        endpoints: {
+          sessionsHttpUrl: string;
+          terminalWsUrl: string;
+        };
+      }
+    | {
+        ok: false;
+        issue: {
+          code: string;
+          details: string;
+        };
+      } = {
+    ok: true,
+    endpoints: {
+      sessionsHttpUrl: "/api/sessions",
+      terminalWsUrl: "ws://127.0.0.1/api/terminal",
+    },
+  },
 ): TerminalAppEnvironment {
   const storage = new Map<string, string>();
   return {
     platform: {
-      resolveBackendEndpoints: () => ({
-        ok: true,
-        endpoints: {
-          sessionsHttpUrl: "/api/sessions",
-          terminalWsUrl: "ws://127.0.0.1/api/terminal",
-        },
-      }),
+      resolveBackendEndpoints: () => backendResolution,
       fetchSessionsPayload,
       documentRef: document,
       windowRef: window,
@@ -102,7 +120,36 @@ describe("terminal platform composition", () => {
     fireEvent.click(screen.getByTestId("fetch"));
 
     await waitFor(() => {
-      expect(fetchSessionsPayload).toHaveBeenCalledWith("/api/sessions");
+      expect(fetchSessionsPayload).toHaveBeenCalledWith(
+        "/api/sessions",
+        undefined,
+      );
+    });
+  });
+
+  it("returns bootstrap errors without calling sessions fetch when endpoint resolution fails", async () => {
+    const fetchSessionsPayload = vi.fn(async () => {
+      return {
+        ok: true,
+        payload: {},
+      } as const;
+    });
+    render(
+      <PlatformProbe
+        environment={createEnvironment(fetchSessionsPayload, {
+          ok: false,
+          issue: {
+            code: "socket_url_invalid_format",
+            details: "invalid endpoint",
+          },
+        })}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("fetch"));
+
+    await waitFor(() => {
+      expect(fetchSessionsPayload).not.toHaveBeenCalled();
     });
   });
 });

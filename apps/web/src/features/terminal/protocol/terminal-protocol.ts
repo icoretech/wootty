@@ -33,25 +33,58 @@ export type TerminalProtocolFailureReason =
   | "unsupported_type"
   | "incompatible_version";
 
+export type TerminalProtocolFailureDetail =
+  | "non_text_frame"
+  | "json_parse_error"
+  | "payload_not_object"
+  | "invalid_message_type"
+  | "unsupported_message_type"
+  | "missing_ready_session_id"
+  | "invalid_ready_read_only"
+  | "invalid_output_data"
+  | "invalid_exit_payload"
+  | "missing_error_message"
+  | "wire_version_mismatch";
+
+export type TerminalProtocolFailure = {
+  reason: TerminalProtocolFailureReason;
+  detail?: TerminalProtocolFailureDetail;
+  cause?: unknown;
+};
+
 type ServerMessageParseResult =
   | { message: ServerMessage }
-  | { reason: TerminalProtocolFailureReason };
+  | { failure: TerminalProtocolFailure };
 
-const MALFORMED_PAYLOAD: ServerMessageParseResult = {
-  reason: "malformed_payload",
-};
+function malformedPayload(
+  detail: TerminalProtocolFailureDetail,
+  cause?: unknown,
+): ServerMessageParseResult {
+  return {
+    failure: {
+      reason: "malformed_payload",
+      detail,
+      cause,
+    },
+  };
+}
 
 function parseReadyMessage(
   message: Record<string, unknown>,
 ): ServerMessageParseResult {
   if (typeof message.sessionId !== "string" || message.sessionId.length === 0) {
-    return MALFORMED_PAYLOAD;
+    return malformedPayload("missing_ready_session_id");
   }
   if (typeof message.readOnly !== "boolean") {
-    return MALFORMED_PAYLOAD;
+    return malformedPayload("invalid_ready_read_only");
   }
   if (message.version !== TERMINAL_WIRE_CONTRACT_VERSION) {
-    return { reason: "incompatible_version" };
+    return {
+      failure: {
+        reason: "incompatible_version",
+        detail: "wire_version_mismatch",
+      },
+    };
   }
   return {
     message: {
@@ -75,19 +108,28 @@ function parseOutputMessage(
 function parseExitMessage(
   message: Record<string, unknown>,
 ): ServerMessage | null {
-  if (
-    typeof message.code !== "number" ||
-    !Number.isFinite(message.code) ||
-    typeof message.signal !== "number" ||
-    !Number.isFinite(message.signal)
-  ) {
+  const code = parseNonNegativeInteger(message.code);
+  const signal = parseNonNegativeInteger(message.signal);
+  if (code === null || signal === null) {
     return null;
   }
   return {
     type: TERMINAL_SERVER_MESSAGE_TYPE.EXIT,
-    code: message.code,
-    signal: message.signal,
+    code,
+    signal,
   };
+}
+
+function parseNonNegativeInteger(value: unknown): number | null {
+  if (
+    typeof value !== "number" ||
+    !Number.isFinite(value) ||
+    !Number.isInteger(value) ||
+    value < 0
+  ) {
+    return null;
+  }
+  return value;
 }
 
 function parseErrorMessage(
@@ -114,23 +156,34 @@ function parseKnownMessage(
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.OUTPUT) {
     const parsed = parseOutputMessage(message);
-    return parsed ? { message: parsed } : MALFORMED_PAYLOAD;
+    return parsed
+      ? { message: parsed }
+      : malformedPayload("invalid_output_data");
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.EXIT) {
     const parsed = parseExitMessage(message);
-    return parsed ? { message: parsed } : MALFORMED_PAYLOAD;
+    return parsed
+      ? { message: parsed }
+      : malformedPayload("invalid_exit_payload");
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.ERROR) {
     const parsed = parseErrorMessage(message);
-    return parsed ? { message: parsed } : MALFORMED_PAYLOAD;
+    return parsed
+      ? { message: parsed }
+      : malformedPayload("missing_error_message");
   }
   if (type === TERMINAL_SERVER_MESSAGE_TYPE.PONG) {
     return { message: { type: TERMINAL_SERVER_MESSAGE_TYPE.PONG } };
   }
   if (typeof type === "string") {
-    return { reason: "unsupported_type" };
+    return {
+      failure: {
+        reason: "unsupported_type",
+        detail: "unsupported_message_type",
+      },
+    };
   }
-  return MALFORMED_PAYLOAD;
+  return malformedPayload("invalid_message_type");
 }
 
 function parseServerErrorCode(value: unknown): {
@@ -150,16 +203,16 @@ export function parseServerMessageWithReason(
   raw: unknown,
 ): ServerMessageParseResult {
   if (typeof raw !== "string") {
-    return MALFORMED_PAYLOAD;
+    return malformedPayload("non_text_frame");
   }
 
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") {
-      return MALFORMED_PAYLOAD;
+      return malformedPayload("payload_not_object");
     }
     return parseKnownMessage(parsed as Record<string, unknown>);
-  } catch {
-    return MALFORMED_PAYLOAD;
+  } catch (error) {
+    return malformedPayload("json_parse_error", error);
   }
 }

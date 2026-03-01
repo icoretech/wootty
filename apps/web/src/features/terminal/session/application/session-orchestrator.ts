@@ -7,20 +7,27 @@ import {
   useState,
 } from "react";
 import type { AttachMode, SessionSnapshot } from "../../contracts/session";
-import type { SessionsFetchResult } from "../../environment/terminal-environment-contract";
 import type { FailureNoticeState } from "../../notifications/failure-notice-throttle";
 import type { NoticeDetails } from "../../notifications/notice-contract";
 import { createNoticePublisher } from "../../notifications/notice-publisher";
 import type { Scheduler } from "../../platform/scheduler";
+import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
+import type { SessionsFetchResult } from "../../session/protocol/sessions-fetch-contract";
 import { parseSessionsResponse } from "../../session/protocol/sessions-payload-parser";
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import { useSessionNoticeChannel } from "./session-notice-channel";
 import { useSessionPersistence } from "./session-persistence";
-import type { SessionRefreshResult } from "./session-refresh-result";
+import { toSessionRefreshFailureNotice } from "./session-refresh-failure-notice";
+import type {
+  SessionRefreshRequest,
+  SessionRefreshResult,
+} from "./session-refresh-result";
 import { toStorageFailureNoticeDetails } from "./storage-failure-notice";
 
 type UseSessionOrchestratorArgs = {
-  fetchSessions: () => Promise<SessionsFetchResult>;
+  fetchSessions: (options?: {
+    signal?: AbortSignal;
+  }) => Promise<SessionsFetchResult>;
   getLocalStorage: () => Storage | null;
   getSessionStorage: () => Storage | null;
   scheduler: Scheduler;
@@ -28,6 +35,16 @@ type UseSessionOrchestratorArgs = {
 };
 
 const REFRESH_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
+
+const REQUEST_SUPERSEDED_FAILURE: SessionRefreshFailure = {
+  source: "lifecycle",
+  reason: "request_superseded",
+};
+
+const REQUEST_ABORTED_FAILURE: SessionRefreshFailure = {
+  source: "lifecycle",
+  reason: "request_aborted",
+};
 
 type SessionOrchestratorState = {
   state: {
@@ -45,7 +62,9 @@ type SessionOrchestratorState = {
     publishSessionNotice: (message: string) => void;
     clearSessionNotice: () => void;
     setSessionMode: (mode: AttachMode) => void;
-    refreshLiveSessions: (requestId?: number) => Promise<SessionRefreshResult>;
+    refreshLiveSessions: (
+      request: SessionRefreshRequest,
+    ) => Promise<SessionRefreshResult>;
     applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
     clearMissingSession: () => void;
     transitionSessionContext: (
@@ -64,6 +83,7 @@ export function useSessionOrchestrator({
 }: UseSessionOrchestratorArgs): SessionOrchestratorState {
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
   const latestRefreshRequestIdRef = useRef(0);
+  const activeRefreshControllerRef = useRef<AbortController | null>(null);
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
   const [attachMode, setAttachMode] = useState<AttachMode>("control");
   const [sessionMenuOpen, setSessionMenuOpenState] = useState<boolean>(false);
@@ -103,90 +123,68 @@ export function useSessionOrchestrator({
   } = persistence.actions;
 
   const publishRefreshFailure = useCallback(
-    (failureKey: string, message: string) => {
+    (failure: SessionRefreshFailure) => {
+      const noticeData = toSessionRefreshFailureNotice(failure);
+      if (!noticeData.notice) {
+        return;
+      }
+      const message = formatNotice(noticeData.notice);
+      if (!noticeData.failureKey) {
+        publishSessionNotice(message);
+        return;
+      }
       publishThrottledSessionNotice({
         stateRef: refreshFailureNoticeRef,
-        failureKey,
+        failureKey: noticeData.failureKey,
         message,
         cooldownMs: REFRESH_FAILURE_NOTICE_COOLDOWN_MS,
       });
     },
-    [publishThrottledSessionNotice],
+    [formatNotice, publishSessionNotice, publishThrottledSessionNotice],
   );
 
   const refreshLiveSessions = useCallback(
-    async (requestId?: number): Promise<SessionRefreshResult> => {
-      if (typeof requestId === "number") {
-        latestRefreshRequestIdRef.current = requestId;
+    async (request: SessionRefreshRequest): Promise<SessionRefreshResult> => {
+      latestRefreshRequestIdRef.current += 1;
+      const requestId = latestRefreshRequestIdRef.current;
+      const previousController = activeRefreshControllerRef.current;
+      previousController?.abort();
+      const refreshController = new AbortController();
+      activeRefreshControllerRef.current = refreshController;
+      const onOuterAbort = () => {
+        refreshController.abort();
+      };
+      if (request.signal) {
+        if (request.signal.aborted) {
+          refreshController.abort();
+        } else {
+          request.signal.addEventListener("abort", onOuterAbort, {
+            once: true,
+          });
+        }
       }
       const isStaleRequest = () => {
-        return (
-          typeof requestId === "number" &&
-          latestRefreshRequestIdRef.current !== requestId
-        );
+        return latestRefreshRequestIdRef.current !== requestId;
       };
       try {
-        const response = await fetchSessions();
+        const response = await fetchSessions({
+          signal: refreshController.signal,
+        });
         if (isStaleRequest()) {
-          return { ok: false, reason: "network_error" };
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
         if (!response.ok) {
-          if (response.failure.reason === "http_error") {
-            publishRefreshFailure(
-              `http:${response.failure.status}`,
-              formatNotice({
-                context: "sessions_refresh",
-                reason: "http",
-                status: response.failure.status,
-              }),
-            );
-            return { ok: false, reason: "http_error" };
-          }
-          if (response.failure.reason === "bootstrap_error") {
-            publishSessionNotice(
-              formatNotice({
-                context: "bootstrap",
-                reason: "backend_resolution_failed",
-                details: response.failure.issue,
-              }),
-            );
-            return { ok: false, reason: "bootstrap_error" };
-          }
-          if (response.failure.reason === "json_parse_error") {
-            publishRefreshFailure(
-              "payload:json_parse_error",
-              formatNotice({
-                context: "sessions_refresh",
-                reason: "cause",
-                cause: response.failure.cause,
-              }),
-            );
-            return { ok: false, reason: "json_parse_error" };
-          }
-          publishRefreshFailure(
-            "network",
-            formatNotice({
-              context: "sessions_refresh",
-              reason: "cause",
-              cause: response.failure.cause,
-            }),
-          );
-          return { ok: false, reason: "network_error" };
+          publishRefreshFailure(response.failure);
+          return { ok: false, failure: response.failure };
         }
 
         const parsed = parseSessionsResponse(response.payload);
         if (isStaleRequest()) {
-          return { ok: false, reason: "network_error" };
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
         if (!parsed.ok) {
-          publishRefreshFailure(
-            `payload:${parsed.reason}`,
-            formatNotice({
-              context: "sessions_refresh",
-              reason: parsed.reason,
-            }),
-          );
-          return { ok: false, reason: parsed.reason };
+          publishRefreshFailure(parsed.failure);
+          return { ok: false, failure: parsed.failure };
         }
 
         refreshFailureNoticeRef.current = null;
@@ -203,17 +201,28 @@ export function useSessionOrchestrator({
         return { ok: true };
       } catch (error) {
         if (isStaleRequest()) {
-          return { ok: false, reason: "network_error" };
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
-        publishRefreshFailure(
-          "network",
-          formatNotice({
-            context: "sessions_refresh",
-            reason: "cause",
-            cause: error,
-          }),
-        );
-        return { ok: false, reason: "network_error" };
+        if (
+          request.signal?.aborted ||
+          (error instanceof DOMException && error.name === "AbortError")
+        ) {
+          return { ok: false, failure: REQUEST_ABORTED_FAILURE };
+        }
+        const failure: SessionRefreshFailure = {
+          source: "fetch",
+          reason: "network_error",
+          cause: error,
+        };
+        publishRefreshFailure(failure);
+        return { ok: false, failure };
+      } finally {
+        if (request.signal) {
+          request.signal.removeEventListener("abort", onOuterAbort);
+        }
+        if (activeRefreshControllerRef.current === refreshController) {
+          activeRefreshControllerRef.current = null;
+        }
       }
     },
     [fetchSessions, formatNotice, publishRefreshFailure, publishSessionNotice],

@@ -4,7 +4,7 @@ import {
   latencyTone,
   shortSessionId,
   statusLabel,
-} from "../../../src/features/terminal/presentation/formatters";
+} from "../../../../src/features/terminal/presentation/formatters";
 
 describe("terminal view-model helpers", () => {
   it("formats status labels", () => {

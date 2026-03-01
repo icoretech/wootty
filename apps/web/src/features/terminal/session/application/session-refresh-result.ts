@@ -1,14 +1,17 @@
-export const SESSION_REFRESH_FAILURE_REASONS = [
-  "http_error",
-  "bootstrap_error",
-  "json_parse_error",
-  "invalid_payload",
-  "missing_sessions_array",
-  "network_error",
-] as const;
+import {
+  SESSION_REFRESH_FAILURE_REASONS,
+  type SessionRefreshFailure,
+} from "../protocol/session-refresh-failure-contract";
 
-export type SessionRefreshFailureReason =
-  (typeof SESSION_REFRESH_FAILURE_REASONS)[number];
+export { SESSION_REFRESH_FAILURE_REASONS };
+export type { SessionRefreshFailure };
+
+export type SessionRefreshTrigger = "poll" | "transport_event" | "manual";
+
+export type SessionRefreshRequest = {
+  readonly trigger: SessionRefreshTrigger;
+  readonly signal?: AbortSignal;
+};
 
 export type SessionRefreshResult =
   | {
@@ -16,5 +19,5 @@ export type SessionRefreshResult =
     }
   | {
       readonly ok: false;
-      readonly reason: SessionRefreshFailureReason;
+      readonly failure: SessionRefreshFailure;
     };

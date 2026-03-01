@@ -1,49 +1,8 @@
+import type { TerminalBackendResolution } from "../bootstrap/backend-resolution-contract";
 import type { TerminalTransport } from "../contracts/transport";
 import type { Scheduler } from "../platform/scheduler";
 import type { TerminalRuntime } from "../runtime/xterm-runtime-contract";
-
-export type TerminalBackendEndpoints = {
-  sessionsHttpUrl: string;
-  terminalWsUrl: string;
-};
-
-export type SessionsFetchFailure =
-  | {
-      reason: "http_error";
-      status: number;
-    }
-  | {
-      reason: "bootstrap_error";
-      issue: string;
-    }
-  | {
-      reason: "json_parse_error";
-      cause: unknown;
-    }
-  | {
-      reason: "network_error";
-      cause: unknown;
-    };
-
-export type SessionsFetchResult =
-  | {
-      ok: true;
-      payload: unknown;
-    }
-  | {
-      ok: false;
-      failure: SessionsFetchFailure;
-    };
-
-export type TerminalBackendResolution =
-  | {
-      ok: true;
-      endpoints: TerminalBackendEndpoints;
-    }
-  | {
-      ok: false;
-      issue: string;
-    };
+import type { SessionsFetchResult } from "../session/protocol/sessions-fetch-contract";
 
 export type TerminalPlatformEnvironment = {
   documentRef: Document | null;
@@ -54,6 +13,9 @@ export type TerminalPlatformEnvironment = {
   ) => TerminalBackendResolution;
   fetchSessionsPayload: (
     sessionsHttpUrl: string,
+    options?: {
+      signal?: AbortSignal;
+    },
   ) => Promise<SessionsFetchResult>;
 };
 

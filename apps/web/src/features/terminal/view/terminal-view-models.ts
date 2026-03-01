@@ -9,7 +9,6 @@ import {
 } from "../contracts/font-size";
 import type { AttachMode, SessionSnapshot } from "../contracts/session";
 import { formatBytes, formatLatency } from "../lib/terminal-format";
-import { buildFloatingControlDescriptors } from "../presentation/command-ui/floating-control-descriptors";
 import {
   ageLabel,
   latencyTone,
@@ -17,7 +16,8 @@ import {
   statusLabel,
 } from "../presentation/formatters";
 import { presentSessionCandidate } from "../presentation/session-menu-presenter";
-import { deriveSessionCandidates } from "../session/domain/session-contract";
+import { deriveSessionCandidates } from "../session/domain/session-candidates";
+import { buildFloatingControlDescriptors } from "./floating-controls/descriptors";
 
 type TerminalViewModelInput = {
   controlsOpen: boolean;

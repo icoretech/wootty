@@ -134,10 +134,10 @@ export function useSessionPersistence({
 
       const historyRead = readSessionHistoryResult(localStorageRef);
       reportFailure(historyRead.error, onStorageFailure);
-      const nextHistory = pushSessionHistory(
-        historyRead.sessions,
-        nextSessionId,
-      );
+      const historySource = historyRead.error
+        ? sessionHistoryIds
+        : historyRead.sessions;
+      const nextHistory = pushSessionHistory(historySource, nextSessionId);
       const historyWrite = writeSessionHistoryResult(
         localStorageRef,
         nextHistory,
@@ -147,7 +147,7 @@ export function useSessionPersistence({
       setSessionHistoryIds(nextHistory);
       setLastSessionId(nextSessionId);
     },
-    [getLocalStorage, onStorageFailure],
+    [getLocalStorage, onStorageFailure, sessionHistoryIds],
   );
 
   return {

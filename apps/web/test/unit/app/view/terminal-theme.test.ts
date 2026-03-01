@@ -5,8 +5,8 @@ import {
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
   readInitialFontSizeResult,
-} from "../../../src/features/terminal/app/preferences/font-size-preferences";
-import { readTerminalTheme } from "../../../src/features/terminal/runtime/terminal-theme";
+} from "../../../../src/features/terminal/app/preferences/font-size-preferences";
+import { readTerminalTheme } from "../../../../src/features/terminal/runtime/terminal-theme";
 
 describe("terminal-theme helpers", () => {
   it("clamps font size into the supported range", () => {

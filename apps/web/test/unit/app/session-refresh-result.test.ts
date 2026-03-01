@@ -9,6 +9,11 @@ describe("session refresh result contract", () => {
       "json_parse_error",
       "invalid_payload",
       "missing_sessions_array",
+      "all_sessions_invalid",
+      "too_many_invalid_sessions",
+      "request_timeout",
+      "request_aborted",
+      "request_superseded",
       "network_error",
     ]);
   });

@@ -1,38 +1,35 @@
 import { useCallback, useMemo } from "react";
-import type {
-  SessionsFetchResult,
-  TerminalBackendResolution,
-  TerminalPlatformEnvironment,
-} from "../../environment/terminal-environment-contract";
+import type { TerminalBackendResolution } from "../../bootstrap/backend-resolution-contract";
+import type { TerminalPlatformEnvironment } from "../../environment/terminal-environment-contract";
 import type { Scheduler } from "../../platform/scheduler";
-
-function useBackendEndpoints(
-  environment: TerminalPlatformEnvironment,
-  windowRef: Window | null,
-) {
-  return useMemo(() => {
-    return environment.resolveBackendEndpoints(windowRef);
-  }, [environment, windowRef]);
-}
+import type { SessionsFetchResult } from "../../session/protocol/sessions-fetch-contract";
 
 function useFetchSessions(
   environment: TerminalPlatformEnvironment,
   backendResolution: TerminalBackendResolution,
-): () => Promise<SessionsFetchResult> {
-  return useCallback(() => {
-    if (!backendResolution.ok) {
-      return Promise.resolve({
-        ok: false,
-        failure: {
-          reason: "bootstrap_error",
-          issue: backendResolution.issue,
-        },
-      });
-    }
-    return environment.fetchSessionsPayload(
-      backendResolution.endpoints.sessionsHttpUrl,
-    );
-  }, [backendResolution, environment]);
+): (options?: { signal?: AbortSignal }) => Promise<SessionsFetchResult> {
+  const sessionsHttpUrl = backendResolution.ok
+    ? backendResolution.endpoints.sessionsHttpUrl
+    : null;
+  const bootstrapIssue = backendResolution.ok ? null : backendResolution.issue;
+  return useCallback(
+    (options?: { signal?: AbortSignal }) => {
+      if (!sessionsHttpUrl || bootstrapIssue) {
+        return Promise.resolve({
+          ok: false,
+          failure: {
+            source: "fetch",
+            reason: "bootstrap_error",
+            issue:
+              bootstrapIssue?.details ?? "backend endpoint resolution failed",
+            issueCode: bootstrapIssue?.code,
+          },
+        });
+      }
+      return environment.fetchSessionsPayload(sessionsHttpUrl, options);
+    },
+    [bootstrapIssue, environment.fetchSessionsPayload, sessionsHttpUrl],
+  );
 }
 
 export type TerminalPlatformContext = {
@@ -40,7 +37,9 @@ export type TerminalPlatformContext = {
   documentRef: Document | null;
   scheduler: Scheduler;
   backendResolution: TerminalBackendResolution;
-  fetchSessions: () => Promise<SessionsFetchResult>;
+  fetchSessions: (options?: {
+    signal?: AbortSignal;
+  }) => Promise<SessionsFetchResult>;
 };
 
 export function useTerminalPlatformContext(
@@ -51,7 +50,9 @@ export function useTerminalPlatformContext(
   const scheduler = useMemo(() => {
     return environment.scheduler;
   }, [environment.scheduler]);
-  const backendResolution = useBackendEndpoints(environment, windowRef);
+  const backendResolution = useMemo(() => {
+    return environment.resolveBackendEndpoints(windowRef);
+  }, [environment.resolveBackendEndpoints, windowRef]);
   const fetchSessions = useFetchSessions(environment, backendResolution);
   return {
     windowRef,

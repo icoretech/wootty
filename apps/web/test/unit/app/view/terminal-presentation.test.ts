@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { useTerminalPresentationModel } from "../../../src/features/terminal/app/terminal-presentation";
+import { useTerminalPresentationModel } from "../../../../src/features/terminal/app/terminal-presentation";
 
 describe("terminal presentation model", () => {
   it("projects view models and accessibility announcement from domain state", () => {

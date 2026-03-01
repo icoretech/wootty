@@ -6,7 +6,6 @@ import {
   useRef,
   useState,
 } from "react";
-import type { FloatingControlsAction } from "../../commands/floating-controls-actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
@@ -16,6 +15,7 @@ import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import { toStorageFailureNoticeDetails } from "../../session/application/storage-failure-notice";
 import type { StorageAccessFailure } from "../../session/persistence/session-storage";
+import type { FloatingControlsAction } from "../../view/floating-controls/actions";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,
@@ -189,21 +189,29 @@ export function useTerminalDomainController({
     environment.getLocalStorage,
     reportStorageFailure,
   );
+  const lastBootstrapIssueRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (platform.backendResolution.ok) {
+      lastBootstrapIssueRef.current = null;
       return;
     }
+    const issueKey = `${platform.backendResolution.issue.code}:${platform.backendResolution.issue.details}`;
+    if (lastBootstrapIssueRef.current === issueKey) {
+      return;
+    }
+    lastBootstrapIssueRef.current = issueKey;
     publishNotice({
       context: "bootstrap",
       reason: "backend_resolution_failed",
-      details: platform.backendResolution.issue,
+      details: platform.backendResolution.issue.details,
+      code: platform.backendResolution.issue.code,
     });
   }, [platform.backendResolution, publishNotice]);
 
   const wsUrl = platform.backendResolution.ok
     ? platform.backendResolution.endpoints.terminalWsUrl
-    : "ws://127.0.0.1/invalid-endpoint";
+    : null;
 
   const connection = useConnectionCoordinator({
     createTransport: environment.createTransport,

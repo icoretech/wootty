@@ -1,4 +1,4 @@
-import type { FloatingControlMetadata } from "../../commands/floating-control-metadata-contract";
+import type { FloatingControlDescriptors } from "../../view/floating-controls/descriptors";
 
 export type FloatingControlsModel = {
   controlsOpen: boolean;
@@ -8,12 +8,5 @@ export type FloatingControlsModel = {
   fontSizeMax: number;
   defaultFontSize: number;
   isFullscreen: boolean;
-  metadata: {
-    reconnect: FloatingControlMetadata;
-    clear: FloatingControlMetadata;
-    decreaseFont: FloatingControlMetadata;
-    increaseFont: FloatingControlMetadata;
-    resetFont: FloatingControlMetadata;
-    fullscreen: FloatingControlMetadata;
-  };
+  metadata: FloatingControlDescriptors;
 };

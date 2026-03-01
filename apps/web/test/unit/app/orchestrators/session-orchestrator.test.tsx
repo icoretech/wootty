@@ -1,6 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { SessionsFetchResult } from "../../../../src/features/terminal/environment/terminal-environment-contract";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import type { Scheduler } from "../../../../src/features/terminal/platform/scheduler";
 import { useSessionOrchestrator } from "../../../../src/features/terminal/session/application/session-orchestrator";
@@ -8,12 +7,15 @@ import {
   LAST_SESSION_STORAGE_KEY,
   SESSION_HISTORY_STORAGE_KEY,
 } from "../../../../src/features/terminal/session/persistence/storage-keys";
+import type { SessionsFetchResult } from "../../../../src/features/terminal/session/protocol/sessions-fetch-contract";
 import { StorageDouble } from "../../../support/harness/storage-double";
 
 type SessionProbeProps = {
   localStorageRef: Storage;
   sessionStorageRef: Storage;
-  fetchSessions: () => Promise<SessionsFetchResult>;
+  fetchSessions: (options?: {
+    signal?: AbortSignal;
+  }) => Promise<SessionsFetchResult>;
 };
 
 const browserLikeScheduler: Scheduler = {
@@ -61,7 +63,9 @@ function SessionProbe({
         type="button"
         data-testid="refresh"
         onClick={() => {
-          void session.actions.refreshLiveSessions();
+          void session.actions.refreshLiveSessions({
+            trigger: "manual",
+          });
         }}
       >
         refresh
@@ -150,5 +154,94 @@ describe("session orchestrator", () => {
         "sessions array",
       );
     });
+  });
+
+  it("surfaces bootstrap error notices with stable issue codes", async () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    const fetchSessions = vi.fn(async () => {
+      return {
+        ok: false,
+        failure: {
+          source: "fetch",
+          reason: "bootstrap_error",
+          issue: "invalid backend endpoint",
+          issueCode: "socket_url_invalid_format",
+        },
+      } as const;
+    });
+
+    render(
+      <SessionProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        fetchSessions={fetchSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("refresh"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("notice").textContent).toContain(
+        "code=socket_url_invalid_format",
+      );
+    });
+  });
+
+  it("aborts stale refresh fetches when a newer refresh starts", async () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    const signals: AbortSignal[] = [];
+    let callCount = 0;
+    const fetchSessions = vi.fn(
+      async (options?: {
+        signal?: AbortSignal;
+      }): Promise<SessionsFetchResult> => {
+        const signal = options?.signal;
+        if (signal) {
+          signals.push(signal);
+        }
+        callCount += 1;
+        if (callCount === 1) {
+          return new Promise<SessionsFetchResult>((resolve) => {
+            signal?.addEventListener(
+              "abort",
+              () => {
+                resolve({
+                  ok: false,
+                  failure: {
+                    source: "lifecycle",
+                    reason: "request_aborted",
+                  },
+                });
+              },
+              { once: true },
+            );
+          });
+        }
+        return {
+          ok: true,
+          payload: {
+            sessions: [],
+          },
+        };
+      },
+    );
+
+    render(
+      <SessionProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        fetchSessions={fetchSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("refresh"));
+    fireEvent.click(screen.getByTestId("refresh"));
+
+    await waitFor(() => {
+      expect(signals.length).toBe(2);
+    });
+    expect(signals[0]?.aborted).toBe(true);
   });
 });
