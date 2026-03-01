@@ -48,8 +48,9 @@ type TransportLifecycleServiceDeps = {
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
     reasonCode?: TransportFailureReasonCode,
-    debugDetail?: string,
+    technicalDetail?: string,
     cause?: unknown,
+    noticeMessage?: string,
   ) => void;
   getState: () => TransportState;
   dispatchEvent: (event: TransportEvent) => void;

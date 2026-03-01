@@ -28,8 +28,9 @@ type UseTransportOrchestratorArgs = {
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
     reasonCode?: TransportFailureReasonCode,
-    debugDetail?: string,
+    technicalDetail?: string,
     cause?: unknown,
+    noticeMessage?: string,
   ) => void;
 };
 

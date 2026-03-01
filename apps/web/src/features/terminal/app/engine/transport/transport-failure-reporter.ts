@@ -17,8 +17,9 @@ type TransportFailureReporterDeps = {
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
     reasonCode?: TransportFailureReasonCode,
-    debugDetail?: string,
+    technicalDetail?: string,
     cause?: unknown,
+    noticeMessage?: string,
   ) => void;
 };
 
@@ -26,7 +27,7 @@ function socketFailureContext(
   source: SocketFailureSource,
   reasonCode?: TransportFailureReasonCode,
   code?: TerminalTransportFailureCode,
-  debugDetail?: string,
+  technicalDetail?: string,
 ): string {
   const contextParts: string[] = [source];
   if (reasonCode) {
@@ -35,8 +36,8 @@ function socketFailureContext(
   if (typeof code === "number" || typeof code === "string") {
     contextParts.push(`code=${code}`);
   }
-  if (typeof debugDetail === "string" && debugDetail.length > 0) {
-    contextParts.push(`detail=${debugDetail}`);
+  if (typeof technicalDetail === "string" && technicalDetail.length > 0) {
+    contextParts.push(`detail=${technicalDetail}`);
   }
   return contextParts.join(" ");
 }
@@ -57,16 +58,21 @@ export class TransportFailureReporter {
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
     reasonCode?: TransportFailureReasonCode,
-    debugDetail?: string,
+    technicalDetail?: string,
     cause?: unknown,
   ): void {
-    const context = socketFailureContext(source, reasonCode, code, debugDetail);
+    const context = socketFailureContext(
+      source,
+      reasonCode,
+      code,
+      technicalDetail,
+    );
     this.deps.dispatchSocketFailure(context);
 
-    const noticeKey = `${source}|${String(code ?? "")}|${reasonCode ?? ""}|${debugDetail ?? ""}`;
+    const noticeKey = `${source}|${String(code ?? "")}|${reasonCode ?? ""}|${technicalDetail ?? ""}`;
     const baseReason =
-      debugDetail && debugDetail.length > 0
-        ? debugDetail
+      technicalDetail && technicalDetail.length > 0
+        ? technicalDetail
         : (reasonCode ?? "transport failure");
     const nextNoticeState = notifyWithFailureThrottle({
       current: this.socketFailureNotice,
@@ -75,7 +81,14 @@ export class TransportFailureReporter {
       cooldownMs: SOCKET_FAILURE_NOTICE_COOLDOWN_MS,
       baseMessage: baseReason,
       notify: (message) => {
-        this.deps.onSocketFailure(source, code, reasonCode, message, cause);
+        this.deps.onSocketFailure(
+          source,
+          code,
+          reasonCode,
+          technicalDetail,
+          cause,
+          message,
+        );
       },
     });
     this.socketFailureNotice = nextNoticeState.next;

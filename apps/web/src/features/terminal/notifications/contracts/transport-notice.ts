@@ -14,5 +14,6 @@ export type TransportNotice = {
   source?: "error" | "close";
   code?: number | string;
   debugDetail?: string;
+  noticeMessage?: string;
   cause?: unknown;
 };

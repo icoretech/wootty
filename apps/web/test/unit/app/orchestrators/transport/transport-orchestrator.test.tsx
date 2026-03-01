@@ -75,6 +75,7 @@ describe("transport orchestrator", () => {
       "socket_failure",
       "pong timeout",
       undefined,
+      "pong timeout",
     );
   });
 
@@ -143,6 +144,7 @@ describe("transport orchestrator", () => {
       "socket_failure",
       "boom",
       undefined,
+      "boom",
     );
 
     act(() => {
@@ -155,8 +157,9 @@ describe("transport orchestrator", () => {
       "error",
       undefined,
       "socket_failure",
-      "boom (repeated 3 times)",
+      "boom",
       undefined,
+      "boom (repeated 3 times)",
     );
   });
 

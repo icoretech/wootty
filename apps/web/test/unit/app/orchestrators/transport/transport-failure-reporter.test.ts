@@ -31,6 +31,7 @@ describe("transport failure reporter", () => {
       "socket_failure",
       "broken pipe",
       undefined,
+      "broken pipe",
     );
     nowMs += 1000;
     reporter.report("close", 1006, "socket_failure", "broken pipe");
@@ -62,8 +63,9 @@ describe("transport failure reporter", () => {
       "error",
       undefined,
       "send_failed",
-      "send_failed (repeated 2 times)",
       undefined,
+      undefined,
+      "send_failed (repeated 2 times)",
     );
 
     reporter.reset();
@@ -75,8 +77,9 @@ describe("transport failure reporter", () => {
       "error",
       undefined,
       "send_failed",
-      "send_failed",
       undefined,
+      undefined,
+      "send_failed",
     );
   });
 });
