@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { redactTokenInUrlForNotice } from "../../../src/features/terminal/bootstrap/url/redact-token-in-url";
+import { redactTokenInUrlForNotice } from "../../../src/features/terminal/shared/sanitization/redact-token-in-url";
 
 describe("redact token in url", () => {
   it("redacts token query params for valid urls", () => {

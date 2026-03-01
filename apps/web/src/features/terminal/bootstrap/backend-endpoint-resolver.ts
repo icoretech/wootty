@@ -3,9 +3,8 @@ import type {
   TerminalBackendResolutionIssue,
 } from "../contracts/backend-resolution";
 import { TERMINAL_BACKEND_ROUTE } from "../protocol/generated-wire-contract";
-import { TERMINAL_AUTH_POLICY } from "./auth-policy";
+import { redactTokenInUrlForNotice } from "../shared/sanitization/redact-token-in-url";
 import { createBackendResolutionIssue } from "./url/backend-resolution-issue";
-import { redactTokenInUrlForNotice } from "./url/redact-token-in-url";
 import { resolveSocketUrl } from "./url/socket-url-resolution";
 
 function resolveSessionUrlFromSocket(
@@ -55,49 +54,9 @@ function deriveSessionsPath(socketPathname: string): string {
   return TERMINAL_BACKEND_ROUTE.SESSIONS_HTTP;
 }
 
-type SocketUrlMutationResult =
-  | { ok: true; socketUrl: string }
-  | { ok: false; issue: TerminalBackendResolutionIssue };
-
-function withAuthQueryParam(
-  socketUrl: string,
-  authToken?: string,
-): SocketUrlMutationResult {
-  if (TERMINAL_AUTH_POLICY.websocket !== "query_token_legacy") {
-    return {
-      ok: true,
-      socketUrl,
-    };
-  }
-  const normalized = authToken?.trim();
-  if (!normalized) {
-    return {
-      ok: true,
-      socketUrl,
-    };
-  }
-  try {
-    const parsed = new URL(socketUrl);
-    parsed.searchParams.set("token", normalized);
-    return {
-      ok: true,
-      socketUrl: parsed.toString(),
-    };
-  } catch {
-    return {
-      ok: false,
-      issue: createBackendResolutionIssue(
-        "socket_url_invalid_format",
-        `unable to apply auth token query param to websocket URL (${redactTokenInUrlForNotice(socketUrl)})`,
-      ),
-    };
-  }
-}
-
 export function resolveTerminalBackendEndpoints(
   windowRef: Window | null,
   envSocketUrl?: string,
-  authToken?: string,
 ): TerminalBackendResolution {
   const socketResolution = resolveSocketUrl(windowRef, envSocketUrl);
   if (!socketResolution.ok) {
@@ -107,17 +66,7 @@ export function resolveTerminalBackendEndpoints(
     };
   }
 
-  const authSocketResolution = withAuthQueryParam(
-    socketResolution.socketUrl,
-    authToken,
-  );
-  if (!authSocketResolution.ok) {
-    return {
-      ok: false,
-      issue: authSocketResolution.issue,
-    };
-  }
-  const terminalWsUrl = authSocketResolution.socketUrl;
+  const terminalWsUrl = socketResolution.socketUrl;
   const sessionsResolution = resolveSessionUrlFromSocket(terminalWsUrl);
   if (!sessionsResolution.ok) {
     return {
