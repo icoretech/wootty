@@ -3,7 +3,7 @@ import {
   type BootstrapNotice,
   NOTICE_BOOTSTRAP_ISSUE_CODES,
   type NoticeBootstrapIssueCode,
-} from "../notice-contract";
+} from "../contracts/bootstrap-notice";
 
 function toNoticeBootstrapIssueCode(
   code?: BackendResolutionIssueCode,

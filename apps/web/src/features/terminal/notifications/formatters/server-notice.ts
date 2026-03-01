@@ -1,4 +1,4 @@
-import type { ServerNotice } from "../notice-contract";
+import type { ServerNotice } from "../contracts/server-notice";
 
 type KnownServerNoticeReason = Exclude<
   ServerNotice["reason"],

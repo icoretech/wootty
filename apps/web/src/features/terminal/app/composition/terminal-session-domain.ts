@@ -10,7 +10,10 @@ import {
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
-import type { NoticePublisher } from "../../notifications/notice-contract";
+import type {
+  NoticePublisher,
+  SessionNoticePublisher,
+} from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import {
@@ -94,7 +97,7 @@ function useControllerUiState(
 
 function useBackendResolutionNotice(
   backendResolution: TerminalPlatformContext["backendResolution"],
-  publishNotice: NoticePublisher,
+  publishNotice: SessionNoticePublisher,
 ): void {
   const lastBootstrapIssueRef = useRef<string | null>(null);
 
