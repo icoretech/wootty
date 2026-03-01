@@ -46,6 +46,8 @@ type TerminalViewModels = {
   statusBarModel: StatusBarModel;
 };
 
+const FLOATING_CONTROL_DESCRIPTORS = buildFloatingControlDescriptors();
+
 export function buildTerminalViewModels(
   input: TerminalViewModelInput,
 ): TerminalViewModels {
@@ -84,7 +86,7 @@ export function buildTerminalViewModels(
     fontSizeMax: FONT_SIZE_MAX,
     defaultFontSize: DEFAULT_FONT_SIZE,
     isFullscreen: input.isFullscreen,
-    metadata: buildFloatingControlDescriptors(),
+    metadata: FLOATING_CONTROL_DESCRIPTORS,
   };
 
   const sessionMenuModel: SessionMenuModel = {

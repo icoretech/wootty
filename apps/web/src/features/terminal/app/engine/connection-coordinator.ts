@@ -240,6 +240,19 @@ export function useConnectionCoordinator({
     };
   }, [connect, dispose, runtimeBridge.terminalReady, transportEnabled]);
 
+  const previousWsUrlRef = useRef<string | null>(wsUrl);
+  useEffect(() => {
+    if (!runtimeBridge.terminalReady || !transportEnabled) {
+      previousWsUrlRef.current = wsUrl;
+      return;
+    }
+    if (previousWsUrlRef.current === wsUrl) {
+      return;
+    }
+    previousWsUrlRef.current = wsUrl;
+    connect();
+  }, [connect, runtimeBridge.terminalReady, transportEnabled, wsUrl]);
+
   useEffect(() => {
     if (shouldClearStatusOverride(statusFlag, transportStatus)) {
       setStatusFlag(null);

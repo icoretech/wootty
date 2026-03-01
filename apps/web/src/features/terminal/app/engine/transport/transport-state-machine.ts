@@ -18,7 +18,7 @@ export const initialTransportState: TransportState = {
   closeIntent: "normal",
 };
 
-type TransportEvent =
+export type TransportEvent =
   | { type: "set-close-intent"; intent: SocketCloseIntent }
   | { type: "set-connecting"; reconnecting: boolean }
   | { type: "connected" }
