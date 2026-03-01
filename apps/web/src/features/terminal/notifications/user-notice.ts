@@ -159,25 +159,12 @@ export const NOTICE_CONTEXTS = Object.freeze(
   Object.keys(NOTICE_FORMATTERS) as NoticeDetails["context"][],
 );
 
+function formatNoticeByContext<Context extends NoticeDetails["context"]>(
+  details: Extract<NoticeDetails, { context: Context }>,
+): string {
+  return NOTICE_FORMATTERS[details.context](details);
+}
+
 export function toUserNotice(details: NoticeDetails): string {
-  switch (details.context) {
-    case "sessions_refresh":
-      return NOTICE_FORMATTERS.sessions_refresh(details);
-    case "fullscreen":
-      return NOTICE_FORMATTERS.fullscreen(details);
-    case "runtime":
-      return NOTICE_FORMATTERS.runtime(details);
-    case "protocol":
-      return NOTICE_FORMATTERS.protocol(details);
-    case "transport":
-      return NOTICE_FORMATTERS.transport(details);
-    case "server":
-      return NOTICE_FORMATTERS.server(details);
-    case "bootstrap":
-      return NOTICE_FORMATTERS.bootstrap(details);
-    case "storage":
-      return NOTICE_FORMATTERS.storage(details);
-    default:
-      return assertNever(details);
-  }
+  return formatNoticeByContext(details as never);
 }
