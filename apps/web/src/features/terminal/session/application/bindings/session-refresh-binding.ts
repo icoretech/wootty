@@ -47,6 +47,7 @@ export function useSessionRefreshBinding({
     let refreshTimer: SchedulerTimerHandle | null = null;
     let consecutiveFailures = 0;
     let circuitOpen = false;
+    let terminalRefreshFailureLatched = false;
     let activeRefreshController: AbortController | null = null;
 
     const scheduleNext = () => {
@@ -98,6 +99,7 @@ export function useSessionRefreshBinding({
 
         if (refreshResult.ok) {
           consecutiveFailures = 0;
+          terminalRefreshFailureLatched = false;
         } else {
           if (
             refreshResult.failure.reason === "request_aborted" ||
@@ -105,6 +107,11 @@ export function useSessionRefreshBinding({
           ) {
             return;
           }
+          if (refreshResult.failure.reason === "bootstrap_error") {
+            terminalRefreshFailureLatched = true;
+            return;
+          }
+          terminalRefreshFailureLatched = false;
           consecutiveFailures += 1;
           if (consecutiveFailures >= SESSION_REFRESH_FAILURE_LIMIT) {
             openCircuitBreaker();
@@ -115,7 +122,7 @@ export function useSessionRefreshBinding({
           activeRefreshController = null;
         }
         refreshInFlight = false;
-        if (!circuitOpen) {
+        if (!circuitOpen && !terminalRefreshFailureLatched) {
           scheduleNext();
         }
       }

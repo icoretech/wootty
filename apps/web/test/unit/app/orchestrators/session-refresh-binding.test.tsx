@@ -88,4 +88,46 @@ describe("session refresh binding delay policy", () => {
       vi.useRealTimers();
     }
   }, 200_000);
+
+  it("stops polling on terminal bootstrap failures and resumes after resolver change", async () => {
+    vi.useFakeTimers();
+    try {
+      const bootstrapFailureRefresh = vi.fn(async () => {
+        return {
+          ok: false,
+          failure: {
+            source: "fetch",
+            reason: "bootstrap_error",
+            issue: {
+              code: "socket_url_invalid_format",
+              details: "invalid endpoint",
+            },
+          },
+        } as const;
+      });
+
+      const { rerender } = render(
+        <SessionRefreshBindingProbe
+          refreshLiveSessions={bootstrapFailureRefresh}
+        />,
+      );
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(bootstrapFailureRefresh).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(nextSessionRefreshDelayMs(2) * 3);
+      expect(bootstrapFailureRefresh).toHaveBeenCalledTimes(1);
+
+      const recoveredRefresh = vi.fn(async () => ({ ok: true }) as const);
+      rerender(
+        <SessionRefreshBindingProbe refreshLiveSessions={recoveredRefresh} />,
+      );
+
+      await vi.advanceTimersByTimeAsync(0);
+      expect(recoveredRefresh).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(nextSessionRefreshDelayMs(0));
+      expect(recoveredRefresh).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
