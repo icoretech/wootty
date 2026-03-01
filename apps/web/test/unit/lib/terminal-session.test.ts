@@ -148,6 +148,7 @@ describe("terminal-session helpers", () => {
       failure: {
         reason: "unsupported_type",
         detail: "unsupported_message_type",
+        rawType: "future",
       },
     });
     expect(parseServerMessageWithReason("not-json")).toEqual({

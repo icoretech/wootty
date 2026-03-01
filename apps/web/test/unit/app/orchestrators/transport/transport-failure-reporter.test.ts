@@ -45,6 +45,15 @@ describe("transport failure reporter", () => {
       technicalDetail: "broken pipe",
     });
     expect(onSocketFailure).toHaveBeenCalledTimes(1);
+
+    nowMs += 1000;
+    reporter.report({
+      source: "close",
+      code: 1006,
+      reasonCode: "socket_failure",
+      technicalDetail: "connection reset by peer",
+    });
+    expect(onSocketFailure).toHaveBeenCalledTimes(1);
   });
 
   it("resets throttle state and emits repeated marker after cooldown", () => {

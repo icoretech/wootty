@@ -9,7 +9,11 @@ export const NOTICE_PROTOCOL_FAILURE_DETAILS =
 export type NoticeProtocolFailureDetail = TerminalProtocolFailureDetail;
 
 export type ProtocolNotice =
-  | { context: "protocol"; reason: "unsupported_type" }
+  | {
+      context: "protocol";
+      reason: "unsupported_type";
+      rawType?: string;
+    }
   | {
       context: "protocol";
       reason: "malformed_payload";

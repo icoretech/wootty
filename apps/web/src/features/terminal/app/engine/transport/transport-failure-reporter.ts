@@ -33,6 +33,16 @@ function socketFailureContext(failure: TransportFailure): string {
   return contextParts.join(" ");
 }
 
+function stableFailureCode(code: TransportFailure["code"]): string {
+  if (typeof code === "number") {
+    return String(code);
+  }
+  if (typeof code === "string") {
+    return code.trim().toLowerCase().slice(0, 64);
+  }
+  return "";
+}
+
 export class TransportFailureReporter {
   private readonly deps: TransportFailureReporterDeps;
   private socketFailureNotice: FailureNoticeState = null;
@@ -55,7 +65,11 @@ export class TransportFailureReporter {
     const context = socketFailureContext(failure);
     this.deps.dispatchSocketFailure(context);
 
-    const noticeKey = `${failure.source}|${String(failure.code ?? "")}|${failure.reasonCode ?? ""}|${failure.technicalDetail ?? ""}`;
+    const noticeKey = [
+      failure.source,
+      failure.reasonCode ?? "socket_failure",
+      stableFailureCode(failure.code),
+    ].join("|");
     const baseReason =
       failure.technicalDetail && failure.technicalDetail.length > 0
         ? failure.technicalDetail
