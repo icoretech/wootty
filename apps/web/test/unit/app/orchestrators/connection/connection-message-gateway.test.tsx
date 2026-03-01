@@ -18,7 +18,7 @@ function createGatewayArgs() {
     setStatusFlag: vi.fn(),
     applyReadySession: vi.fn(),
     clearMissingSession: vi.fn(),
-    requestSessionRefresh: vi.fn(async () => ({ ok: true as const })),
+    requestTransportRefresh: vi.fn(async () => ({ ok: true as const })),
     setSessionMode: vi.fn(),
     writeServerError: vi.fn(),
     flushAfterReady: vi.fn(),
@@ -74,9 +74,7 @@ describe("connection message gateway", () => {
     expect(args.applyReadySession).toHaveBeenCalledWith("session-1", false);
     expect(args.setStatusFlag).toHaveBeenCalledWith(null);
     expect(args.flushAfterReady).toHaveBeenCalledOnce();
-    expect(args.requestSessionRefresh).toHaveBeenCalledWith({
-      trigger: "transport_event",
-    });
+    expect(args.requestTransportRefresh).toHaveBeenCalledOnce();
   });
 
   it("maps known server errors through policy callbacks", () => {
@@ -102,8 +100,6 @@ describe("connection message gateway", () => {
     });
     expect(args.clearMissingSession).toHaveBeenCalledOnce();
     expect(args.setStatusFlag).toHaveBeenCalledWith("session_not_found");
-    expect(args.requestSessionRefresh).toHaveBeenCalledWith({
-      trigger: "transport_event",
-    });
+    expect(args.requestTransportRefresh).toHaveBeenCalledOnce();
   });
 });

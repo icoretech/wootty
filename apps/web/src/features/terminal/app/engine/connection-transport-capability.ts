@@ -11,10 +11,7 @@ import type {
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
-import type {
-  SessionRefreshRequest,
-  SessionRefreshResult,
-} from "../../session/application/session-refresh-result";
+import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
 import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
 import type { ConnectionStatusFlag } from "./protocol/connection-status-projector";
 import type { TransportFailureSink } from "./transport/transport-failure-contract";
@@ -35,9 +32,7 @@ type UseConnectionTransportCapabilityArgs = {
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  requestSessionRefresh: (
-    request: SessionRefreshRequest,
-  ) => Promise<SessionRefreshResult>;
+  requestTransportRefresh: () => Promise<SessionRefreshResult>;
   writeServerError: (message: string) => void;
   flushAfterReady: () => void;
   writeOutputAndTrackBytes: (data: string) => void;
@@ -60,7 +55,7 @@ export function useConnectionTransportCapability({
   setSessionMode,
   applyReadySession,
   clearMissingSession,
-  requestSessionRefresh,
+  requestTransportRefresh,
   writeServerError,
   flushAfterReady,
   writeOutputAndTrackBytes,
@@ -90,7 +85,7 @@ export function useConnectionTransportCapability({
     setStatusFlag,
     applyReadySession,
     clearMissingSession,
-    requestSessionRefresh,
+    requestTransportRefresh,
     setSessionMode,
     writeServerError,
     flushAfterReady,

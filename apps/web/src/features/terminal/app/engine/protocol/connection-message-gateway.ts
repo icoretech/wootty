@@ -5,10 +5,7 @@ import { toServerPolicyNotice } from "../../../notifications/mappers/server-erro
 import type { ConnectionNoticePublisher } from "../../../notifications/notice-contract";
 import { resolveServerErrorPolicy } from "../../../protocol/policies/server-error-policy";
 import type { TerminalServerErrorCode } from "../../../protocol/server-error-codes";
-import type {
-  SessionRefreshRequest,
-  SessionRefreshResult,
-} from "../../../session/application/session-refresh-result";
+import type { SessionRefreshResult } from "../../../session/application/session-refresh-result";
 import { handleIncomingServerMessage } from "./connection-message-policy";
 import type { ConnectionStatusFlag } from "./connection-status-projector";
 
@@ -17,9 +14,7 @@ type UseConnectionMessageGatewayArgs = {
   setStatusFlag: (next: ConnectionStatusFlag | null) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  requestSessionRefresh: (
-    request: SessionRefreshRequest,
-  ) => Promise<SessionRefreshResult>;
+  requestTransportRefresh: () => Promise<SessionRefreshResult>;
   setSessionMode: (mode: AttachMode) => void;
   writeServerError: (message: string) => void;
   flushAfterReady: () => void;
@@ -37,7 +32,7 @@ export function useConnectionMessageGateway({
   setStatusFlag,
   applyReadySession,
   clearMissingSession,
-  requestSessionRefresh,
+  requestTransportRefresh,
   setSessionMode,
   writeServerError,
   flushAfterReady,
@@ -65,15 +60,13 @@ export function useConnectionMessageGateway({
         setStatusFlag(statusFlag);
       }
       if (policy.refreshSessions) {
-        void requestSessionRefresh({
-          trigger: "transport_event",
-        });
+        void requestTransportRefresh();
       }
     },
     [
       clearMissingSession,
       publishNotice,
-      requestSessionRefresh,
+      requestTransportRefresh,
       setSessionMode,
       setStatusFlag,
       writeServerError,
@@ -100,9 +93,7 @@ export function useConnectionMessageGateway({
           applyReadySession(readySessionId, readOnly);
           setStatusFlag(null);
           flushAfterReady();
-          void requestSessionRefresh({
-            trigger: "transport_event",
-          });
+          void requestTransportRefresh();
         },
         onOutput: ({ data }) => {
           writeOutputAndTrackBytes(data);
@@ -125,7 +116,7 @@ export function useConnectionMessageGateway({
       handleServerError,
       markPong,
       publishNotice,
-      requestSessionRefresh,
+      requestTransportRefresh,
       setStatusFlag,
       writeExit,
       writeOutputAndTrackBytes,

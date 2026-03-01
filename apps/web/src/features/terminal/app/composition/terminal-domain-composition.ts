@@ -55,7 +55,7 @@ export function useTerminalDomainController({
     setSessionMode: session.sessionActions.setSessionMode,
     applyReadySession: session.sessionActions.applyReadySession,
     clearMissingSession: session.sessionActions.clearMissingSession,
-    requestSessionRefresh: session.sessionActions.requestSessionRefresh,
+    requestTransportRefresh: session.sessionActions.requestTransportRefresh,
     scheduler: platform.scheduler,
   });
   const commands = useUiBindingsController({

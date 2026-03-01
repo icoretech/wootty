@@ -35,7 +35,7 @@ describe("connection coordinator", () => {
         setSessionMode: vi.fn(),
         applyReadySession: vi.fn(),
         clearMissingSession: vi.fn(),
-        requestSessionRefresh: async () => ({ ok: true }),
+        requestTransportRefresh: async () => ({ ok: true }),
         scheduler: browserScheduler,
       });
     });
