@@ -62,6 +62,26 @@ describe("browser transport adapter", () => {
     expect(transport.readyState).toBe(TRANSPORT_READY_STATE.CLOSED);
   });
 
+  it("maps closing and unknown native ready states to transport compatibility states", () => {
+    const transport = createBrowserTransport(
+      "ws://localhost",
+      socketHarness.createSocket,
+    );
+    const raw = socketHarness.instances[0];
+    if (!raw) {
+      throw new Error("browser transport socket was not created");
+    }
+
+    raw.readyState = BrowserSocketMock.CLOSING;
+    expect(transport.readyState).toBe(TRANSPORT_READY_STATE.CLOSING);
+
+    raw.readyState = BrowserSocketMock.CLOSED;
+    expect(transport.readyState).toBe(TRANSPORT_READY_STATE.CLOSED);
+
+    raw.readyState = 99;
+    expect(transport.readyState).toBe(TRANSPORT_READY_STATE.CLOSED);
+  });
+
   it("normalizes malformed message and close events", () => {
     const transport = createBrowserTransport(
       "ws://localhost",
