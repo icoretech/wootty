@@ -1,5 +1,5 @@
-import type { ConnectionStatus } from "../../../contracts/connection";
-import { assertNever } from "../../../lib/assert-never";
+import type { ConnectionStatus } from "../../../../contracts/connection";
+import { assertNever } from "../../../../lib/assert-never";
 
 export type SocketCloseIntent = "normal" | "fresh" | "manual" | "dispose";
 

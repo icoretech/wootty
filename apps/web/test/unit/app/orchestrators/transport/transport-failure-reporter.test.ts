@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TransportFailureReporter } from "../../../../../src/features/terminal/app/engine/transport/transport-failure-reporter";
+import { TransportFailureReporter } from "../../../../../src/features/terminal/app/engine/transport/reliability/transport-failure-reporter";
 import type { Scheduler } from "../../../../../src/features/terminal/platform/scheduler";
 
 describe("transport failure reporter", () => {

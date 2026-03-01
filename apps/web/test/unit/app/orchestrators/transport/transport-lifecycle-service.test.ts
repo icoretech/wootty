@@ -1,20 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TransportFailure } from "../../../../../src/features/terminal/app/engine/transport/transport-failure-contract";
+import type { TransportFailure } from "../../../../../src/features/terminal/app/engine/transport/contracts/transport-failure-contract";
 import {
   type TransportHandlers,
   TransportLifecycleService,
-} from "../../../../../src/features/terminal/app/engine/transport/transport-lifecycle-service";
+} from "../../../../../src/features/terminal/app/engine/transport/lifecycle/transport-lifecycle-service";
 import {
   reconnectDelayMs,
   TERMINAL_CLOSE_CODE,
   TERMINAL_HEARTBEAT_MS,
-} from "../../../../../src/features/terminal/app/engine/transport/transport-policy";
+} from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
 import {
   initialTransportState,
   reduceTransportState,
   type TransportEvent,
   type TransportState,
-} from "../../../../../src/features/terminal/app/engine/transport/transport-state-machine";
+} from "../../../../../src/features/terminal/app/engine/transport/state/transport-state-machine";
 import { createPingMessage } from "../../../../../src/features/terminal/protocol/terminal-client-messages";
 import { FakeScheduler } from "../../../../support/harness/fake-scheduler";
 import { FakeTransport } from "../../../../support/harness/fake-transport";

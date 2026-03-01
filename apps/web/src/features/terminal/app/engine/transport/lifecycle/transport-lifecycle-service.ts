@@ -3,28 +3,28 @@ import type {
   TerminalTransportCloseEvent,
   TerminalTransportErrorEvent,
   TerminalTransportMessageEvent,
-} from "../../../contracts/transport/transport";
-import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
-import type { Scheduler } from "../../../platform/scheduler";
-import { createPingMessage } from "../../../protocol/terminal-client-messages";
-import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
-import { TransportCommandExecutor } from "./transport-command-executor";
-import {
-  type TransportBootstrapFailureReasonCode,
-  TransportConnectionBootstrap,
-} from "./transport-connection-bootstrap";
-import type { TransportFailureSink } from "./transport-failure-contract";
-import { TransportFailureReporter } from "./transport-failure-reporter";
-import { TransportHeartbeatMonitor } from "./transport-heartbeat-monitor";
-import { TERMINAL_CLOSE_CODE } from "./transport-policy";
-import { TransportReconnectController } from "./transport-reconnect-controller";
-import { resolveTransportClosePlan } from "./transport-recovery-plan";
-import { TransportSocketSession } from "./transport-socket-session";
+} from "../../../../contracts/transport/transport";
+import { TRANSPORT_READY_STATE } from "../../../../contracts/transport/transport";
+import type { Scheduler } from "../../../../platform/scheduler";
+import { createPingMessage } from "../../../../protocol/terminal-client-messages";
+import type { TerminalClientMessage } from "../../../../protocol/terminal-wire-schema";
+import type { TransportFailureSink } from "../contracts/transport-failure-contract";
+import { TransportFailureReporter } from "../reliability/transport-failure-reporter";
+import { TransportHeartbeatMonitor } from "../reliability/transport-heartbeat-monitor";
+import { TransportReconnectController } from "../reliability/transport-reconnect-controller";
+import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
+import { resolveTransportClosePlan } from "../state/transport-recovery-plan";
 import type {
   SocketCloseIntent,
   TransportEvent,
   TransportState,
-} from "./transport-state-machine";
+} from "../state/transport-state-machine";
+import {
+  type TransportBootstrapFailureReasonCode,
+  TransportConnectionBootstrap,
+} from "../transport-connection-bootstrap";
+import { TransportCommandExecutor } from "./transport-command-executor";
+import { TransportSocketSession } from "./transport-socket-session";
 
 export type TransportHandlers = {
   onOpen: () => void;

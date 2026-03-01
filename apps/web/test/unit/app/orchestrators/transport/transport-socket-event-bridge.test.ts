@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TransportSocketEventBridge } from "../../../../../src/features/terminal/app/engine/transport/transport-socket-event-bridge";
+import { TransportSocketEventBridge } from "../../../../../src/features/terminal/app/engine/transport/lifecycle/transport-socket-event-bridge";
 import {
   type TerminalTransport,
   type TerminalTransportEventType,

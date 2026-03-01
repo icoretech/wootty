@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   initialTransportState,
   reduceTransportState,
-} from "../../../../../src/features/terminal/app/engine/transport/transport-state-machine";
+} from "../../../../../src/features/terminal/app/engine/transport/state/transport-state-machine";
 
 describe("transport state machine", () => {
   it("tracks reconnect scheduling and reset on open", () => {

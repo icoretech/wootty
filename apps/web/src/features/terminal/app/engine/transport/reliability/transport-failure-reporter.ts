@@ -1,12 +1,12 @@
-import type { Scheduler } from "../../../platform/scheduler";
+import type { Scheduler } from "../../../../platform/scheduler";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
-} from "../../../shared/reliability/failure-notice-throttle";
+} from "../../../../shared/reliability/failure-notice-throttle";
 import type {
   TransportFailure,
   TransportFailureSink,
-} from "./transport-failure-contract";
+} from "../contracts/transport-failure-contract";
 
 const SOCKET_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
 

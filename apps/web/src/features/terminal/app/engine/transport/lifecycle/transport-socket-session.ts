@@ -1,5 +1,5 @@
-import type { TerminalTransport } from "../../../contracts/transport/transport";
-import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
+import type { TerminalTransport } from "../../../../contracts/transport/transport";
+import { TRANSPORT_READY_STATE } from "../../../../contracts/transport/transport";
 import {
   TransportSocketEventBridge,
   type TransportSocketEventHandlers,

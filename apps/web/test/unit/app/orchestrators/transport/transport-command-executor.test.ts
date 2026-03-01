@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { TransportCommandExecutor } from "../../../../../src/features/terminal/app/engine/transport/transport-command-executor";
-import { TERMINAL_CLOSE_CODE } from "../../../../../src/features/terminal/app/engine/transport/transport-policy";
+import { TransportCommandExecutor } from "../../../../../src/features/terminal/app/engine/transport/lifecycle/transport-command-executor";
+import { TERMINAL_CLOSE_CODE } from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
 import type {
   SocketCloseIntent,
   TransportEvent,
-} from "../../../../../src/features/terminal/app/engine/transport/transport-state-machine";
+} from "../../../../../src/features/terminal/app/engine/transport/state/transport-state-machine";
 import {
   type TerminalTransport,
   TRANSPORT_READY_STATE,

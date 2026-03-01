@@ -2,17 +2,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { TerminalTransport } from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
-import type { TransportFailureSink } from "./transport-failure-contract";
+import type { TransportFailureSink } from "./contracts/transport-failure-contract";
 import {
   type TransportHandlers,
   TransportLifecycleService,
-} from "./transport-lifecycle-service";
+} from "./lifecycle/transport-lifecycle-service";
 import {
   initialTransportState,
   reduceTransportState,
   type TransportEvent,
   type TransportState,
-} from "./transport-state-machine";
+} from "./state/transport-state-machine";
 
 type UseTransportOrchestratorArgs = {
   createTransport: (url: string) => TerminalTransport;

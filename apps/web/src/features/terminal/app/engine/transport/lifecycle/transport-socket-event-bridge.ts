@@ -3,7 +3,7 @@ import type {
   TerminalTransportCloseEvent,
   TerminalTransportErrorEvent,
   TerminalTransportMessageEvent,
-} from "../../../contracts/transport/transport";
+} from "../../../../contracts/transport/transport";
 
 export type TransportSocketEventHandlers = {
   onOpen: () => void;
