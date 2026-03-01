@@ -36,7 +36,7 @@ function fetchSessionsFromEndpoint(
       if (body.trim().length === 0) {
         return {
           ok: true as const,
-          payload: null,
+          payload: { sessions: [] },
         };
       }
 

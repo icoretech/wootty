@@ -1,12 +1,5 @@
-import type { FloatingControlDescriptors } from "../commands/floating-controls/catalog";
+import type { FloatingControlPolicyState } from "../commands/floating-controls/contracts";
 
 export type FloatingControlsModel = {
   controlsOpen: boolean;
-  terminalReady: boolean;
-  fontSize: number;
-  fontSizeMin: number;
-  fontSizeMax: number;
-  defaultFontSize: number;
-  isFullscreen: boolean;
-  metadata: FloatingControlDescriptors;
-};
+} & FloatingControlPolicyState;

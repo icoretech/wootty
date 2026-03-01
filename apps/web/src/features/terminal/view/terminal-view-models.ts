@@ -1,4 +1,3 @@
-import { FLOATING_CONTROL_DESCRIPTORS } from "../commands/floating-controls/catalog";
 import type { ConnectionStatus } from "../contracts/connection";
 import {
   DEFAULT_FONT_SIZE,
@@ -84,7 +83,6 @@ export function buildTerminalViewModels(
     fontSizeMax: FONT_SIZE_MAX,
     defaultFontSize: DEFAULT_FONT_SIZE,
     isFullscreen: input.isFullscreen,
-    metadata: FLOATING_CONTROL_DESCRIPTORS,
   };
 
   const sessionMenuModel: SessionMenuModel = {

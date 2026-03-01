@@ -86,4 +86,24 @@ describe("sessions client", () => {
       },
     });
   });
+
+  it("maps empty successful payloads to an empty sessions envelope", async () => {
+    const fetchMock = vi.fn(async () => {
+      return {
+        ok: true,
+        text: async () => "   ",
+      } as const;
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = createBrowserSessionsClient(() => ({ token: "secret" }));
+    const result = await client(SESSIONS_ENDPOINT);
+
+    expect(result).toEqual({
+      ok: true,
+      payload: {
+        sessions: [],
+      },
+    });
+  });
 });
