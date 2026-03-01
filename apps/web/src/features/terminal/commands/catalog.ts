@@ -1,9 +1,18 @@
 import { COMMAND_MANIFEST } from "./definitions/command-manifest";
 
-type CommandCatalogEntry = Pick<
-  (typeof COMMAND_MANIFEST)[number],
+type RuntimeCommandCatalogEntry = Pick<
+  Extract<(typeof COMMAND_MANIFEST)[number], { handler: "runtime" }>,
   "id" | "handler" | "shortcutCode"
 >;
+
+type ViewportCommandCatalogEntry = Pick<
+  Extract<(typeof COMMAND_MANIFEST)[number], { handler: "viewport" }>,
+  "id" | "handler" | "shortcutCode"
+>;
+
+type CommandCatalogEntry =
+  | RuntimeCommandCatalogEntry
+  | ViewportCommandCatalogEntry;
 
 export const COMMAND_CATALOG = Object.freeze(
   COMMAND_MANIFEST.map((entry) => {
