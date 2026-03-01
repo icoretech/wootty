@@ -1,4 +1,4 @@
-import type { FloatingControlDescriptors } from "../commands/floating-controls/descriptors";
+import type { FloatingControlDescriptors } from "../commands/floating-controls/catalog";
 
 export type FloatingControlsModel = {
   controlsOpen: boolean;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FLOATING_CONTROL_REGISTRY } from "../../../../src/features/terminal/commands/floating-controls/registry";
+import { FLOATING_CONTROL_REGISTRY } from "../../../../src/features/terminal/commands/floating-controls/catalog";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../../src/features/terminal/commands/viewport-commands";
 

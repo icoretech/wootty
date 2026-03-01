@@ -1,4 +1,4 @@
-import { buildFloatingControlDescriptors } from "../commands/floating-controls/descriptors";
+import { FLOATING_CONTROL_DESCRIPTORS } from "../commands/floating-controls/catalog";
 import type { ConnectionStatus } from "../contracts/connection";
 import {
   DEFAULT_FONT_SIZE,
@@ -45,8 +45,6 @@ type TerminalViewModels = {
   sessionMenuModel: SessionMenuModel;
   statusBarModel: StatusBarModel;
 };
-
-const FLOATING_CONTROL_DESCRIPTORS = buildFloatingControlDescriptors();
 
 export function buildTerminalViewModels(
   input: TerminalViewModelInput,
