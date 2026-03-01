@@ -1,10 +1,7 @@
 import type { TerminalTransport } from "../../../../contracts/transport/transport";
 import { TRANSPORT_READY_STATE } from "../../../../contracts/transport/transport";
 import type { SocketCloseIntent } from "../state/transport-state-machine";
-import {
-  TransportSocketEventBridge,
-  type TransportSocketEventHandlers,
-} from "./transport-socket-event-bridge";
+import type { TransportSocketEventHandlers } from "./transport-socket-event-bridge";
 
 type ReleasedSocket = {
   released: boolean;
@@ -12,15 +9,10 @@ type ReleasedSocket = {
 };
 
 export class TransportSocketSession {
-  private readonly eventBridge: TransportSocketEventBridge;
   private socket: TerminalTransport | null = null;
   private detachListeners: (() => void) | null = null;
   private generation = 0;
   private closeIntent: SocketCloseIntent = "normal";
-
-  constructor(eventBridge = new TransportSocketEventBridge()) {
-    this.eventBridge = eventBridge;
-  }
 
   current(): TerminalTransport | null {
     return this.socket;
@@ -44,7 +36,7 @@ export class TransportSocketSession {
     this.clear();
     this.generation += 1;
     this.socket = socket;
-    this.detachListeners = this.eventBridge.bind(socket, handlers);
+    this.detachListeners = this.bindSocketHandlers(socket, handlers);
     return this.generation;
   }
 
@@ -95,5 +87,21 @@ export class TransportSocketSession {
     }
     this.socket = null;
     this.closeIntent = "normal";
+  }
+
+  private bindSocketHandlers(
+    socket: TerminalTransport,
+    handlers: TransportSocketEventHandlers,
+  ): () => void {
+    socket.addEventListener("open", handlers.onOpen);
+    socket.addEventListener("message", handlers.onMessage);
+    socket.addEventListener("close", handlers.onClose);
+    socket.addEventListener("error", handlers.onError);
+    return () => {
+      socket.removeEventListener("open", handlers.onOpen);
+      socket.removeEventListener("message", handlers.onMessage);
+      socket.removeEventListener("close", handlers.onClose);
+      socket.removeEventListener("error", handlers.onError);
+    };
   }
 }

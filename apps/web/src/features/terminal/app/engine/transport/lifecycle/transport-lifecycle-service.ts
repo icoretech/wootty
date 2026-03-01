@@ -10,12 +10,12 @@ import { createPingMessage } from "../../../../protocol/terminal-client-messages
 import type { TerminalClientMessage } from "../../../../protocol/terminal-wire-schema";
 import type { TransportFailureSink } from "../contracts/transport-failure-contract";
 import { TransportSocketReliabilityCoordinator } from "../reliability/transport-socket-reliability-coordinator";
+import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
 import type {
   TransportEvent,
   TransportState,
 } from "../state/transport-state-machine";
 import { TransportConnectionBootstrap } from "../transport-connection-bootstrap";
-import { TransportLifecycleCommandPolicy } from "./transport-lifecycle-command-policy";
 import { TransportSocketSession } from "./transport-socket-session";
 
 export type TransportHandlers = {
@@ -24,9 +24,9 @@ export type TransportHandlers = {
 };
 
 export type TransportLifecycleRuntimeRef = {
-  wsUrl: string | null;
-  handlers: TransportHandlers;
-  hasSessionContext: boolean;
+  wsUrl: () => string | null;
+  handlers: () => TransportHandlers;
+  hasSessionContext: () => boolean;
   onSocketFailure: TransportFailureSink;
 };
 
@@ -42,13 +42,10 @@ export class TransportLifecycleService {
   private readonly deps: TransportLifecycleServiceDeps;
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly reliability: TransportSocketReliabilityCoordinator;
-  private readonly commandPolicy: TransportLifecycleCommandPolicy;
   private readonly socketSession: TransportSocketSession;
-  private runtime: TransportLifecycleRuntimeRef;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
-    this.runtime = deps.runtime;
     this.connectionBootstrap = new TransportConnectionBootstrap({
       createTransport: this.deps.createTransport,
     });
@@ -57,7 +54,7 @@ export class TransportLifecycleService {
       scheduler: this.deps.scheduler,
       dispatchEvent: this.deps.dispatchEvent,
       onSocketFailure: (failure) => {
-        this.runtime.onSocketFailure(failure);
+        this.deps.runtime.onSocketFailure(failure);
       },
       connect: () => {
         this.connect();
@@ -70,24 +67,6 @@ export class TransportLifecycleService {
       },
       closeActive: (code, reason) => {
         return this.socketSession.closeActive(code, reason);
-      },
-    });
-    this.commandPolicy = new TransportLifecycleCommandPolicy({
-      dispatchEvent: this.deps.dispatchEvent,
-      clearLifecycleTimers: () => {
-        this.reliability.clearLifecycleTimers();
-      },
-      closeActive: (code, reason, closeIntent) => {
-        return this.socketSession.closeActive(code, reason, closeIntent);
-      },
-      detachForSocketSwap: () => {
-        return this.socketSession.detachForSocketSwap();
-      },
-      clearSocketSession: () => {
-        this.socketSession.clear();
-      },
-      connect: () => {
-        this.connect();
       },
     });
   }
@@ -111,10 +90,6 @@ export class TransportLifecycleService {
     this.reliability.markPong();
   };
 
-  updateRuntime(nextRuntime: TransportLifecycleRuntimeRef): void {
-    this.runtime = nextRuntime;
-  }
-
   connect = (): void => {
     if (this.socketSession.hasActiveConnection()) {
       return;
@@ -122,11 +97,11 @@ export class TransportLifecycleService {
 
     this.deps.dispatchEvent({
       type: "set-connecting",
-      reconnecting: this.runtime.hasSessionContext,
+      reconnecting: this.deps.runtime.hasSessionContext(),
     });
 
     const bootstrapResult = this.connectionBootstrap.createSocket(
-      this.runtime.wsUrl,
+      this.deps.runtime.wsUrl(),
     );
     if (!bootstrapResult.ok) {
       this.reliability.reportBootstrapFailure(
@@ -143,12 +118,12 @@ export class TransportLifecycleService {
         this.withCurrentSocket(ws, socketGeneration, () => {
           this.reliability.onConnected();
           this.deps.dispatchEvent({ type: "connected" });
-          this.runtime.handlers.onOpen();
+          this.deps.runtime.handlers().onOpen();
         });
       },
       onMessage: (event) => {
         this.withCurrentSocket(ws, socketGeneration, () => {
-          this.runtime.handlers.onMessage(event);
+          this.deps.runtime.handlers().onMessage(event);
         });
       },
       onClose: (event) => {
@@ -161,19 +136,76 @@ export class TransportLifecycleService {
   };
 
   reconnectNow = (): void => {
-    this.commandPolicy.reconnectNow();
+    this.executeLifecycleCommand({
+      clearReconnectAttempts: true,
+      tryClose: () => {
+        return this.socketSession.closeActive(
+          TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+          "manual reconnect",
+          "manual",
+        );
+      },
+      fallback: () => {
+        this.connect();
+      },
+    });
   };
 
   reconnectWithEndpointChange = (): void => {
-    this.commandPolicy.reconnectWithEndpointChange();
+    this.executeLifecycleCommand({
+      clearReconnectAttempts: true,
+      tryClose: () => {
+        const previousSocket = this.socketSession.detachForSocketSwap();
+        if (
+          previousSocket &&
+          previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
+        ) {
+          // Detach before reconnect so connect() is not blocked by old socket state.
+          this.connect();
+          previousSocket.close(
+            TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+            "endpoint changed",
+          );
+          return true;
+        }
+        return false;
+      },
+      fallback: () => {
+        this.connect();
+      },
+    });
   };
 
   scheduleFreshConnection = (): void => {
-    this.commandPolicy.scheduleFreshConnection();
+    this.executeLifecycleCommand({
+      clearReconnectAttempts: true,
+      tryClose: () => {
+        return this.socketSession.closeActive(
+          TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
+          "start fresh session",
+          "fresh",
+        );
+      },
+      fallback: () => {
+        this.connect();
+      },
+    });
   };
 
   dispose = (): void => {
-    this.commandPolicy.dispose();
+    this.executeLifecycleCommand({
+      tryClose: () => {
+        return this.socketSession.closeActive(
+          1000,
+          "component unmount",
+          "dispose",
+        );
+      },
+      fallback: () => {
+        this.socketSession.clear();
+        this.deps.dispatchEvent({ type: "socket-closed" });
+      },
+    });
   };
 
   private onSocketError(
@@ -216,5 +248,20 @@ export class TransportLifecycleService {
       return;
     }
     task();
+  }
+
+  private executeLifecycleCommand(options: {
+    clearReconnectAttempts?: boolean;
+    tryClose: () => boolean;
+    fallback: () => void;
+  }): void {
+    if (options.clearReconnectAttempts) {
+      this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
+    }
+    this.reliability.clearLifecycleTimers();
+    if (options.tryClose()) {
+      return;
+    }
+    options.fallback();
   }
 }

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TransportSocketEventBridge } from "../../../../../src/features/terminal/app/engine/transport/lifecycle/transport-socket-event-bridge";
 import { TransportSocketSession } from "../../../../../src/features/terminal/app/engine/transport/lifecycle/transport-socket-session";
 import {
   type TerminalTransport,
@@ -33,6 +32,10 @@ class SocketDouble implements TerminalTransport {
       this.listeners[type] = null;
     }
   }
+
+  emit(type: TerminalTransportEventType, event: Event): void {
+    this.listeners[type]?.(event);
+  }
 }
 
 function createHandlers() {
@@ -46,32 +49,30 @@ function createHandlers() {
 
 describe("transport socket session", () => {
   it("tracks socket generation and detaches previous listeners on reattach", () => {
-    const firstDetach = vi.fn();
-    const secondDetach = vi.fn();
-    const bind = vi
-      .fn()
-      .mockReturnValueOnce(firstDetach)
-      .mockReturnValueOnce(secondDetach);
-    const eventBridge = {
-      bind,
-    } as unknown as TransportSocketEventBridge;
-    const session = new TransportSocketSession(eventBridge);
+    const session = new TransportSocketSession();
 
     const firstSocket = new SocketDouble();
-    const firstGeneration = session.attach(firstSocket, createHandlers());
+    const firstHandlers = createHandlers();
+    const firstGeneration = session.attach(firstSocket, firstHandlers);
 
     expect(firstGeneration).toBe(1);
     expect(session.current()).toBe(firstSocket);
 
     const secondSocket = new SocketDouble();
-    const secondGeneration = session.attach(secondSocket, createHandlers());
+    const secondHandlers = createHandlers();
+    const secondGeneration = session.attach(secondSocket, secondHandlers);
 
     expect(secondGeneration).toBe(2);
     expect(session.current()).toBe(secondSocket);
-    expect(firstDetach).toHaveBeenCalledTimes(1);
+
+    firstSocket.emit("open", new Event("open"));
+    secondSocket.emit("open", new Event("open"));
+    expect(firstHandlers.onOpen).toHaveBeenCalledTimes(0);
+    expect(secondHandlers.onOpen).toHaveBeenCalledTimes(1);
 
     session.clear();
-    expect(secondDetach).toHaveBeenCalledTimes(1);
+    secondSocket.emit("open", new Event("open"));
+    expect(secondHandlers.onOpen).toHaveBeenCalledTimes(1);
     expect(session.current()).toBeNull();
   });
 

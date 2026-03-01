@@ -6,17 +6,17 @@
         {
           "lane": "unitIntegration",
           "path": "apps/server/internal/protocol/protocol_test.go",
-          "contains": "func TestParseAttach(t *testing.T)"
+          "traceId": "@trace FR-1 protocol-parse-attach"
         },
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/unit/protocol/terminal-wire-contract.test.ts",
-          "contains": "keeps client/server message kinds aligned with the contract file"
+          "traceId": "@trace FR-1 wire-contract-kinds"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "renders terminal UI and reaches connected state"
+          "traceId": "@trace FR-1 e2e-connected-state"
         }
       ]
     },
@@ -26,17 +26,17 @@
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/unit/lib/terminal-session.test.ts",
-          "contains": "stores and clears session id in storage"
+          "traceId": "@trace FR-2 storage-store-clear-session"
         },
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/integration/app/app-connection-integration.test.tsx",
-          "contains": "connects and stores ready session id in tab and resume storage"
+          "traceId": "@trace FR-2 integration-store-ready-session"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "new session rotates session id"
+          "traceId": "@trace FR-2 e2e-session-rotation"
         }
       ]
     },
@@ -46,17 +46,17 @@
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/unit/lib/terminal-session.test.ts",
-          "contains": "parses valid server messages and rejects invalid payloads"
+          "traceId": "@trace FR-3 parse-and-reject-payloads"
         },
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/unit/app/orchestrators/transport/transport-lifecycle-service.test.ts",
-          "contains": "drives heartbeat timeout and schedules reconnect"
+          "traceId": "@trace FR-3 heartbeat-reconnect"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "stays connected through resize bursts and reconnect churn"
+          "traceId": "@trace FR-3 e2e-reconnect-churn"
         }
       ]
     },
@@ -66,17 +66,17 @@
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/unit/lib/terminal-session.test.ts",
-          "contains": "buffers and flushes input while preserving byte accounting"
+          "traceId": "@trace FR-4 unit-buffer-flush"
         },
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/integration/app/app-connection-integration.test.tsx",
-          "contains": "buffers input while disconnected and flushes after reconnect"
+          "traceId": "@trace FR-4 integration-buffer-flush"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "manual reconnect returns to connected"
+          "traceId": "@trace FR-4 e2e-manual-reconnect"
         }
       ]
     },
@@ -86,12 +86,12 @@
         {
           "lane": "unitIntegration",
           "path": "apps/server/internal/session/history_test.go",
-          "contains": "func TestHistoryBufferTrimsOldChunks(t *testing.T)"
+          "traceId": "@trace FR-5 history-trims-old-chunks"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "stays stable through viewport resizes"
+          "traceId": "@trace FR-5 e2e-viewport-resize-stability"
         }
       ]
     },
@@ -101,12 +101,12 @@
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/integration/app/terminal-app-direct.test.tsx",
-          "contains": "boots websocket transport from the feature entrypoint"
+          "traceId": "@trace FR-6 entrypoint-bootstraps-transport"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "renders terminal UI and reaches connected state"
+          "traceId": "@trace FR-6 e2e-connected-state"
         }
       ]
     },
@@ -116,17 +116,17 @@
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/integration/app/app-ui-integration.test.tsx",
-          "contains": "updates font size controls and persists preference"
+          "traceId": "@trace FR-7 ui-font-preference"
         },
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/integration/app/app-sessions-integration.test.tsx",
-          "contains": "attaches in watch mode for sessions already controlled elsewhere"
+          "traceId": "@trace FR-7 sessions-watch-attach"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "font size controls update terminal preference"
+          "traceId": "@trace FR-7 e2e-font-preference"
         }
       ]
     },
@@ -136,12 +136,12 @@
         {
           "lane": "unitIntegration",
           "path": "apps/web/test/integration/app/app-ui-integration.test.tsx",
-          "contains": "announces reconnect status changes for assistive tech"
+          "traceId": "@trace FR-8 ui-reconnect-a11y"
         },
         {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
-          "contains": "renders terminal UI and reaches connected state"
+          "traceId": "@trace FR-8 e2e-connected-state"
         }
       ]
     }

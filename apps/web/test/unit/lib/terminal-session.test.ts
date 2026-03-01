@@ -22,6 +22,7 @@ import {
 } from "../../../src/features/terminal/session/persistence/storage-keys";
 
 describe("terminal-session helpers", () => {
+  // @trace FR-3 parse-and-reject-payloads
   it("parses valid server messages and rejects invalid payloads", () => {
     expect(
       parseServerMessageWithReason(
@@ -167,6 +168,7 @@ describe("terminal-session helpers", () => {
     expect(reconnectDelayMs(100)).toBe(5_000);
   });
 
+  // @trace FR-4 unit-buffer-flush
   it("buffers and flushes input while preserving byte accounting", () => {
     const outbox = createOutbox();
 
@@ -208,6 +210,7 @@ describe("terminal-session helpers", () => {
     expect(outbox.bytes).toBe(0);
   });
 
+  // @trace FR-2 storage-store-clear-session
   it("stores and clears session id in storage", () => {
     const values = new Map<string, string>();
     const storage: Storage = {

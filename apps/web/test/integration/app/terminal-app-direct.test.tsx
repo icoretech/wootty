@@ -13,6 +13,7 @@ describe("TerminalApp direct entrypoint", () => {
     harness.cleanup();
   });
 
+  // @trace FR-6 entrypoint-bootstraps-transport
   it("boots websocket transport from the feature entrypoint", async () => {
     await harness.renderTerminalApp("terminal");
     await harness.waitForSocket();

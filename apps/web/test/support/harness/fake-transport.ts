@@ -23,6 +23,9 @@ export class FakeTransport implements TerminalTransport {
   };
 
   send(data: string): void {
+    if (this.readyState !== TRANSPORT_READY_STATE.OPEN) {
+      throw new Error("transport is not open");
+    }
     this.sentPayloads.push(data);
   }
 

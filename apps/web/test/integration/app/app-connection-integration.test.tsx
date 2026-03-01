@@ -13,6 +13,7 @@ describe("App integration - connection lifecycle", () => {
     harness.cleanup();
   });
 
+  // @trace FR-2 integration-store-ready-session
   it("connects and stores ready session id in tab and resume storage", async () => {
     await harness.renderTerminalApp();
     const ws1 = await harness.waitForSocket();
@@ -37,6 +38,7 @@ describe("App integration - connection lifecycle", () => {
     );
   });
 
+  // @trace FR-4 integration-buffer-flush
   it("buffers input while disconnected and flushes after reconnect", async () => {
     const ws1 = await harness.bootConnected("session-a");
 

@@ -128,6 +128,7 @@ describe("App integration - session menu", () => {
     );
   });
 
+  // @trace FR-7 sessions-watch-attach
   it("attaches in watch mode for sessions already controlled elsewhere", async () => {
     harness.setFetchResponse({
       sessions: [

@@ -8,6 +8,9 @@ async function waitUntilConnected(
   });
 }
 
+// @trace FR-1 e2e-connected-state
+// @trace FR-6 e2e-connected-state
+// @trace FR-8 e2e-connected-state
 test("renders terminal UI and reaches connected state", async ({ page }) => {
   await page.goto("/");
 
@@ -23,6 +26,7 @@ test("renders terminal UI and reaches connected state", async ({ page }) => {
   await expect(page.locator(".xterm")).toBeVisible();
 });
 
+// @trace FR-4 e2e-manual-reconnect
 test("manual reconnect returns to connected", async ({ page }) => {
   await page.goto("/");
   await waitUntilConnected(page);
@@ -32,6 +36,7 @@ test("manual reconnect returns to connected", async ({ page }) => {
   await expect(page.getByTestId("session-value")).not.toHaveText("pending");
 });
 
+// @trace FR-2 e2e-session-rotation
 test("new session rotates session id", async ({ page }) => {
   await page.goto("/");
   await waitUntilConnected(page);
@@ -71,6 +76,7 @@ test("new tab starts a distinct active session by default", async ({
   await secondPage.close();
 });
 
+// @trace FR-5 e2e-viewport-resize-stability
 test("stays stable through viewport resizes", async ({ page }) => {
   await page.goto("/");
   await waitUntilConnected(page);
@@ -84,6 +90,7 @@ test("stays stable through viewport resizes", async ({ page }) => {
   await expect(page.getByTestId("terminal-wrap")).toBeVisible();
 });
 
+// @trace FR-3 e2e-reconnect-churn
 test("stays connected through resize bursts and reconnect churn", async ({
   page,
 }) => {
@@ -145,6 +152,7 @@ test("handles long output bursts without dropping connection", async ({
   await expect(page.getByText("$ line-139")).toBeVisible();
 });
 
+// @trace FR-7 e2e-font-preference
 test("font size controls update terminal preference", async ({ page }) => {
   await page.goto("/");
   await waitUntilConnected(page);

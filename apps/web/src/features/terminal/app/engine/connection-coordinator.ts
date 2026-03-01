@@ -106,6 +106,7 @@ export function useConnectionCoordinator({
     // no-op
   });
   const hasSessionContextRef = useRef(hasActiveSession);
+  const wsUrlRef = useRef(wsUrl);
   const [statusState, dispatchStatusEvent] = useReducer(
     reduceConnectionStatusState,
     initialConnectionStatusState,
@@ -114,6 +115,10 @@ export function useConnectionCoordinator({
   useEffect(() => {
     hasSessionContextRef.current = hasActiveSession;
   }, [hasActiveSession]);
+
+  useEffect(() => {
+    wsUrlRef.current = wsUrl;
+  }, [wsUrl]);
 
   const hasSessionContext = useCallback(() => {
     return hasSessionContextRef.current;
@@ -158,6 +163,10 @@ export function useConnectionCoordinator({
     },
     [publishNotice],
   );
+  const reportSocketFailureRef = useRef(reportSocketFailure);
+  useEffect(() => {
+    reportSocketFailureRef.current = reportSocketFailure;
+  }, [reportSocketFailure]);
   const { handleSocketMessage } = useConnectionMessageGateway({
     publishNotice,
     setStatusFlag,
@@ -216,6 +225,10 @@ export function useConnectionCoordinator({
       setStatusFlag,
     ],
   );
+  const transportHandlersRef = useRef(transportHandlers);
+  useEffect(() => {
+    transportHandlersRef.current = transportHandlers;
+  }, [transportHandlers]);
   const [transportState, setTransportState] = useState(initialTransportState);
   const transportStateRef = useRef(initialTransportState);
   const dispatchTransportEvent = useCallback((event: TransportEvent) => {
@@ -223,28 +236,35 @@ export function useConnectionCoordinator({
     transportStateRef.current = nextState;
     setTransportState(nextState);
   }, []);
-  const runtimeContext = useMemo<TransportLifecycleRuntimeRef>(() => {
-    return {
-      wsUrl,
-      handlers: transportHandlers,
-      hasSessionContext: hasSessionContext(),
-      onSocketFailure: reportSocketFailure,
-    };
-  }, [hasSessionContext, reportSocketFailure, transportHandlers, wsUrl]);
-  const initialRuntimeContextRef = useRef(runtimeContext);
+  const transportLifecycleRuntime =
+    useMemo<TransportLifecycleRuntimeRef>(() => {
+      return {
+        wsUrl: () => {
+          return wsUrlRef.current;
+        },
+        handlers: () => {
+          return transportHandlersRef.current;
+        },
+        hasSessionContext,
+        onSocketFailure: (failure) => {
+          reportSocketFailureRef.current(failure);
+        },
+      };
+    }, [hasSessionContext]);
   const transportLifecycle = useMemo(() => {
     return new TransportLifecycleService({
       createTransport,
       scheduler,
-      runtime: initialRuntimeContextRef.current,
+      runtime: transportLifecycleRuntime,
       getState: () => transportStateRef.current,
       dispatchEvent: dispatchTransportEvent,
     });
-  }, [createTransport, dispatchTransportEvent, scheduler]);
-
-  useEffect(() => {
-    transportLifecycle.updateRuntime(runtimeContext);
-  }, [runtimeContext, transportLifecycle]);
+  }, [
+    createTransport,
+    dispatchTransportEvent,
+    scheduler,
+    transportLifecycleRuntime,
+  ]);
 
   const {
     connect,
