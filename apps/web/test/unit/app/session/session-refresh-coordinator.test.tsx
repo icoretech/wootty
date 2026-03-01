@@ -238,4 +238,40 @@ describe("session refresh coordinator", () => {
       }),
     );
   });
+
+  it("suppresses abort failure notices from fetch lifecycle outcomes", async () => {
+    const fetchSessions = vi.fn(async () => {
+      return {
+        ok: false,
+        failure: {
+          source: "lifecycle",
+          reason: "request_aborted",
+        },
+      } as const;
+    });
+    const onRefreshFailure = vi.fn();
+
+    const { result } = renderHook(() => {
+      return useSessionRefreshCoordinator({
+        fetchSessions,
+        scheduler: browserLikeScheduler,
+        onRefreshFailure,
+        onRefreshSuccess: vi.fn(),
+        onInvalidEntries: vi.fn(),
+      });
+    });
+
+    const refreshResult = await result.current.requestSessionRefresh({
+      trigger: "manual",
+    });
+
+    expect(refreshResult).toEqual({
+      ok: false,
+      failure: {
+        source: "lifecycle",
+        reason: "request_aborted",
+      },
+    });
+    expect(onRefreshFailure).not.toHaveBeenCalled();
+  });
 });

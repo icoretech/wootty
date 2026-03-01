@@ -43,7 +43,7 @@ export function resolveCommandFromShortcutCode(
   return COMMAND_REGISTRY.commandByShortcutCode.get(code) ?? null;
 }
 
-export function handlerForCommand(command: ShortcutAction): CommandHandlerKind {
+function resolveHandlerForCommand(command: ShortcutAction): CommandHandlerKind {
   const handler = COMMAND_REGISTRY.handlerByCommand.get(command);
   if (!handler) {
     throw new Error(`No command handler descriptor found for '${command}'.`);
@@ -54,7 +54,7 @@ export function handlerForCommand(command: ShortcutAction): CommandHandlerKind {
 export function isRuntimeCommand(
   command: ShortcutAction,
 ): command is TerminalRuntimeCommand {
-  return handlerForCommand(command) === "runtime";
+  return resolveHandlerForCommand(command) === "runtime";
 }
 
 type CommandDispatchHandlers = {
@@ -66,9 +66,9 @@ export function dispatchCommand(
   command: ShortcutAction,
   handlers: CommandDispatchHandlers,
 ): void {
-  if (handlerForCommand(command) === "runtime") {
-    handlers.runtime[command as TerminalRuntimeCommand]();
+  if (isRuntimeCommand(command)) {
+    handlers.runtime[command]();
     return;
   }
-  handlers.viewport[command as ViewportUiCommand]();
+  handlers.viewport[command]();
 }

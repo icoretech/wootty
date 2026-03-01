@@ -28,6 +28,14 @@ function toRefreshPipelineFailure(cause: unknown): SessionRefreshFailure {
   };
 }
 
+function shouldNotifyRefreshFailure(failure: SessionRefreshFailure): boolean {
+  return !(
+    failure.source === "lifecycle" &&
+    (failure.reason === "request_aborted" ||
+      failure.reason === "request_superseded")
+  );
+}
+
 type PendingRefreshRequest = {
   trigger: SessionRefreshRequest["trigger"];
   queuedForRequestId: number;
@@ -181,7 +189,9 @@ export function useSessionRefreshCoordinator({
         return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
       }
       if (!response.ok) {
-        onRefreshFailure(response.failure);
+        if (shouldNotifyRefreshFailure(response.failure)) {
+          onRefreshFailure(response.failure);
+        }
         return { ok: false, failure: response.failure };
       }
 
@@ -191,7 +201,9 @@ export function useSessionRefreshCoordinator({
           return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
         if (!parsed.ok) {
-          onRefreshFailure(parsed.failure);
+          if (shouldNotifyRefreshFailure(parsed.failure)) {
+            onRefreshFailure(parsed.failure);
+          }
           return { ok: false, failure: parsed.failure };
         }
 
@@ -205,7 +217,9 @@ export function useSessionRefreshCoordinator({
           return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
         const failure = toRefreshPipelineFailure(error);
-        onRefreshFailure(failure);
+        if (shouldNotifyRefreshFailure(failure)) {
+          onRefreshFailure(failure);
+        }
         return { ok: false, failure };
       } finally {
         if (refreshTimeoutHandle !== null) {

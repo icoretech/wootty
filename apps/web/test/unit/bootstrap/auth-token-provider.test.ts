@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { createBrowserAuthTokenProvider } from "../../../src/features/terminal/bootstrap/auth-token-provider";
 import {
-  createBrowserAuthTokenProvider,
   normalizeAuthToken,
   readAuthTokenFromUrlResult,
   readAuthTokenFromWindow,
-} from "../../../src/features/terminal/bootstrap/auth-token-provider";
+} from "../../../src/features/terminal/bootstrap/resolution/bootstrap-context";
 
 describe("auth token provider", () => {
   const originalPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
