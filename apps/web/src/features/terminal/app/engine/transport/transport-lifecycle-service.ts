@@ -19,13 +19,9 @@ import {
   TransportFailureReporter,
 } from "./transport-failure-reporter";
 import { TransportHeartbeatMonitor } from "./transport-heartbeat-monitor";
-import {
-  isRecoverableTransportClose,
-  reconnectDelayMs,
-  TERMINAL_CLOSE_CODE,
-  TERMINAL_RECONNECT_POLICY,
-} from "./transport-policy";
+import { TERMINAL_CLOSE_CODE } from "./transport-policy";
 import { TransportReconnectController } from "./transport-reconnect-controller";
+import { resolveTransportClosePlan } from "./transport-recovery-plan";
 import { TransportSocketSession } from "./transport-socket-session";
 import type {
   SocketCloseIntent,
@@ -285,21 +281,22 @@ export class TransportLifecycleService {
     this.clearLifecycleTimers();
     const closeIntent = this.deps.getState().closeIntent;
     const shouldReportCloseFailure = !this.socketErrorSinceConnect;
+    const reconnectAttempt = this.deps.getState().reconnectAttempt;
     this.socketErrorSinceConnect = false;
     this.setCloseIntent("normal");
 
-    if (closeIntent === "dispose") {
+    const closePlan = resolveTransportClosePlan({
+      closeIntent,
+      closeCode: event.code,
+      reconnectAttempt,
+    });
+
+    if (closePlan.kind === "disposed") {
       this.deps.dispatchEvent({ type: "socket-closed" });
       return;
     }
 
-    if (closeIntent === "fresh") {
-      this.deps.dispatchEvent({ type: "set-connecting", reconnecting: false });
-      this.connect();
-      return;
-    }
-
-    if (closeIntent === "manual") {
+    if (closePlan.kind === "reconnect-immediate") {
       this.deps.dispatchEvent({ type: "set-connecting", reconnecting: false });
       this.connect();
       return;
@@ -313,32 +310,28 @@ export class TransportLifecycleService {
         event.reason,
       );
     }
-    if (!isRecoverableTransportClose(event.code)) {
+
+    if (closePlan.kind === "nonrecoverable") {
       this.deps.dispatchEvent({ type: "socket-error" });
       return;
     }
 
-    const attempt = this.deps.getState().reconnectAttempt;
-    if (attempt >= TERMINAL_RECONNECT_POLICY.MAX_ATTEMPTS) {
+    if (closePlan.kind === "reconnect-exhausted") {
       this.deps.dispatchEvent({
         type: "socket-failure",
-        context: `close reason=reconnect exhausted attempts=${attempt}`,
+        context: `close reason=reconnect exhausted attempts=${closePlan.attempt}`,
       });
       this.deps.dispatchEvent({ type: "socket-error" });
       return;
     }
 
-    const nextAttempt = attempt + 1;
     this.deps.dispatchEvent({
       type: "schedule-reconnect",
-      attempt: nextAttempt,
+      attempt: closePlan.nextAttempt,
     });
-    this.reconnectController.scheduleReconnect(
-      reconnectDelayMs(attempt),
-      () => {
-        this.connect();
-      },
-    );
+    this.reconnectController.scheduleReconnect(closePlan.delayMs, () => {
+      this.connect();
+    });
   }
 
   private setCloseIntent(intent: SocketCloseIntent): void {
