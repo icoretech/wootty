@@ -59,6 +59,6 @@ describe("auth token provider", () => {
     const resolution = provider();
 
     expect(resolution.token).toBeUndefined();
-    expect(resolution.issue?.code).toBe("socket_url_invalid_format");
+    expect(resolution.issue?.code).toBe("env_socket_url_invalid_format");
   });
 });

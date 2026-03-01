@@ -85,7 +85,7 @@ describe("terminal environment backend endpoint resolution", () => {
     expect(resolved).toMatchObject({
       ok: false,
       issue: {
-        code: "socket_url_invalid_format",
+        code: "env_socket_url_invalid_format",
       },
     });
   });
