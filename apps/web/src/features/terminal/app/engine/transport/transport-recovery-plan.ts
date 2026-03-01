@@ -5,7 +5,7 @@ import {
 } from "./transport-policy";
 import type { SocketCloseIntent } from "./transport-state-machine";
 
-export type TransportClosePlan =
+type TransportClosePlan =
   | { kind: "disposed" }
   | { kind: "reconnect-immediate" }
   | { kind: "nonrecoverable" }

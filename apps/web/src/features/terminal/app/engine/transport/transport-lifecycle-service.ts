@@ -12,10 +12,7 @@ import {
   type TransportBootstrapFailureReasonCode,
   TransportConnectionBootstrap,
 } from "./transport-connection-bootstrap";
-import type {
-  SocketFailureSource,
-  TransportFailureSink,
-} from "./transport-failure-contract";
+import type { TransportFailureSink } from "./transport-failure-contract";
 import { TransportFailureReporter } from "./transport-failure-reporter";
 import { TransportHeartbeatMonitor } from "./transport-heartbeat-monitor";
 import { TERMINAL_CLOSE_CODE } from "./transport-policy";
@@ -351,5 +348,3 @@ export class TransportLifecycleService {
     this.reconnectController.clearReconnectTimer();
   }
 }
-
-export type { SocketFailureSource };
