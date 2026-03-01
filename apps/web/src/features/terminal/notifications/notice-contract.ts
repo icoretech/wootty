@@ -1,4 +1,5 @@
 import type { BackendResolutionIssueCode } from "../contracts/backend-resolution";
+import type { TerminalProtocolFailureDetail } from "../protocol/terminal-protocol";
 
 export type SessionsRefreshNotice =
   | { context: "sessions_refresh"; reason: "generic" }
@@ -34,25 +35,12 @@ export type RuntimeNotice = {
   reason?: string;
 };
 
-export type NoticeProtocolFailureDetail =
-  | "non_text_frame"
-  | "json_parse_error"
-  | "payload_not_object"
-  | "invalid_message_type"
-  | "unsupported_message_type"
-  | "missing_ready_session_id"
-  | "invalid_ready_read_only"
-  | "invalid_output_data"
-  | "invalid_exit_payload"
-  | "missing_error_message"
-  | "wire_version_mismatch";
-
 export type ProtocolNotice =
   | { context: "protocol"; reason: "unsupported_type" }
   | {
       context: "protocol";
       reason: "malformed_payload";
-      detail?: NoticeProtocolFailureDetail;
+      detail?: TerminalProtocolFailureDetail;
       cause?: unknown;
     }
   | { context: "protocol"; reason: "empty_transport_message" }

@@ -3,6 +3,7 @@ import {
   createBrowserAuthTokenProvider,
   normalizeAuthToken,
   readAuthTokenFromUrl,
+  readAuthTokenFromUrlResult,
   readAuthTokenFromWindow,
 } from "../../../src/features/terminal/bootstrap/auth-token-provider";
 
@@ -20,6 +21,12 @@ describe("auth token provider", () => {
       "abc",
     );
     expect(readAuthTokenFromUrl("not-a-url")).toBeUndefined();
+    expect(readAuthTokenFromUrlResult("not-a-url")).toMatchObject({
+      token: undefined,
+      issue: {
+        code: "socket_url_invalid_format",
+      },
+    });
   });
 
   it("prefers window query token, then configured endpoint token fallback", () => {
@@ -43,5 +50,15 @@ describe("auth token provider", () => {
     const provider = createBrowserAuthTokenProvider("ftp://ws.example.test");
     const resolution = provider();
     expect(resolution.token).toBeUndefined();
+    expect(resolution.issue?.code).toBe("env_socket_url_unsupported_protocol");
+  });
+
+  it("surfaces typed issue when configured websocket URL is malformed", () => {
+    window.history.replaceState({}, "", "/");
+    const provider = createBrowserAuthTokenProvider("ws://[::1");
+    const resolution = provider();
+
+    expect(resolution.token).toBeUndefined();
+    expect(resolution.issue?.code).toBe("socket_url_invalid_format");
   });
 });

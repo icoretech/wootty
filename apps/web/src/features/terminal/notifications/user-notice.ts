@@ -166,5 +166,24 @@ function formatNoticeByContext<Context extends NoticeDetails["context"]>(
 }
 
 export function toUserNotice(details: NoticeDetails): string {
-  return formatNoticeByContext(details as never);
+  switch (details.context) {
+    case "sessions_refresh":
+      return formatNoticeByContext(details);
+    case "fullscreen":
+      return formatNoticeByContext(details);
+    case "runtime":
+      return formatNoticeByContext(details);
+    case "protocol":
+      return formatNoticeByContext(details);
+    case "transport":
+      return formatNoticeByContext(details);
+    case "server":
+      return formatNoticeByContext(details);
+    case "bootstrap":
+      return formatNoticeByContext(details);
+    case "storage":
+      return formatNoticeByContext(details);
+    default:
+      return assertNever(details);
+  }
 }

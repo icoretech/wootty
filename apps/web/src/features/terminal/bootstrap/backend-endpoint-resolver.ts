@@ -17,6 +17,15 @@ function toIssue(
   };
 }
 
+function isBackendResolutionIssue(
+  value: unknown,
+): value is TerminalBackendResolutionIssue {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  return "code" in value && "details" in value;
+}
+
 function resolveSessionUrlFromSocket(
   socketUrl: string,
 ):
@@ -77,7 +86,10 @@ function withAuthQueryParam(socketUrl: string, authToken?: string): string {
     parsed.searchParams.set("token", normalized);
     return parsed.toString();
   } catch {
-    return socketUrl;
+    throw toIssue(
+      "socket_url_invalid_format",
+      `unable to apply auth token query param to websocket URL (${redactTokenInUrlForNotice(socketUrl)})`,
+    );
   }
 }
 
@@ -94,10 +106,20 @@ export function resolveTerminalBackendEndpoints(
     };
   }
 
-  const terminalWsUrl = withAuthQueryParam(
-    socketResolution.socketUrl,
-    authToken,
-  );
+  let terminalWsUrl: string;
+  try {
+    terminalWsUrl = withAuthQueryParam(socketResolution.socketUrl, authToken);
+  } catch (issue) {
+    return {
+      ok: false,
+      issue: isBackendResolutionIssue(issue)
+        ? issue
+        : toIssue(
+            "socket_url_invalid_format",
+            "unable to apply websocket auth token",
+          ),
+    };
+  }
   const sessionsResolution = resolveSessionUrlFromSocket(terminalWsUrl);
   if (!sessionsResolution.ok) {
     return {
