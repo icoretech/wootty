@@ -1,7 +1,7 @@
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import {
   SESSION_HISTORY_STORAGE_KEY,
-  type SessionStorageKey,
+  type SessionIdStorageKey,
 } from "./storage-keys";
 
 export type { StorageAccessFailure } from "../../contracts/storage-access";
@@ -22,7 +22,7 @@ type StorageMutationResult = {
 
 export function readStoredSessionIdResult(
   storage: Storage,
-  key: SessionStorageKey,
+  key: SessionIdStorageKey,
 ): StorageReadSessionIdResult {
   try {
     const sessionId = storage.getItem(key);
@@ -50,7 +50,7 @@ export function readStoredSessionIdResult(
 
 export function storeSessionIdResult(
   storage: Storage,
-  key: SessionStorageKey,
+  key: SessionIdStorageKey,
   sessionId: string,
 ): StorageMutationResult {
   try {
@@ -69,7 +69,7 @@ export function storeSessionIdResult(
 
 export function clearStoredSessionIdResult(
   storage: Storage,
-  key: SessionStorageKey,
+  key: SessionIdStorageKey,
 ): StorageMutationResult {
   try {
     storage.removeItem(key);

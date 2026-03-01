@@ -1,4 +1,8 @@
-import type { SessionsFetchResult } from "../contracts/session/sessions-fetch";
+import type {
+  SessionsFetchPayload,
+  SessionsFetchResult,
+} from "../contracts/session/sessions-fetch";
+import { SESSIONS_ENVELOPE_FIELD } from "../protocol/generated-wire-contract";
 import { TERMINAL_AUTH_POLICY } from "./auth-policy";
 import type { AuthTokenProvider } from "./auth-token-provider";
 
@@ -52,9 +56,26 @@ function fetchSessionsFromEndpoint(
             },
           };
         }
+        const payload = parsed as Record<string, unknown>;
+        const sessions = payload[SESSIONS_ENVELOPE_FIELD];
+        if (!Array.isArray(sessions)) {
+          return {
+            ok: false as const,
+            failure: {
+              source: "fetch" as const,
+              reason: "json_parse_error" as const,
+              cause: new Error(
+                "sessions payload must include a sessions array",
+              ),
+            },
+          };
+        }
         return {
           ok: true as const,
-          payload: parsed as Record<string, unknown>,
+          payload: {
+            ...payload,
+            [SESSIONS_ENVELOPE_FIELD]: sessions,
+          } as SessionsFetchPayload,
         };
       } catch (error: unknown) {
         return {

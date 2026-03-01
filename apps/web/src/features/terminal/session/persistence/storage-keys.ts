@@ -4,4 +4,9 @@ export const SESSION_HISTORY_STORAGE_KEY = "wootty.sessionHistory";
 
 export type SessionStorageKey =
   | typeof ACTIVE_SESSION_STORAGE_KEY
+  | typeof LAST_SESSION_STORAGE_KEY
+  | typeof SESSION_HISTORY_STORAGE_KEY;
+
+export type SessionIdStorageKey =
+  | typeof ACTIVE_SESSION_STORAGE_KEY
   | typeof LAST_SESSION_STORAGE_KEY;

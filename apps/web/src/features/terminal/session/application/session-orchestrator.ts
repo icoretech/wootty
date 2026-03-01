@@ -5,7 +5,6 @@ import {
   useRef,
   useState,
 } from "react";
-import type { FailureNoticeState } from "../../app/engine/notice-throttle";
 import type {
   AttachMode,
   SessionSnapshot,
@@ -15,6 +14,7 @@ import type { TerminalStorageAccessResult } from "../../environment/terminal-env
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { NoticeDetails } from "../../notifications/notice-contract";
+import type { FailureNoticeState } from "../../notifications/notice-throttle";
 import type { Scheduler } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
 import { parseSessionsResponse } from "../../session/protocol/sessions-payload-parser";

@@ -1,13 +1,11 @@
-export const NOTICE_BOOTSTRAP_ISSUE_CODES = [
-  "env_socket_url_invalid_format",
-  "env_socket_url_requires_window_host",
-  "env_socket_url_unsupported_protocol",
-  "socket_url_invalid_format",
-  "socket_url_unsupported_protocol",
-] as const;
+import {
+  BACKEND_RESOLUTION_ISSUE_CODES,
+  type BackendResolutionIssueCode,
+} from "../../contracts/backend-resolution";
 
-export type NoticeBootstrapIssueCode =
-  (typeof NOTICE_BOOTSTRAP_ISSUE_CODES)[number];
+export const NOTICE_BOOTSTRAP_ISSUE_CODES = BACKEND_RESOLUTION_ISSUE_CODES;
+
+export type NoticeBootstrapIssueCode = BackendResolutionIssueCode;
 
 export type BootstrapNotice = {
   context: "bootstrap";

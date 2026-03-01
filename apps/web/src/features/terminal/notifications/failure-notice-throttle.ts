@@ -1,1 +1,1 @@
-export * from "../app/engine/notice-throttle";
+export * from "./notice-throttle";

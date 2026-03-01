@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
@@ -57,6 +57,21 @@ export function useTransportOrchestrator({
 }: UseTransportOrchestratorArgs): TransportOrchestrator {
   const [state, setState] = useState(initialTransportState);
   const stateRef = useRef(initialTransportState);
+  const createTransportRef = useRef(createTransport);
+  const wsUrlRef = useRef(wsUrl);
+  const handlersRef = useRef(handlers);
+  const hasSessionContextRef = useRef(hasSessionContext);
+  const onSocketFailureRef = useRef(onSocketFailure);
+  const schedulerRef = useRef(scheduler);
+  const schedulerProxyRef = useRef<Scheduler | null>(null);
+  const lifecycleServiceRef = useRef<TransportLifecycleService | null>(null);
+
+  createTransportRef.current = createTransport;
+  wsUrlRef.current = wsUrl;
+  handlersRef.current = handlers;
+  hasSessionContextRef.current = hasSessionContext;
+  onSocketFailureRef.current = onSocketFailure;
+  schedulerRef.current = scheduler;
 
   const dispatchEvent = useCallback((event: TransportEvent) => {
     const nextState = reduceTransportState(stateRef.current, event);
@@ -64,32 +79,46 @@ export function useTransportOrchestrator({
     setState(nextState);
   }, []);
 
-  const lifecycleService = useMemo(
-    () =>
-      new TransportLifecycleService({
-        createTransport,
-        getWsUrl: () => wsUrl,
-        getHandlers: () => handlers,
-        hasSessionContext,
-        scheduler,
-        onSocketFailure,
-        getState: () => stateRef.current,
-        dispatchEvent,
-      }),
-    [
-      createTransport,
+  if (schedulerProxyRef.current === null) {
+    schedulerProxyRef.current = {
+      now: () => schedulerRef.current.now(),
+      setTimeout: (task, delayMs) => {
+        return schedulerRef.current.setTimeout(task, delayMs);
+      },
+      clearTimeout: (timerId) => {
+        schedulerRef.current.clearTimeout(timerId);
+      },
+      setInterval: (task, delayMs) => {
+        return schedulerRef.current.setInterval(task, delayMs);
+      },
+      clearInterval: (timerId) => {
+        schedulerRef.current.clearInterval(timerId);
+      },
+    };
+  }
+
+  if (lifecycleServiceRef.current === null) {
+    lifecycleServiceRef.current = new TransportLifecycleService({
+      createTransport: (url) => {
+        return createTransportRef.current(url);
+      },
+      getWsUrl: () => wsUrlRef.current,
+      getHandlers: () => handlersRef.current,
+      hasSessionContext: () => hasSessionContextRef.current(),
+      scheduler: schedulerProxyRef.current,
+      onSocketFailure: (...args) => {
+        onSocketFailureRef.current(...args);
+      },
+      getState: () => stateRef.current,
       dispatchEvent,
-      handlers,
-      hasSessionContext,
-      onSocketFailure,
-      scheduler,
-      wsUrl,
-    ],
-  );
+    });
+  }
+  const lifecycleService = lifecycleServiceRef.current;
 
   useEffect(
     () => () => {
       lifecycleService.dispose();
+      lifecycleServiceRef.current = null;
     },
     [lifecycleService],
   );

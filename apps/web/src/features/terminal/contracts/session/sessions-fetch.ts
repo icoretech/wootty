@@ -1,5 +1,9 @@
 import type { TerminalBackendResolutionIssue } from "../backend-resolution";
 
+export type SessionsFetchPayload = Record<string, unknown> & {
+  sessions: unknown[];
+};
+
 export type SessionsFetchFailure =
   | {
       source: "fetch";
@@ -29,7 +33,7 @@ export type SessionsFetchFailure =
 export type SessionsFetchResult =
   | {
       ok: true;
-      payload: Record<string, unknown>;
+      payload: SessionsFetchPayload;
     }
   | {
       ok: false;

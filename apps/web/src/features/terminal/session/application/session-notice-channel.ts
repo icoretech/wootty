@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
-} from "../../app/engine/notice-throttle";
+} from "../../notifications/notice-throttle";
 import type { Scheduler, SchedulerTimerHandle } from "../../platform/scheduler";
 
 type UseSessionNoticeChannelArgs = {
