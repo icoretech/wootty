@@ -21,8 +21,8 @@ function PersistenceProbe({
   onStorageFailure,
 }: PersistenceProbeProps) {
   const persistence = useSessionPersistence({
-    getLocalStorage: () => localStorageRef,
-    getSessionStorage: () => sessionStorageRef,
+    getLocalStorage: () => ({ storage: localStorageRef, error: null }),
+    getSessionStorage: () => ({ storage: sessionStorageRef, error: null }),
     onStorageFailure,
   });
 

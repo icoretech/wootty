@@ -7,6 +7,8 @@ type CommandRegistry = {
   runtimeCommands: Set<TerminalRuntimeCommand>;
 };
 
+let commandRegistryCache: CommandRegistry | null = null;
+
 function buildCommandRegistry(): CommandRegistry {
   const commandByShortcutCode = new Map<string, ShortcutAction>();
   const runtimeCommands = new Set<TerminalRuntimeCommand>();
@@ -29,18 +31,25 @@ function buildCommandRegistry(): CommandRegistry {
   };
 }
 
-const COMMAND_REGISTRY = buildCommandRegistry();
+function getCommandRegistry(): CommandRegistry {
+  if (commandRegistryCache) {
+    return commandRegistryCache;
+  }
+  const registry = buildCommandRegistry();
+  commandRegistryCache = registry;
+  return registry;
+}
 
 export function resolveCommandFromShortcutCode(
   code: string,
 ): ShortcutAction | null {
-  return COMMAND_REGISTRY.commandByShortcutCode.get(code) ?? null;
+  return getCommandRegistry().commandByShortcutCode.get(code) ?? null;
 }
 
 export function isRuntimeCommand(
   command: ShortcutAction,
 ): command is TerminalRuntimeCommand {
-  return COMMAND_REGISTRY.runtimeCommands.has(
+  return getCommandRegistry().runtimeCommands.has(
     command as TerminalRuntimeCommand,
   );
 }

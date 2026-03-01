@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import type { AttachMode, SessionSnapshot } from "../../contracts/session";
+import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
 import type { FailureNoticeState } from "../../notifications/failure-notice-throttle";
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
@@ -27,8 +28,8 @@ type UseSessionOrchestratorArgs = {
   fetchSessions: (options?: {
     signal?: AbortSignal;
   }) => Promise<SessionsFetchResult>;
-  getLocalStorage: () => Storage | null;
-  getSessionStorage: () => Storage | null;
+  getLocalStorage: () => TerminalStorageAccessResult;
+  getSessionStorage: () => TerminalStorageAccessResult;
   scheduler: Scheduler;
   formatNotice: (details: NoticeDetails) => string;
 };
@@ -205,6 +206,7 @@ export function useSessionOrchestrator({
       let refreshTimeoutHandle: ReturnType<Scheduler["setTimeout"]> | null =
         null;
       const refreshTimeoutToken = Symbol("refresh_timeout");
+      let timedOut = false;
       try {
         const responseOrTimeout = await Promise.race<
           SessionsFetchResult | typeof refreshTimeoutToken
@@ -214,6 +216,7 @@ export function useSessionOrchestrator({
           }),
           new Promise<typeof refreshTimeoutToken>((resolve) => {
             refreshTimeoutHandle = scheduler.setTimeout(() => {
+              timedOut = true;
               refreshController.abort();
               resolve(refreshTimeoutToken);
             }, SESSION_REFRESH_CALL_TIMEOUT_MS);
@@ -261,6 +264,14 @@ export function useSessionOrchestrator({
       } catch (error) {
         if (isStaleRequest()) {
           return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+        }
+        if (timedOut) {
+          const timeoutFailure: SessionRefreshFailure = {
+            source: "lifecycle",
+            reason: "request_timeout",
+          };
+          publishRefreshFailure(timeoutFailure);
+          return { ok: false, failure: timeoutFailure };
         }
         if (
           request.signal?.aborted ||

@@ -72,7 +72,9 @@ describe("transport orchestrator", () => {
     expect(onSocketFailure).toHaveBeenCalledWith(
       "close",
       TERMINAL_CLOSE_CODE.PONG_TIMEOUT,
+      "socket_failure",
       "pong timeout",
+      undefined,
     );
   });
 
@@ -138,7 +140,9 @@ describe("transport orchestrator", () => {
     expect(onSocketFailure).toHaveBeenLastCalledWith(
       "error",
       undefined,
+      "socket_failure",
       "boom",
+      undefined,
     );
 
     act(() => {
@@ -150,7 +154,9 @@ describe("transport orchestrator", () => {
     expect(onSocketFailure).toHaveBeenLastCalledWith(
       "error",
       undefined,
+      "socket_failure",
       "boom (repeated 3 times)",
+      undefined,
     );
   });
 

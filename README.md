@@ -180,9 +180,10 @@ flowchart LR
 
 Frontend module ownership:
 
+<!-- governance:module-ownership:start -->
 - `apps/web/src/App.tsx`: composition entrypoint that mounts the terminal feature app.
 - `apps/web/src/features/terminal/app/TerminalApp.tsx`: terminal app entrypoint and top-level composition shell.
-- `apps/web/src/features/terminal/app/composition/*`: app-level composition boundaries (`platform`, `domain`, and controller wiring) that join environment adapters with feature hooks.
+- `apps/web/src/features/terminal/app/composition/*`: app-level composition boundaries (platform, domain, and controller wiring) that join environment adapters with feature hooks.
 - `apps/web/src/features/terminal/app/engine/*`: transport lifecycle, runtime boot/IO bridge, and connection state projection.
 - `apps/web/src/features/terminal/app/bindings/*`: browser/document/window/session bindings (shortcuts, refresh cadence wiring, resize/fullscreen wiring, title updates).
 - `apps/web/src/features/terminal/environment/*`: environment contracts shared by app bootstrap and controller layers.
@@ -191,12 +192,15 @@ Frontend module ownership:
 - `apps/web/src/features/terminal/platform/*`: platform-facing utilities shared by app/engine bindings (for example scheduler abstractions).
 - `apps/web/src/features/terminal/components/*`: presentational controls, status bar, and session menu UI.
 - `apps/web/src/features/terminal/view/*`: UI-facing formatting and presenter mapping for menu/session copy.
-- `apps/web/src/features/terminal/view/floating-controls/*`: floating-controls registry, metadata, and descriptor assembly.
+- `apps/web/src/features/terminal/commands/floating-controls/*`: floating-controls registry, metadata, and descriptor assembly.
 - `apps/web/src/features/terminal/notifications/*`: user-facing terminal notice mapping.
 - `apps/web/src/features/terminal/session/domain/*`: session payload parsing and candidate derivation.
 - `apps/web/src/features/terminal/session/persistence/*`: storage adapters and storage key ownership.
 - `apps/web/src/features/terminal/lib/*`: terminal-only utility helpers (formatting, outbox buffering).
-- `apps/web/src/features/terminal/protocol/*`, `apps/web/src/features/terminal/orchestration/*`, and `apps/web/src/features/terminal/runtime/*`: protocol parsing, transport orchestration adapters, and xterm runtime loading owned by the terminal feature.
+- `apps/web/src/features/terminal/protocol/*`: protocol parsing owned by the terminal feature.
+- `apps/web/src/features/terminal/orchestration/*`: transport orchestration adapters owned by the terminal feature.
+- `apps/web/src/features/terminal/runtime/*`: xterm runtime loading owned by the terminal feature.
+<!-- governance:module-ownership:end -->
 
 ### Client Protocol Contract
 
@@ -219,7 +223,7 @@ Frontend module ownership:
 Transport responsibilities are split by contract:
 
 - `apps/web/src/features/terminal/contracts/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
-- `apps/web/src/features/terminal/contracts/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
+- `apps/web/src/features/terminal/app/engine/transport/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
 - `apps/web/src/features/terminal/orchestration/transport-event-normalizer.ts` adapts browser runtime events into typed contract payloads.
 
 - Canonical ready states:

@@ -1,13 +1,35 @@
-export function readStorage(
-  kind: "localStorage" | "sessionStorage",
-): Storage | null {
+import type { StorageAccessFailure } from "../session/persistence/session-storage";
+
+type BrowserStorageKind = "localStorage" | "sessionStorage";
+
+type BrowserStorageReadResult = {
+  storage: Storage | null;
+  error: StorageAccessFailure | null;
+};
+
+export function readStorageResult(
+  kind: BrowserStorageKind,
+): BrowserStorageReadResult {
   if (typeof window === "undefined") {
-    return null;
+    return {
+      storage: null,
+      error: null,
+    };
   }
   try {
-    return window[kind];
-  } catch {
-    return null;
+    return {
+      storage: window[kind],
+      error: null,
+    };
+  } catch (cause) {
+    return {
+      storage: null,
+      error: {
+        operation: "read",
+        key: kind,
+        cause,
+      },
+    };
   }
 }
 

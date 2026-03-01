@@ -1,6 +1,7 @@
 import { assertNever } from "../../lib/assert-never";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
 import type { NoticeDetails } from "../notice-contract";
+import { toBackendResolutionNotice } from "./backend-resolution-notice";
 
 type SessionRefreshFailureNotice = {
   failureKey: string | null;
@@ -74,12 +75,10 @@ function toFetchFailureNotice(
     case "bootstrap_error":
       return {
         failureKey: "bootstrap:backend_resolution_failed",
-        notice: {
-          context: "bootstrap",
-          reason: "backend_resolution_failed",
-          details: failure.issue,
+        notice: toBackendResolutionNotice({
           code: failure.issueCode,
-        },
+          details: failure.issue,
+        }),
       };
     case "json_parse_error":
     case "network_error":

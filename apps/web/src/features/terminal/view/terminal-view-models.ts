@@ -1,11 +1,11 @@
 import type { ConnectionStatus } from "../contracts/connection";
+import type { AttachMode, SessionSnapshot } from "../contracts/session";
+import { formatBytes, formatLatency } from "../lib/terminal-format";
 import {
   DEFAULT_FONT_SIZE,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
-} from "../contracts/font-size";
-import type { AttachMode, SessionSnapshot } from "../contracts/session";
-import { formatBytes, formatLatency } from "../lib/terminal-format";
+} from "../preferences/font-size-policy";
 import {
   ageLabel,
   latencyTone,

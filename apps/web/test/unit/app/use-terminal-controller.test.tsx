@@ -80,8 +80,8 @@ function createEnvironmentStub(): TerminalAppEnvironment {
     domain: {
       createTransport: throwTransportCalled,
       loadRuntime: throwRuntimeCalled,
-      getLocalStorage: () => storage,
-      getSessionStorage: () => storage,
+      getLocalStorage: () => ({ storage, error: null }),
+      getSessionStorage: () => ({ storage, error: null }),
     },
   };
 }

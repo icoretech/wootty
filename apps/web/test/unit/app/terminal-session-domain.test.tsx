@@ -39,8 +39,8 @@ describe("terminal session domain", () => {
       loadRuntime: async () => {
         throw new Error("runtime not expected");
       },
-      getLocalStorage: () => storage,
-      getSessionStorage: () => storage,
+      getLocalStorage: () => ({ storage, error: null }),
+      getSessionStorage: () => ({ storage, error: null }),
     };
     const platform: TerminalPlatformContext = {
       windowRef: window,

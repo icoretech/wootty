@@ -39,8 +39,8 @@ function SessionProbe({
   const [lastRefreshResult, setLastRefreshResult] = useState<string>("");
   const session = useSessionOrchestrator({
     fetchSessions,
-    getLocalStorage: () => localStorageRef,
-    getSessionStorage: () => sessionStorageRef,
+    getLocalStorage: () => ({ storage: localStorageRef, error: null }),
+    getSessionStorage: () => ({ storage: sessionStorageRef, error: null }),
     scheduler: browserLikeScheduler,
     formatNotice: toUserNotice,
   });

@@ -75,8 +75,8 @@ function createEnvironment(
       loadRuntime: async () => {
         throw new Error("not used");
       },
-      getLocalStorage: () =>
-        ({
+      getLocalStorage: () => ({
+        storage: {
           get length() {
             return storage.size;
           },
@@ -95,8 +95,10 @@ function createEnvironment(
           setItem(key: string, value: string) {
             storage.set(key, value);
           },
-        }) as Storage,
-      getSessionStorage: () => null,
+        } as Storage,
+        error: null,
+      }),
+      getSessionStorage: () => ({ storage: null, error: null }),
     },
   };
 }

@@ -1,0 +1,125 @@
+{
+  "moduleOwnership": [
+    {
+      "path": "apps/web/src/App.tsx",
+      "description": "composition entrypoint that mounts the terminal feature app."
+    },
+    {
+      "path": "apps/web/src/features/terminal/app/TerminalApp.tsx",
+      "description": "terminal app entrypoint and top-level composition shell."
+    },
+    {
+      "path": "apps/web/src/features/terminal/app/composition/*",
+      "description": "app-level composition boundaries (platform, domain, and controller wiring) that join environment adapters with feature hooks."
+    },
+    {
+      "path": "apps/web/src/features/terminal/app/engine/*",
+      "description": "transport lifecycle, runtime boot/IO bridge, and connection state projection."
+    },
+    {
+      "path": "apps/web/src/features/terminal/app/bindings/*",
+      "description": "browser/document/window/session bindings (shortcuts, refresh cadence wiring, resize/fullscreen wiring, title updates)."
+    },
+    {
+      "path": "apps/web/src/features/terminal/environment/*",
+      "description": "environment contracts shared by app bootstrap and controller layers."
+    },
+    {
+      "path": "apps/web/src/features/terminal/commands/*",
+      "description": "terminal command contract + registry ownership (UI actions and shortcut mapping)."
+    },
+    {
+      "path": "apps/web/src/features/terminal/contracts/*",
+      "description": "shared terminal contracts (session + transport types and ready-state constants)."
+    },
+    {
+      "path": "apps/web/src/features/terminal/platform/*",
+      "description": "platform-facing utilities shared by app/engine bindings (for example scheduler abstractions)."
+    },
+    {
+      "path": "apps/web/src/features/terminal/components/*",
+      "description": "presentational controls, status bar, and session menu UI."
+    },
+    {
+      "path": "apps/web/src/features/terminal/view/*",
+      "description": "UI-facing formatting and presenter mapping for menu/session copy."
+    },
+    {
+      "path": "apps/web/src/features/terminal/commands/floating-controls/*",
+      "description": "floating-controls registry, metadata, and descriptor assembly."
+    },
+    {
+      "path": "apps/web/src/features/terminal/notifications/*",
+      "description": "user-facing terminal notice mapping."
+    },
+    {
+      "path": "apps/web/src/features/terminal/session/domain/*",
+      "description": "session payload parsing and candidate derivation."
+    },
+    {
+      "path": "apps/web/src/features/terminal/session/persistence/*",
+      "description": "storage adapters and storage key ownership."
+    },
+    {
+      "path": "apps/web/src/features/terminal/lib/*",
+      "description": "terminal-only utility helpers (formatting, outbox buffering)."
+    },
+    {
+      "path": "apps/web/src/features/terminal/protocol/*",
+      "description": "protocol parsing owned by the terminal feature."
+    },
+    {
+      "path": "apps/web/src/features/terminal/orchestration/*",
+      "description": "transport orchestration adapters owned by the terminal feature."
+    },
+    {
+      "path": "apps/web/src/features/terminal/runtime/*",
+      "description": "xterm runtime loading owned by the terminal feature."
+    }
+  ],
+  "traceability": [
+    {
+      "requirement": "FR-1 Connection lifecycle",
+      "unitIntegration": "`apps/server/internal/protocol/protocol_test.go`, `apps/server/internal/protocol/wire_contract_test.go`, `apps/web/test/unit/protocol/terminal-wire-contract.test.ts`, and `apps/server/internal/config/config_test.go` (attach + wire-contract parity + runtime config parsing)",
+      "e2e": "`apps/web/e2e/terminal.spec.ts` -> \"renders terminal UI and reaches connected state\""
+    },
+    {
+      "requirement": "FR-2 Session persistence",
+      "unitIntegration": "`apps/web/test/unit/lib/terminal-session.test.ts` (storage helpers), `apps/web/test/integration/app/app-connection-integration.test.tsx` (ready session id persistence)",
+      "e2e": "`apps/web/e2e/terminal.spec.ts` -> \"new session rotates session id\""
+    },
+    {
+      "requirement": "FR-3 Heartbeat and stale transport detection",
+      "unitIntegration": "`apps/web/test/unit/lib/terminal-session.test.ts` (message parser for pong), `apps/web/test/unit/app/orchestrators/transport-orchestrator.test.tsx` (heartbeat timeout + reconnect)",
+      "e2e": "covered by reconnect stability checks in e2e reconnect and resize scenarios"
+    },
+    {
+      "requirement": "FR-4 Input durability during reconnect",
+      "unitIntegration": "`apps/web/test/unit/lib/terminal-session.test.ts` (outbox accounting, flush behavior), `apps/web/test/integration/app/app-connection-integration.test.tsx` (buffer+flush in App flow)",
+      "e2e": "exercised indirectly by reconnect flows in e2e"
+    },
+    {
+      "requirement": "FR-5 Resize correctness",
+      "unitIntegration": "`apps/server/internal/session/history_test.go` + manager/runtime paths exercised in e2e",
+      "e2e": "`apps/web/e2e/terminal.spec.ts` -> \"stays stable through viewport resizes\""
+    },
+    {
+      "requirement": "FR-6 Terminal behavior",
+      "unitIntegration": "`apps/web/test/integration/app/terminal-app-direct.test.tsx` validates runtime integration (`xterm` load + render path)",
+      "e2e": "all e2e scenarios assert terminal visibility and connected state"
+    },
+    {
+      "requirement": "FR-7 Operator controls",
+      "unitIntegration": "`apps/web/test/integration/app/app-ui-integration.test.tsx` (new-session + font controls), `apps/web/test/integration/app/app-sessions-integration.test.tsx` (session attach modes)",
+      "e2e": "`apps/web/e2e/terminal.spec.ts` -> reconnect/new-session/font-control flows"
+    },
+    {
+      "requirement": "FR-8 Accessibility baseline",
+      "unitIntegration": "`apps/web/test/integration/app/app-ui-integration.test.tsx` (status announcement behavior)",
+      "e2e": "`apps/web/e2e/terminal.spec.ts` -> terminal region semantics check"
+    }
+  ],
+  "runtimeHealthLane": [
+    "`pnpm test` runs web unit tests and Go server tests (`go test ./...` in `apps/server`)."
+  ]
+}

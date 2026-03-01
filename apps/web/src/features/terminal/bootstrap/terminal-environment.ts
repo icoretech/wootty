@@ -12,7 +12,7 @@ import {
 import { resolveTerminalBackendEndpoints } from "./backend-endpoint-resolver";
 import {
   readDocument,
-  readStorage,
+  readStorageResult,
   readWindow,
 } from "./browser-environment-access";
 import { createRuntimeLoader } from "./runtime-loader";
@@ -67,11 +67,30 @@ export function createTerminalAppEnvironment(
   const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
   const platform = createPlatformEnvironment(authTokenProvider, envSocketUrl);
   const loadRuntime = createRuntimeLoader();
+  const reportedStorageFailures = new Set<string>();
+  const readStorageWithSingleFailureReport = (
+    kind: "localStorage" | "sessionStorage",
+  ) => {
+    const result = readStorageResult(kind);
+    if (!result.error) {
+      return result;
+    }
+    const marker = `${result.error.operation}:${result.error.key}`;
+    if (reportedStorageFailures.has(marker)) {
+      return {
+        storage: result.storage,
+        error: null,
+      };
+    }
+    reportedStorageFailures.add(marker);
+    return result;
+  };
   const domain: TerminalDomainEnvironment = {
     createTransport: createBrowserTransport,
     loadRuntime,
-    getLocalStorage: () => readStorage("localStorage"),
-    getSessionStorage: () => readStorage("sessionStorage"),
+    getLocalStorage: () => readStorageWithSingleFailureReport("localStorage"),
+    getSessionStorage: () =>
+      readStorageWithSingleFailureReport("sessionStorage"),
   };
   const environment: TerminalAppEnvironment = {
     platform,

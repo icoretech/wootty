@@ -66,4 +66,22 @@ describe("error notice mapping", () => {
       }),
     ).toContain("xterm chunk failed");
   });
+
+  it("maps transport reason codes with deterministic messages", () => {
+    expect(
+      toUserNotice({
+        context: "transport",
+        reasonCode: "attach_handshake_send_failed",
+      }),
+    ).toBe("Connection problem during attach handshake.");
+    expect(
+      toUserNotice({
+        context: "transport",
+        reasonCode: "socket_failure",
+        source: "close",
+        code: 1006,
+        debugDetail: "abnormal closure",
+      }),
+    ).toContain("Connection problem (transport failure).");
+  });
 });

@@ -27,12 +27,87 @@ type TerminalDomainController = {
   dispatchStatusBar: (action: StatusBarAction) => void;
 };
 
+type SessionAttachmentController = {
+  uiState: ControllerUiState;
+  sessionState: ReturnType<typeof useTerminalSessionDomain>["sessionState"];
+  sessionActions: ReturnType<typeof useTerminalSessionDomain>["sessionActions"];
+  publishNotice: NoticePublisher;
+  wsUrl: string | null;
+};
+
+type TransportRuntimeBridge = {
+  connectionRuntime: ReturnType<typeof useConnectionCoordinator>["runtime"];
+  connectionTransport: ReturnType<typeof useConnectionCoordinator>["transport"];
+  connectionTelemetry: ReturnType<typeof useConnectionCoordinator>["telemetry"];
+};
+
+type CommandDispatchers = {
+  dispatchFloatingControls: (action: FloatingControlsAction) => void;
+  dispatchSessionMenu: (action: SessionMenuAction) => void;
+  dispatchStatusBar: (action: StatusBarAction) => void;
+};
+
+function useSessionAttachmentController({
+  environment,
+  platform,
+}: {
+  environment: TerminalDomainEnvironment;
+  platform: TerminalPlatformContext;
+}): SessionAttachmentController {
+  const domain = useTerminalSessionDomain({
+    environment,
+    platform,
+  });
+
+  return {
+    uiState: domain.uiState,
+    sessionState: domain.sessionState,
+    sessionActions: domain.sessionActions,
+    publishNotice: domain.publishNotice,
+    wsUrl: domain.wsUrl,
+  };
+}
+
+function useTransportRuntimeBridge({
+  environment,
+  platform,
+  session,
+}: {
+  environment: TerminalDomainEnvironment;
+  platform: TerminalPlatformContext;
+  session: SessionAttachmentController;
+}): TransportRuntimeBridge {
+  const connection = useConnectionCoordinator({
+    createTransport: environment.createTransport,
+    loadRuntime: environment.loadRuntime,
+    wsUrl: session.wsUrl,
+    documentRef: platform.documentRef,
+    initialFontSize: session.uiState.initialFontSize,
+    sessionId: session.sessionState.sessionId,
+    attachMode: session.sessionState.attachMode,
+    hasActiveSession: session.sessionState.hasActiveSession,
+    transportEnabled: platform.backendResolution.ok,
+    publishNotice: session.publishNotice,
+    setSessionMode: session.sessionActions.setSessionMode,
+    applyReadySession: session.sessionActions.applyReadySession,
+    clearMissingSession: session.sessionActions.clearMissingSession,
+    refreshLiveSessions: session.sessionActions.refreshLiveSessions,
+    scheduler: platform.scheduler,
+  });
+
+  return {
+    connectionRuntime: connection.runtime,
+    connectionTransport: connection.transport,
+    connectionTelemetry: connection.telemetry,
+  };
+}
+
 function useFullscreenCommand({
   appViewportRef,
   documentRef,
   publishNotice,
 }: {
-  appViewportRef: RefObject<HTMLDivElement | null>;
+  appViewportRef: RefObject<HTMLElement | null>;
   documentRef: Document | null;
   publishNotice: NoticePublisher;
 }): () => Promise<void> {
@@ -61,7 +136,7 @@ function useApplyFontSizeAction({
   applyFontSize: ControllerUiState["applyFontSize"];
   updateFontSize: (fontSize: number, onResized: () => void) => void;
   fitAndSyncSize: () => void;
-}) {
+}): (next: number) => void {
   return useCallback(
     (next: number) => {
       applyFontSize(next, updateFontSize, fitAndSyncSize);
@@ -76,6 +151,86 @@ function useCloseSessionMenu(setSessionMenuOpen: (open: boolean) => void) {
   }, [setSessionMenuOpen]);
 }
 
+function useUiBindingsController({
+  appViewportRef,
+  sessionMenuRef,
+  sessionButtonRef,
+  platform,
+  session,
+  bridge,
+}: {
+  appViewportRef: RefObject<HTMLElement | null>;
+  sessionMenuRef: RefObject<HTMLDivElement | null>;
+  sessionButtonRef: RefObject<HTMLDivElement | null>;
+  platform: TerminalPlatformContext;
+  session: SessionAttachmentController;
+  bridge: TransportRuntimeBridge;
+}): CommandDispatchers {
+  const toggleFullscreen = useFullscreenCommand({
+    appViewportRef,
+    documentRef: platform.documentRef,
+    publishNotice: session.publishNotice,
+  });
+
+  const { dispatchSessionMenu } = useSessionMenuActions({
+    lastSessionId: session.sessionState.lastSessionId,
+    resetRuntimeBuffers: bridge.connectionRuntime.resetRuntimeBuffers,
+    transitionSessionContext: session.sessionActions.transitionSessionContext,
+    scheduleFreshConnection: bridge.connectionTransport.scheduleFreshConnection,
+    reconnectNow: bridge.connectionTransport.reconnectNow,
+  });
+
+  const applyFontSize = useApplyFontSizeAction({
+    applyFontSize: session.uiState.applyFontSize,
+    updateFontSize: bridge.connectionRuntime.updateFontSize,
+    fitAndSyncSize: bridge.connectionRuntime.fitAndSyncSize,
+  });
+
+  const {
+    dispatchShortcutAction,
+    dispatchFloatingControls,
+    dispatchStatusBar,
+  } = useTerminalCommandActions({
+    applyFontSize,
+    clearTerminal: bridge.connectionRuntime.clearTerminal,
+    reconnectNow: bridge.connectionTransport.reconnectNow,
+    toggleFullscreen,
+    readFontSize: session.uiState.readFontSize,
+    setControlsOpen: session.uiState.setControlsOpen,
+    setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
+  });
+
+  const closeSessionMenu = useCloseSessionMenu(
+    session.sessionActions.setSessionMenuOpen,
+  );
+
+  useControllerBindings({
+    documentRef: platform.documentRef,
+    windowRef: platform.windowRef,
+    fitAndSyncSize: bridge.connectionRuntime.fitAndSyncSize,
+    setIsFullscreen: session.uiState.setIsFullscreen,
+    sessionMenuOpen: session.sessionState.sessionMenuOpen,
+    sessionMenuRef,
+    sessionButtonRef,
+    closeSessionMenu,
+    refreshLiveSessions: session.sessionActions.refreshLiveSessions,
+    scheduler: platform.scheduler,
+    attachMode: session.sessionState.attachMode,
+    sessionId: session.sessionState.sessionId,
+    status: bridge.connectionTransport.status,
+    terminalReady: bridge.connectionRuntime.terminalReady,
+    terminalElementRef: bridge.connectionRuntime.terminalElementRef,
+    runShortcutAction: dispatchShortcutAction,
+    publishNotice: session.publishNotice,
+  });
+
+  return {
+    dispatchFloatingControls,
+    dispatchSessionMenu,
+    dispatchStatusBar,
+  };
+}
+
 export function useTerminalDomainController({
   environment,
   platform,
@@ -85,103 +240,36 @@ export function useTerminalDomainController({
 }: {
   environment: TerminalDomainEnvironment;
   platform: TerminalPlatformContext;
-  appViewportRef: RefObject<HTMLDivElement | null>;
+  appViewportRef: RefObject<HTMLElement | null>;
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
 }): TerminalDomainController {
-  const { uiState, sessionState, sessionActions, publishNotice, wsUrl } =
-    useTerminalSessionDomain({
-      environment,
-      platform,
-    });
-
-  const connection = useConnectionCoordinator({
-    createTransport: environment.createTransport,
-    loadRuntime: environment.loadRuntime,
-    wsUrl,
-    documentRef: platform.documentRef,
-    initialFontSize: uiState.initialFontSize,
-    sessionId: sessionState.sessionId,
-    attachMode: sessionState.attachMode,
-    hasActiveSession: sessionState.hasActiveSession,
-    transportEnabled: platform.backendResolution.ok,
-    publishNotice,
-    setSessionMode: sessionActions.setSessionMode,
-    applyReadySession: sessionActions.applyReadySession,
-    clearMissingSession: sessionActions.clearMissingSession,
-    refreshLiveSessions: sessionActions.refreshLiveSessions,
-    scheduler: platform.scheduler,
+  const session = useSessionAttachmentController({
+    environment,
+    platform,
   });
-  const connectionRuntime = connection.runtime;
-  const connectionTransport = connection.transport;
-  const connectionTelemetry = connection.telemetry;
-
-  const toggleFullscreen = useFullscreenCommand({
+  const bridge = useTransportRuntimeBridge({
+    environment,
+    platform,
+    session,
+  });
+  const commands = useUiBindingsController({
     appViewportRef,
-    documentRef: platform.documentRef,
-    publishNotice,
-  });
-
-  const { dispatchSessionMenu } = useSessionMenuActions({
-    lastSessionId: sessionState.lastSessionId,
-    resetRuntimeBuffers: connectionRuntime.resetRuntimeBuffers,
-    transitionSessionContext: sessionActions.transitionSessionContext,
-    scheduleFreshConnection: connectionTransport.scheduleFreshConnection,
-    reconnectNow: connectionTransport.reconnectNow,
-  });
-
-  const applyFontSize = useApplyFontSizeAction({
-    applyFontSize: uiState.applyFontSize,
-    updateFontSize: connectionRuntime.updateFontSize,
-    fitAndSyncSize: connectionRuntime.fitAndSyncSize,
-  });
-
-  const {
-    dispatchShortcutAction,
-    dispatchFloatingControls,
-    dispatchStatusBar,
-  } = useTerminalCommandActions({
-    applyFontSize,
-    clearTerminal: connectionRuntime.clearTerminal,
-    reconnectNow: connectionTransport.reconnectNow,
-    toggleFullscreen,
-    readFontSize: uiState.readFontSize,
-    setControlsOpen: uiState.setControlsOpen,
-    setSessionMenuOpen: sessionActions.setSessionMenuOpen,
-  });
-
-  const closeSessionMenu = useCloseSessionMenu(
-    sessionActions.setSessionMenuOpen,
-  );
-
-  useControllerBindings({
-    documentRef: platform.documentRef,
-    windowRef: platform.windowRef,
-    fitAndSyncSize: connectionRuntime.fitAndSyncSize,
-    setIsFullscreen: uiState.setIsFullscreen,
-    sessionMenuOpen: sessionState.sessionMenuOpen,
     sessionMenuRef,
     sessionButtonRef,
-    closeSessionMenu,
-    refreshLiveSessions: sessionActions.refreshLiveSessions,
-    scheduler: platform.scheduler,
-    attachMode: sessionState.attachMode,
-    sessionId: sessionState.sessionId,
-    status: connectionTransport.status,
-    terminalReady: connectionRuntime.terminalReady,
-    terminalElementRef: connectionRuntime.terminalElementRef,
-    runShortcutAction: dispatchShortcutAction,
-    publishNotice,
+    platform,
+    session,
+    bridge,
   });
 
   return {
-    uiState,
-    sessionState,
-    connectionRuntime,
-    connectionTransport,
-    connectionTelemetry,
-    dispatchFloatingControls,
-    dispatchSessionMenu,
-    dispatchStatusBar,
+    uiState: session.uiState,
+    sessionState: session.sessionState,
+    connectionRuntime: bridge.connectionRuntime,
+    connectionTransport: bridge.connectionTransport,
+    connectionTelemetry: bridge.connectionTelemetry,
+    dispatchFloatingControls: commands.dispatchFloatingControls,
+    dispatchSessionMenu: commands.dispatchSessionMenu,
+    dispatchStatusBar: commands.dispatchStatusBar,
   };
 }

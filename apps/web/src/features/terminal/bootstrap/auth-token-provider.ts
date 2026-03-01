@@ -33,10 +33,6 @@ export function readAuthTokenFromWindow(
   );
 }
 
-export function readAuthTokenFromUrl(rawUrl: string): string | undefined {
-  return readAuthTokenFromUrlResult(rawUrl).token;
-}
-
 export function readAuthTokenFromUrlResult(
   rawUrl: string,
 ): AuthTokenResolution {

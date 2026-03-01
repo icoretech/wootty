@@ -1,5 +1,7 @@
 import { useCallback } from "react";
 import type { AttachMode } from "../../../contracts/session";
+import { toProtocolFailureNotice } from "../../../notifications/mappers/protocol-failure-notice";
+import { toServerPolicyNotice } from "../../../notifications/mappers/server-error-policy-notice";
 import type { NoticePublisher } from "../../../notifications/notice-contract";
 import { resolveServerErrorPolicy } from "../../../protocol/policies/server-error-policy";
 import type { TerminalServerErrorCode } from "../../../protocol/server-error-codes";
@@ -50,10 +52,7 @@ export function useConnectionMessageGateway({
         code,
         rawCode,
       });
-      publishNotice({
-        context: "server",
-        ...policy.notice,
-      });
+      publishNotice(toServerPolicyNotice(policy.notice));
 
       if (policy.clearMissingSession) {
         clearMissingSession();
@@ -92,16 +91,7 @@ export function useConnectionMessageGateway({
           });
         },
         onProtocolFailure: (failure) => {
-          if (failure.reason === "malformed_payload") {
-            publishNotice({
-              context: "protocol",
-              reason: "malformed_payload",
-              detail: failure.detail,
-              cause: failure.cause,
-            });
-          } else {
-            publishNotice({ context: "protocol", reason: failure.reason });
-          }
+          publishNotice(toProtocolFailureNotice(failure));
           if (failure.reason === "incompatible_version") {
             setStatusFlag("protocol_incompatible");
           }

@@ -54,8 +54,8 @@ function createEnvironment(): TerminalAppEnvironment {
           "runtime should not load without a mounted terminal ref",
         );
       },
-      getLocalStorage: () => asStorage,
-      getSessionStorage: () => asStorage,
+      getLocalStorage: () => ({ storage: asStorage, error: null }),
+      getSessionStorage: () => ({ storage: asStorage, error: null }),
     },
   };
 }
@@ -75,7 +75,7 @@ function DomainProbe() {
     },
     fetchSessions: vi.fn(async () => ({ ok: true, payload: {} })),
   };
-  const appViewportRef = useRef<HTMLDivElement | null>(null);
+  const appViewportRef = useRef<HTMLElement | null>(null);
   const sessionMenuRef = useRef<HTMLDivElement | null>(null);
   const sessionButtonRef = useRef<HTMLDivElement | null>(null);
 

@@ -7,9 +7,25 @@ export type ConnectionStatusFlag =
   | "attach_forbidden"
   | "remote_exit";
 
-export function projectConnectionStatus(
-  statusFlag: ConnectionStatusFlag | null,
+export type ConnectionStatusState = {
+  transportStatus: ConnectionStatus;
+  statusFlag: ConnectionStatusFlag | null;
+  status: ConnectionStatus;
+};
+
+export type ConnectionStatusEvent =
+  | { type: "transport-status"; status: ConnectionStatus }
+  | { type: "status-flag"; flag: ConnectionStatusFlag | null };
+
+export const initialConnectionStatusState: ConnectionStatusState = {
+  transportStatus: "connecting",
+  statusFlag: null,
+  status: "connecting",
+};
+
+function projectStatus(
   transportStatus: ConnectionStatus,
+  statusFlag: ConnectionStatusFlag | null,
 ): ConnectionStatus {
   if (!statusFlag) {
     return transportStatus;
@@ -33,9 +49,39 @@ export function projectConnectionStatus(
   return transportStatus;
 }
 
-export function shouldClearStatusOverride(
-  statusFlag: ConnectionStatusFlag | null,
-  transportStatus: ConnectionStatus,
-): boolean {
-  return statusFlag !== null && transportStatus === "connected";
+export function reduceConnectionStatusState(
+  state: ConnectionStatusState,
+  event: ConnectionStatusEvent,
+): ConnectionStatusState {
+  if (event.type === "transport-status") {
+    const nextTransportStatus = event.status;
+    const nextFlag =
+      nextTransportStatus === "connected" ? null : state.statusFlag;
+    const nextStatus = projectStatus(nextTransportStatus, nextFlag);
+
+    if (
+      nextTransportStatus === state.transportStatus &&
+      nextFlag === state.statusFlag &&
+      nextStatus === state.status
+    ) {
+      return state;
+    }
+
+    return {
+      transportStatus: nextTransportStatus,
+      statusFlag: nextFlag,
+      status: nextStatus,
+    };
+  }
+
+  const nextFlag = event.flag;
+  const nextStatus = projectStatus(state.transportStatus, nextFlag);
+  if (nextFlag === state.statusFlag && nextStatus === state.status) {
+    return state;
+  }
+  return {
+    ...state,
+    statusFlag: nextFlag,
+    status: nextStatus,
+  };
 }

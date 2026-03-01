@@ -129,13 +129,18 @@ describe("connection runtime io bridge", () => {
     expect(backpressureState.resetQueuedBuffers).toHaveBeenCalledTimes(1);
     expect(result.current.outputBytes).toBe(0);
 
+    const bootError = new Error("loader exploded");
     act(() => {
-      runtimeArgs.onBootError("loader exploded");
+      runtimeArgs.onBootError({
+        reason: "loader exploded",
+        cause: bootError,
+      });
     });
     expect(publishSessionNotice).toHaveBeenCalledWith(
       toUserNotice({
         context: "runtime",
         reason: "loader exploded",
+        cause: bootError,
       }),
     );
     expect(onRuntimeBootError).toHaveBeenCalledTimes(1);

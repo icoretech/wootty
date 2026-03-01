@@ -62,7 +62,7 @@ type RuntimeProbeProps = {
     FitAddon: typeof FakeFitAddon;
     WebLinksAddon: typeof FakeWebLinksAddon;
   }>;
-  onBootError?: (reason: string) => void;
+  onBootError?: (details: { reason: string; cause?: unknown }) => void;
 };
 
 function RuntimeProbe({ loadRuntime, onBootError }: RuntimeProbeProps) {
@@ -73,8 +73,8 @@ function RuntimeProbe({ loadRuntime, onBootError }: RuntimeProbeProps) {
     onInput: () => {
       // no-op
     },
-    onBootError: (reason) => {
-      onBootError?.(reason);
+    onBootError: (details) => {
+      onBootError?.(details);
     },
   });
 
@@ -115,7 +115,11 @@ describe("runtime orchestrator", () => {
     );
 
     await waitFor(() => {
-      expect(onBootError).toHaveBeenCalledWith("loader exploded");
+      expect(onBootError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reason: "loader exploded",
+        }),
+      );
       expect(screen.getByTestId("ready").textContent).toBe("false");
     });
   });

@@ -18,7 +18,7 @@ type UseRuntimeOrchestratorArgs = {
   loadRuntime: () => Promise<TerminalRuntime>;
   initialFontSize: number;
   onInput: (data: string) => void;
-  onBootError: (reason: string) => void;
+  onBootError: (details: { reason: string; cause?: unknown }) => void;
 };
 
 type RuntimeOrchestrator = {
@@ -159,7 +159,10 @@ export function useRuntimeOrchestrator({
           error instanceof Error && error.message.length > 0
             ? error.message
             : "runtime bootstrap failed";
-        onBootErrorRef.current(reason);
+        onBootErrorRef.current({
+          reason,
+          cause: error,
+        });
         setTerminalReady(false);
       }
     };
