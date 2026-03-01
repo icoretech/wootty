@@ -105,20 +105,38 @@ export const FLOATING_CONTROL_CATALOG = [
 ] as const satisfies readonly FloatingControlCatalogEntry[];
 
 export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
-  FLOATING_CONTROL_CATALOG.map((entry) => ({
-    testId: entry.testId,
-    metadataKey: entry.metadataKey,
-    action: entry.action,
-  }));
-
-const COMMAND_ACTIONS = new Set(COMMAND_CATALOG.map((entry) => entry.id));
-for (const entry of FLOATING_CONTROL_CATALOG) {
-  if (!COMMAND_ACTIONS.has(entry.action)) {
-    throw new Error(
-      `Floating control action '${entry.action}' is not defined in the command catalog.`,
-    );
-  }
-}
+  Object.freeze([
+    {
+      testId: "reconnect-button",
+      metadataKey: "reconnect",
+      action: TERMINAL_RUNTIME_COMMAND.RECONNECT,
+    },
+    {
+      testId: "clear-button",
+      metadataKey: "clear",
+      action: TERMINAL_RUNTIME_COMMAND.CLEAR,
+    },
+    {
+      testId: "font-decrease-button",
+      metadataKey: "decreaseFont",
+      action: VIEWPORT_UI_COMMAND.DECREASE_FONT,
+    },
+    {
+      testId: "font-increase-button",
+      metadataKey: "increaseFont",
+      action: VIEWPORT_UI_COMMAND.INCREASE_FONT,
+    },
+    {
+      testId: "font-reset-button",
+      metadataKey: "resetFont",
+      action: VIEWPORT_UI_COMMAND.RESET_FONT,
+    },
+    {
+      testId: "fullscreen-button",
+      metadataKey: "fullscreen",
+      action: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
+    },
+  ] satisfies readonly FloatingControlRegistryEntry[]);
 
 type FloatingControlLookup = {
   metadataByAction: ReadonlyMap<
@@ -197,15 +215,34 @@ function requireLookupValue<K, V>(
   throw new Error(`Unknown ${label} '${String(key)}'.`);
 }
 
-const FLOATING_CONTROL_LOOKUP = buildFloatingControlLookup(
-  FLOATING_CONTROL_CATALOG,
-);
+let floatingControlLookupCache: FloatingControlLookup | null = null;
+
+function assertFloatingControlActionsInCommandCatalog(): void {
+  const commandActions = new Set(COMMAND_CATALOG.map((entry) => entry.id));
+  for (const entry of FLOATING_CONTROL_CATALOG) {
+    if (!commandActions.has(entry.action)) {
+      throw new Error(
+        `Floating control action '${entry.action}' is not defined in the command catalog.`,
+      );
+    }
+  }
+}
+
+function getFloatingControlLookup(): FloatingControlLookup {
+  if (floatingControlLookupCache) {
+    return floatingControlLookupCache;
+  }
+  assertFloatingControlActionsInCommandCatalog();
+  const lookup = buildFloatingControlLookup(FLOATING_CONTROL_CATALOG);
+  floatingControlLookupCache = lookup;
+  return lookup;
+}
 
 export function floatingControlMetadata(
   command: FloatingControlCommand,
 ): FloatingControlMetadata {
   return requireLookupValue(
-    FLOATING_CONTROL_LOOKUP.metadataByAction,
+    getFloatingControlLookup().metadataByAction,
     command,
     "floating control action metadata",
   );
@@ -215,7 +252,7 @@ export function floatingControlPolicy(
   command: FloatingControlCommand,
 ): FloatingControlPolicy {
   return requireLookupValue(
-    FLOATING_CONTROL_LOOKUP.policyByAction,
+    getFloatingControlLookup().policyByAction,
     command,
     "floating control action policy",
   );
@@ -225,7 +262,7 @@ export function floatingControlDescriptor(
   metadataKey: FloatingControlMetadataKey,
 ): FloatingControlMetadata {
   return requireLookupValue(
-    FLOATING_CONTROL_LOOKUP.metadataByKey,
+    getFloatingControlLookup().metadataByKey,
     metadataKey,
     "floating control metadata",
   );

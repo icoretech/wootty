@@ -59,10 +59,11 @@ export function useConnectionRuntimeIoBridge({
   });
 
   const handleRuntimeBootError = useCallback(
-    (reason: string) => {
+    (details: { reason: string; cause?: unknown }) => {
       publishNotice({
         context: "runtime",
-        reason,
+        reason: details.reason,
+        cause: details.cause,
       });
       onRuntimeBootError();
     },

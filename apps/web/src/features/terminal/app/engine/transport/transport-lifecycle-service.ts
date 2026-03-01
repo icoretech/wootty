@@ -1,3 +1,4 @@
+import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
 import type {
   TerminalTransport,
   TerminalTransportCloseEvent,
@@ -11,6 +12,7 @@ import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
 } from "../../../notifications/failure-notice-throttle";
+import type { TransportNoticeReasonCode } from "../../../notifications/notice-contract";
 import type {
   Scheduler,
   SchedulerTimerHandle,
@@ -48,7 +50,12 @@ type TransportLifecycleServiceDeps = {
   onSocketFailure: (
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
-    reason?: string,
+    reasonCode?: Exclude<
+      TransportNoticeReasonCode,
+      "attach_handshake_send_failed"
+    >,
+    debugDetail?: string,
+    cause?: unknown,
   ) => void;
   getState: () => TransportState;
   dispatchEvent: (event: TransportEvent) => void;
@@ -57,19 +64,33 @@ type TransportLifecycleServiceDeps = {
 type TimerHandle = SchedulerTimerHandle | null;
 type WsEndpointResolution =
   | { ok: true; wsUrl: string }
-  | { ok: false; reason: string };
+  | {
+      ok: false;
+      reasonCode:
+        | "endpoint_unavailable"
+        | "endpoint_invalid_format"
+        | "endpoint_unsupported_protocol";
+      debugDetail: string;
+    };
 
 function socketFailureContext(
   source: SocketFailureSource,
+  reasonCode?: Exclude<
+    TransportNoticeReasonCode,
+    "attach_handshake_send_failed"
+  >,
   code?: TerminalTransportFailureCode,
-  reason?: string,
+  debugDetail?: string,
 ): string {
   const contextParts: string[] = [source];
+  if (reasonCode) {
+    contextParts.push(`reason=${reasonCode}`);
+  }
   if (typeof code === "number" || typeof code === "string") {
     contextParts.push(`code=${code}`);
   }
-  if (typeof reason === "string" && reason.length > 0) {
-    contextParts.push(`reason=${reason}`);
+  if (typeof debugDetail === "string" && debugDetail.length > 0) {
+    contextParts.push(`detail=${debugDetail}`);
   }
   return contextParts.join(" ");
 }
@@ -83,17 +104,26 @@ function resolveWsEndpoint(endpoint: string | null): WsEndpointResolution {
     };
   }
   if (validation.reason === "unavailable") {
-    return { ok: false, reason: "websocket endpoint unavailable" };
+    return {
+      ok: false,
+      reasonCode: "endpoint_unavailable",
+      debugDetail: "websocket endpoint unavailable",
+    };
   }
   if (validation.reason === "unsupported_protocol") {
     return {
       ok: false,
-      reason: `invalid websocket endpoint protocol '${validation.protocol}'`,
+      reasonCode: "endpoint_unsupported_protocol",
+      debugDetail: `invalid websocket endpoint protocol '${validation.protocol}'`,
     };
   }
   return {
     ok: false,
-    reason: `invalid websocket endpoint '${endpoint}'`,
+    reasonCode: "endpoint_invalid_format",
+    debugDetail:
+      typeof endpoint === "string" && endpoint.length > 0
+        ? `invalid websocket endpoint '${redactTokenInUrlForNotice(endpoint)}'`
+        : "invalid websocket endpoint format",
   };
 }
 
@@ -126,7 +156,13 @@ export class TransportLifecycleService {
         error instanceof Error && error.message.length > 0
           ? error.message
           : "transport send failed";
-      this.reportSocketFailure("error", undefined, reason);
+      this.reportSocketFailure(
+        "error",
+        undefined,
+        "send_failed",
+        reason,
+        error,
+      );
       this.deps.dispatchEvent({ type: "socket-error" });
       return false;
     }
@@ -154,7 +190,10 @@ export class TransportLifecycleService {
 
     const endpointResolution = resolveWsEndpoint(this.deps.getWsUrl());
     if (!endpointResolution.ok) {
-      this.failConnectionBootstrap(endpointResolution.reason);
+      this.failConnectionBootstrap(
+        endpointResolution.reasonCode,
+        endpointResolution.debugDetail,
+      );
       return;
     }
 
@@ -166,7 +205,7 @@ export class TransportLifecycleService {
         error instanceof Error && error.message.length > 0
           ? error.message
           : "transport bootstrap failed";
-      this.failConnectionBootstrap(reason);
+      this.failConnectionBootstrap("bootstrap_failed", reason, error);
       return;
     }
     this.ws = ws;
@@ -281,7 +320,12 @@ export class TransportLifecycleService {
       return;
     }
     this.socketErrorSinceConnect = true;
-    this.reportSocketFailure("error", event.code, event.message);
+    this.reportSocketFailure(
+      "error",
+      event.code,
+      "socket_failure",
+      event.message,
+    );
     this.deps.dispatchEvent({ type: "socket-error" });
   }
 
@@ -325,7 +369,12 @@ export class TransportLifecycleService {
     }
 
     if (shouldReportCloseFailure) {
-      this.reportSocketFailure("close", event.code, event.reason);
+      this.reportSocketFailure(
+        "close",
+        event.code,
+        "socket_failure",
+        event.reason,
+      );
     }
     if (!isRecoverableTransportClose(event.code)) {
       this.deps.dispatchEvent({ type: "socket-error" });
@@ -356,22 +405,43 @@ export class TransportLifecycleService {
     this.deps.dispatchEvent({ type: "set-close-intent", intent });
   }
 
-  private failConnectionBootstrap(reason: string): void {
-    this.reportSocketFailure("error", undefined, reason);
+  private failConnectionBootstrap(
+    reasonCode:
+      | "endpoint_unavailable"
+      | "endpoint_invalid_format"
+      | "endpoint_unsupported_protocol"
+      | "bootstrap_failed",
+    debugDetail: string,
+    cause?: unknown,
+  ): void {
+    this.reportSocketFailure(
+      "error",
+      undefined,
+      reasonCode,
+      debugDetail,
+      cause,
+    );
     this.deps.dispatchEvent({ type: "socket-error" });
   }
 
   private reportSocketFailure(
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
-    reason?: string,
+    reasonCode?: Exclude<
+      TransportNoticeReasonCode,
+      "attach_handshake_send_failed"
+    >,
+    debugDetail?: string,
+    cause?: unknown,
   ): void {
-    const context = socketFailureContext(source, code, reason);
+    const context = socketFailureContext(source, reasonCode, code, debugDetail);
     this.deps.dispatchEvent({ type: "socket-failure", context });
 
-    const noticeKey = `${source}|${String(code ?? "")}|${reason ?? ""}`;
+    const noticeKey = `${source}|${String(code ?? "")}|${reasonCode ?? ""}|${debugDetail ?? ""}`;
     const baseReason =
-      reason && reason.length > 0 ? reason : "transport failure";
+      debugDetail && debugDetail.length > 0
+        ? debugDetail
+        : (reasonCode ?? "transport failure");
     const nextNoticeState = notifyWithFailureThrottle({
       current: this.socketFailureNotice,
       key: noticeKey,
@@ -379,7 +449,7 @@ export class TransportLifecycleService {
       cooldownMs: SOCKET_FAILURE_NOTICE_COOLDOWN_MS,
       baseMessage: baseReason,
       notify: (message) => {
-        this.deps.onSocketFailure(source, code, message);
+        this.deps.onSocketFailure(source, code, reasonCode, message, cause);
       },
     });
     this.socketFailureNotice = nextNoticeState.next;

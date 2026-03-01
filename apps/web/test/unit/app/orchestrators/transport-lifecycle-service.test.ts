@@ -36,7 +36,9 @@ function createHarness({
       (
         source: SocketFailureSource,
         code?: TerminalTransportFailureCode,
-        reason?: string,
+        reasonCode?: string,
+        debugDetail?: string,
+        cause?: unknown,
       ) => void
     >();
 
@@ -97,7 +99,9 @@ describe("transport lifecycle service", () => {
     expect(harness.onSocketFailure).toHaveBeenCalledWith(
       "error",
       undefined,
+      "endpoint_unsupported_protocol",
       expect.stringContaining("invalid websocket endpoint protocol"),
+      undefined,
     );
   });
 
@@ -174,7 +178,9 @@ describe("transport lifecycle service", () => {
     expect(harness.onSocketFailure).toHaveBeenCalledWith(
       "error",
       undefined,
+      "socket_failure",
       "transport exploded",
+      undefined,
     );
   });
 });

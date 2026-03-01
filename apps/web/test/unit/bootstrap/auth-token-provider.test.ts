@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it } from "vitest";
 import {
   createBrowserAuthTokenProvider,
   normalizeAuthToken,
-  readAuthTokenFromUrl,
   readAuthTokenFromUrlResult,
   readAuthTokenFromWindow,
 } from "../../../src/features/terminal/bootstrap/auth-token-provider";
@@ -17,10 +16,10 @@ describe("auth token provider", () => {
   it("normalizes and parses token sources", () => {
     expect(normalizeAuthToken("  token  ")).toBe("token");
     expect(normalizeAuthToken("   ")).toBeUndefined();
-    expect(readAuthTokenFromUrl("wss://host/api/terminal?token=abc")).toBe(
-      "abc",
-    );
-    expect(readAuthTokenFromUrl("not-a-url")).toBeUndefined();
+    expect(
+      readAuthTokenFromUrlResult("wss://host/api/terminal?token=abc").token,
+    ).toBe("abc");
+    expect(readAuthTokenFromUrlResult("not-a-url").token).toBeUndefined();
     expect(readAuthTokenFromUrlResult("not-a-url")).toMatchObject({
       token: undefined,
       issue: {

@@ -12,7 +12,7 @@ import { useTerminalPlatformContext } from "./composition/terminal-platform-comp
 import { useTerminalPresentationModel } from "./terminal-presentation";
 
 type TerminalController = {
-  appViewportRef: RefObject<HTMLDivElement | null>;
+  appViewportRef: RefObject<HTMLElement | null>;
   terminalElementRef: RefObject<HTMLDivElement | null>;
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
@@ -33,7 +33,7 @@ type TerminalController = {
 export function useTerminalController(
   environment: TerminalAppEnvironment,
 ): TerminalController {
-  const appViewportRef = useRef<HTMLDivElement | null>(null);
+  const appViewportRef = useRef<HTMLElement | null>(null);
   const sessionMenuRef = useRef<HTMLDivElement | null>(null);
   const sessionButtonRef = useRef<HTMLDivElement | null>(null);
 

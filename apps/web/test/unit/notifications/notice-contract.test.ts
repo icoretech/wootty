@@ -22,7 +22,12 @@ describe("notice contract", () => {
       { context: "fullscreen" },
       { context: "runtime" },
       { context: "protocol", reason: "unsupported_type" },
-      { context: "transport", source: "error", reason: "boom" },
+      {
+        context: "transport",
+        source: "error",
+        reasonCode: "socket_failure",
+        debugDetail: "boom",
+      },
       { context: "server", reason: "attach_required" },
       {
         context: "bootstrap",

@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
 import type { AttachMode } from "../../contracts/session";
 import type {
@@ -7,7 +7,10 @@ import type {
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
 } from "../../contracts/transport";
-import type { NoticePublisher } from "../../notifications/notice-contract";
+import type {
+  NoticePublisher,
+  TransportNoticeReasonCode,
+} from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
@@ -19,8 +22,8 @@ import type {
 import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
 import {
   type ConnectionStatusFlag,
-  projectConnectionStatus,
-  shouldClearStatusOverride,
+  initialConnectionStatusState,
+  reduceConnectionStatusState,
 } from "./protocol/connection-status-projector";
 import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
 import { useTransportOrchestrator } from "./transport/transport-orchestrator";
@@ -93,8 +96,9 @@ export function useConnectionCoordinator({
     // no-op
   });
   const hasSessionContextRef = useRef(hasActiveSession);
-  const [statusFlag, setStatusFlag] = useState<ConnectionStatusFlag | null>(
-    null,
+  const [statusState, dispatchStatusEvent] = useReducer(
+    reduceConnectionStatusState,
+    initialConnectionStatusState,
   );
 
   useEffect(() => {
@@ -109,7 +113,10 @@ export function useConnectionCoordinator({
     return sendPayloadRef.current(payload);
   }, []);
   const handleRuntimeBootError = useCallback(() => {
-    setStatusFlag("runtime_error");
+    dispatchStatusEvent({
+      type: "status-flag",
+      flag: "runtime_error",
+    });
   }, []);
 
   const runtimeBridge = useConnectionRuntimeIoBridge({
@@ -126,13 +133,20 @@ export function useConnectionCoordinator({
     (
       source: "error" | "close",
       code?: TerminalTransportFailureCode,
-      reason?: string,
+      reasonCode?: Exclude<
+        TransportNoticeReasonCode,
+        "attach_handshake_send_failed"
+      >,
+      debugDetail?: string,
+      cause?: unknown,
     ) => {
       publishNotice({
         context: "transport",
         source,
+        reasonCode: reasonCode ?? "socket_failure",
         code,
-        reason,
+        debugDetail,
+        cause,
       });
     },
     [publishNotice],
@@ -140,7 +154,12 @@ export function useConnectionCoordinator({
 
   const { handleSocketMessage } = useConnectionMessageGateway({
     publishNotice,
-    setStatusFlag,
+    setStatusFlag: (next: ConnectionStatusFlag | null) => {
+      dispatchStatusEvent({
+        type: "status-flag",
+        flag: next,
+      });
+    },
     applyReadySession,
     clearMissingSession,
     refreshLiveSessions,
@@ -157,7 +176,10 @@ export function useConnectionCoordinator({
   const transportHandlers = useMemo(
     () => ({
       onOpen: () => {
-        setStatusFlag(null);
+        dispatchStatusEvent({
+          type: "status-flag",
+          flag: null,
+        });
         const fitSize = runtimeBridge.runtimeFitSizeRef.current;
         const attachSent = sendNow(
           createAttachMessage({
@@ -172,7 +194,7 @@ export function useConnectionCoordinator({
         }
         publishNotice({
           context: "transport",
-          reason: "attach handshake send failed",
+          reasonCode: "attach_handshake_send_failed",
         });
       },
       onMessage: (event: TerminalTransportMessageEvent) => {
@@ -222,12 +244,18 @@ export function useConnectionCoordinator({
   markPongRef.current = markPong;
 
   const reconnectNow = useCallback(() => {
-    setStatusFlag(null);
+    dispatchStatusEvent({
+      type: "status-flag",
+      flag: null,
+    });
     reconnectTransportNow();
   }, [reconnectTransportNow]);
 
   const scheduleFreshConnection = useCallback(() => {
-    setStatusFlag(null);
+    dispatchStatusEvent({
+      type: "status-flag",
+      flag: null,
+    });
     scheduleFreshTransportConnection();
   }, [scheduleFreshTransportConnection]);
 
@@ -260,10 +288,11 @@ export function useConnectionCoordinator({
   ]);
 
   useEffect(() => {
-    if (shouldClearStatusOverride(statusFlag, transportStatus)) {
-      setStatusFlag(null);
-    }
-  }, [statusFlag, transportStatus]);
+    dispatchStatusEvent({
+      type: "transport-status",
+      status: transportStatus,
+    });
+  }, [transportStatus]);
 
   return {
     runtime: {
@@ -275,7 +304,7 @@ export function useConnectionCoordinator({
       resetRuntimeBuffers: runtimeBridge.resetRuntimeBuffers,
     },
     transport: {
-      status: projectConnectionStatus(statusFlag, transportStatus),
+      status: statusState.status,
       reconnectAttempt,
       latencyMs,
       lastSocketFailure,

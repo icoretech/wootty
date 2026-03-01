@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
+import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
@@ -36,11 +37,15 @@ export type ControllerUiState = {
 };
 
 function useControllerUiState(
-  getLocalStorage: () => Storage | null,
+  getLocalStorage: TerminalDomainEnvironment["getLocalStorage"],
   onStorageFailure?: (failure: StorageAccessFailure) => void,
 ): ControllerUiState {
   const initialFontSize = useMemo(() => {
-    const result = readInitialFontSizeResult(getLocalStorage());
+    const access = getLocalStorage();
+    if (access.error && onStorageFailure) {
+      onStorageFailure(access.error);
+    }
+    const result = readInitialFontSizeResult(access.storage);
     if (result.error && onStorageFailure) {
       onStorageFailure(result.error);
     }
@@ -60,8 +65,14 @@ function useControllerUiState(
       const normalized = clampFontSize(next);
       fontSizeRef.current = normalized;
       setFontSize(normalized);
-      const storage = getLocalStorage();
-      const writeResult = writeFontSizePreferenceResult(storage, normalized);
+      const access = getLocalStorage();
+      if (access.error && onStorageFailure) {
+        onStorageFailure(access.error);
+      }
+      const writeResult = writeFontSizePreferenceResult(
+        access.storage,
+        normalized,
+      );
       if (writeResult.error && onStorageFailure) {
         onStorageFailure(writeResult.error);
       }
@@ -98,12 +109,7 @@ function useBackendResolutionNotice(
       return;
     }
     lastBootstrapIssueRef.current = issueKey;
-    publishNotice({
-      context: "bootstrap",
-      reason: "backend_resolution_failed",
-      details: backendResolution.issue.details,
-      code: backendResolution.issue.code,
-    });
+    publishNotice(toBackendResolutionNotice(backendResolution.issue));
   }, [backendResolution, publishNotice]);
 }
 

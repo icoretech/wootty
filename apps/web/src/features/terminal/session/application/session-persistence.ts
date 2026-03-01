@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import {
   clearStoredSessionIdResult,
@@ -14,8 +15,8 @@ import {
 } from "../persistence/storage-keys";
 
 type UseSessionPersistenceArgs = {
-  getLocalStorage: () => Storage | null;
-  getSessionStorage: () => Storage | null;
+  getLocalStorage: () => TerminalStorageAccessResult;
+  getSessionStorage: () => TerminalStorageAccessResult;
   onStorageFailure?: (failure: StorageAccessFailure) => void;
 };
 
@@ -40,11 +41,19 @@ type SessionPersistence = {
 function reportFailure(
   failure: StorageAccessFailure | null,
   onStorageFailure?: (failure: StorageAccessFailure) => void,
-) {
+): void {
   if (!failure || !onStorageFailure) {
     return;
   }
   onStorageFailure(failure);
+}
+
+function resolveStorageAccess(
+  access: TerminalStorageAccessResult,
+  onStorageFailure?: (failure: StorageAccessFailure) => void,
+): Storage | null {
+  reportFailure(access.error, onStorageFailure);
+  return access.storage;
 }
 
 export function useSessionPersistence({
@@ -53,7 +62,7 @@ export function useSessionPersistence({
   onStorageFailure,
 }: UseSessionPersistenceArgs): SessionPersistence {
   const initialSessionId = useMemo(() => {
-    const storage = getSessionStorage();
+    const storage = resolveStorageAccess(getSessionStorage(), onStorageFailure);
     if (!storage) {
       return null;
     }
@@ -63,7 +72,7 @@ export function useSessionPersistence({
   }, [getSessionStorage, onStorageFailure]);
 
   const initialLastSessionId = useMemo(() => {
-    const storage = getLocalStorage();
+    const storage = resolveStorageAccess(getLocalStorage(), onStorageFailure);
     if (!storage) {
       return null;
     }
@@ -73,7 +82,7 @@ export function useSessionPersistence({
   }, [getLocalStorage, onStorageFailure]);
 
   const initialSessionHistory = useMemo(() => {
-    const storage = getLocalStorage();
+    const storage = resolveStorageAccess(getLocalStorage(), onStorageFailure);
     if (!storage) {
       return [];
     }
@@ -91,7 +100,7 @@ export function useSessionPersistence({
   );
 
   const clearActiveSessionStorage = useCallback(() => {
-    const storage = getSessionStorage();
+    const storage = resolveStorageAccess(getSessionStorage(), onStorageFailure);
     if (!storage) {
       return;
     }
@@ -104,7 +113,10 @@ export function useSessionPersistence({
 
   const persistActiveSessionStorage = useCallback(
     (nextSessionId: string) => {
-      const storage = getSessionStorage();
+      const storage = resolveStorageAccess(
+        getSessionStorage(),
+        onStorageFailure,
+      );
       if (!storage) {
         return;
       }
@@ -120,7 +132,10 @@ export function useSessionPersistence({
 
   const rememberSession = useCallback(
     (nextSessionId: string) => {
-      const localStorageRef = getLocalStorage();
+      const localStorageRef = resolveStorageAccess(
+        getLocalStorage(),
+        onStorageFailure,
+      );
       if (!localStorageRef) {
         return;
       }

@@ -1,30 +1,43 @@
 import { describe, expect, it } from "vitest";
 import {
-  projectConnectionStatus,
-  shouldClearStatusOverride,
+  initialConnectionStatusState,
+  reduceConnectionStatusState,
 } from "../../../../src/features/terminal/app/engine/protocol/connection-status-projector";
 
-describe("connection status projector", () => {
-  it("projects explicit flags over transport state coherently", () => {
-    expect(projectConnectionStatus(null, "connecting")).toBe("connecting");
-    expect(projectConnectionStatus("runtime_error", "connected")).toBe("error");
-    expect(projectConnectionStatus("protocol_incompatible", "connected")).toBe(
-      "error",
+describe("connection status reducer", () => {
+  it("projects status flags over transport updates in one reducer flow", () => {
+    const withRuntimeError = reduceConnectionStatusState(
+      initialConnectionStatusState,
+      {
+        type: "status-flag",
+        flag: "runtime_error",
+      },
     );
-    expect(projectConnectionStatus("session_not_found", "connected")).toBe(
-      "closed",
+    expect(withRuntimeError.status).toBe("error");
+
+    const withConnectedTransport = reduceConnectionStatusState(
+      withRuntimeError,
+      {
+        type: "transport-status",
+        status: "connected",
+      },
     );
-    expect(projectConnectionStatus("attach_forbidden", "connected")).toBe(
-      "connected",
-    );
-    expect(projectConnectionStatus("remote_exit", "connected")).toBe("closed");
+    expect(withConnectedTransport.statusFlag).toBeNull();
+    expect(withConnectedTransport.status).toBe("connected");
   });
 
-  it("clears status flag once transport reaches connected", () => {
-    expect(shouldClearStatusOverride(null, "connected")).toBe(false);
-    expect(shouldClearStatusOverride("remote_exit", "reconnecting")).toBe(
-      false,
+  it("keeps remote exit projected as closed while transport remains connected", () => {
+    const connected = reduceConnectionStatusState(
+      initialConnectionStatusState,
+      {
+        type: "transport-status",
+        status: "connected",
+      },
     );
-    expect(shouldClearStatusOverride("remote_exit", "connected")).toBe(true);
+    const remoteExit = reduceConnectionStatusState(connected, {
+      type: "status-flag",
+      flag: "remote_exit",
+    });
+    expect(remoteExit.status).toBe("closed");
   });
 });

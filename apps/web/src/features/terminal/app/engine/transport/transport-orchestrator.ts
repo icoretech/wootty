@@ -3,6 +3,7 @@ import type {
   TerminalTransport,
   TerminalTransportFailureCode,
 } from "../../../contracts/transport";
+import type { TransportNoticeReasonCode } from "../../../notifications/notice-contract";
 import type { Scheduler } from "../../../platform/scheduler";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 import {
@@ -26,7 +27,12 @@ type UseTransportOrchestratorArgs = {
   onSocketFailure: (
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
-    reason?: string,
+    reasonCode?: Exclude<
+      TransportNoticeReasonCode,
+      "attach_handshake_send_failed"
+    >,
+    debugDetail?: string,
+    cause?: unknown,
   ) => void;
 };
 
@@ -94,8 +100,14 @@ export function useTransportOrchestrator({
         getHandlers: () => handlersRef.current,
         hasSessionContext: () => hasSessionContextRef.current(),
         scheduler,
-        onSocketFailure: (source, code, reason) =>
-          onSocketFailureRef.current(source, code, reason),
+        onSocketFailure: (source, code, reasonCode, debugDetail, cause) =>
+          onSocketFailureRef.current(
+            source,
+            code,
+            reasonCode,
+            debugDetail,
+            cause,
+          ),
         getState: () => stateRef.current,
         dispatchEvent,
       }),

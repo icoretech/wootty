@@ -1,4 +1,5 @@
 import type { ConnectionStatus } from "../../../contracts/connection";
+import { assertNever } from "../../../lib/assert-never";
 
 export type SocketCloseIntent = "normal" | "fresh" | "manual";
 
@@ -88,7 +89,6 @@ export function reduceTransportState(
         ...state,
         reconnectAttempt: 0,
       };
-    default:
-      return state;
   }
+  return assertNever(event);
 }
