@@ -47,7 +47,7 @@ function createServerLaunch(port: number): E2eServerLaunch {
     "sh",
   ] as const;
   return {
-    cwd: "../server",
+    cwd: "../../../server",
     env: {
       WOOTTY_PORT: String(port),
       WOOTTY_FAKE_PTY: "1",
