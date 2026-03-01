@@ -90,7 +90,7 @@
     },
     {
       "requirement": "FR-3 Heartbeat and stale transport detection",
-      "unitIntegration": "`apps/web/test/unit/lib/terminal-session.test.ts` (message parser for pong), `apps/web/test/unit/app/orchestrators/transport-orchestrator.test.tsx` (heartbeat timeout + reconnect)",
+      "unitIntegration": "`apps/web/test/unit/lib/terminal-session.test.ts` (message parser for pong), `apps/web/test/unit/app/orchestrators/transport/transport-orchestrator.test.tsx` (heartbeat timeout + reconnect)",
       "e2e": "covered by reconnect stability checks in e2e reconnect and resize scenarios"
     },
     {

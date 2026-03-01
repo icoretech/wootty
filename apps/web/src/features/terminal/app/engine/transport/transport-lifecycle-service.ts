@@ -63,6 +63,7 @@ export class TransportLifecycleService {
   private readonly reconnectController: TransportReconnectController;
   private readonly socketEventBridge: TransportSocketEventBridge;
   private ws: TerminalTransport | null = null;
+  private detachSocketListeners: (() => void) | null = null;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
@@ -152,7 +153,8 @@ export class TransportLifecycleService {
     const ws = bootstrapResult.socket;
     this.ws = ws;
 
-    this.socketEventBridge.bind(ws, {
+    this.detachSocketEventListeners();
+    this.detachSocketListeners = this.socketEventBridge.bind(ws, {
       onOpen: () => {
         if (this.ws !== ws) {
           return;
@@ -179,7 +181,7 @@ export class TransportLifecycleService {
   };
 
   reconnectNow = (): void => {
-    this.reconnectController.beginManualReconnect();
+    this.reconnectController.beginReconnect();
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.setCloseIntent("manual");
     this.clearLifecycleTimers();
@@ -191,7 +193,7 @@ export class TransportLifecycleService {
   };
 
   reconnectWithEndpointChange = (): void => {
-    this.reconnectController.beginEndpointReconnect();
+    this.reconnectController.beginReconnect();
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.clearLifecycleTimers();
 
@@ -201,6 +203,7 @@ export class TransportLifecycleService {
       previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
     ) {
       // Detach before reconnect so connect() is not blocked by the old socket state.
+      this.detachSocketEventListeners();
       this.ws = null;
       this.connect();
       previousSocket.close(
@@ -265,6 +268,7 @@ export class TransportLifecycleService {
     const isCurrentSocket = this.ws === socket;
     if (isCurrentSocket) {
       this.ws = null;
+      this.detachSocketEventListeners();
     }
     if (!isCurrentSocket && this.ws !== null) {
       return;
@@ -355,6 +359,14 @@ export class TransportLifecycleService {
   private clearLifecycleTimers(): void {
     this.heartbeatMonitor.stop();
     this.reconnectController.clearReconnectTimer();
+  }
+
+  private detachSocketEventListeners(): void {
+    if (this.detachSocketListeners === null) {
+      return;
+    }
+    this.detachSocketListeners();
+    this.detachSocketListeners = null;
   }
 }
 

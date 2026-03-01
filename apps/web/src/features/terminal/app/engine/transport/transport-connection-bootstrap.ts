@@ -1,6 +1,6 @@
-import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
 import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type { TerminalTransport } from "../../../contracts/transport/transport";
+import { redactTokenInUrlForNotice } from "../../../shared/sanitization/redact-token-in-url";
 import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
 
 const TRANSPORT_BOOTSTRAP_FAILURE_REASON_CODES = [

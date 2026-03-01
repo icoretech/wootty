@@ -34,12 +34,7 @@ export class TransportReconnectController {
     return shouldReport;
   }
 
-  beginManualReconnect(): void {
-    this.closedByUser = false;
-    this.pendingFreshConnect = false;
-  }
-
-  beginEndpointReconnect(): void {
+  beginReconnect(): void {
     this.closedByUser = false;
     this.pendingFreshConnect = false;
   }
