@@ -33,10 +33,6 @@ export class TransportSocketSession {
     );
   }
 
-  currentGeneration(): number {
-    return this.generation;
-  }
-
   isCurrent(socket: TerminalTransport, generation: number): boolean {
     return this.socket === socket && this.generation === generation;
   }
@@ -84,14 +80,6 @@ export class TransportSocketSession {
     const previous = this.socket;
     this.clear();
     return previous;
-  }
-
-  releaseIfCurrent(socket: TerminalTransport, generation: number): boolean {
-    if (!this.isCurrent(socket, generation)) {
-      return false;
-    }
-    this.clear();
-    return true;
   }
 
   releaseIfCurrentWithIntent(

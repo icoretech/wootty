@@ -1,5 +1,12 @@
 import type { RefObject } from "react";
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
 import type { AttachMode } from "../../contracts/session/session";
 import type {
@@ -20,11 +27,13 @@ import {
 } from "./protocol/connection-status-projector";
 import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
 import type { TransportFailureSink } from "./transport/contracts/transport-failure-contract";
-import type { TransportFailureContext } from "./transport/state/transport-state-machine";
+import { TransportLifecycleService } from "./transport/lifecycle/transport-lifecycle-service";
 import {
-  type TransportOrchestrator,
-  useTransportOrchestrator,
-} from "./transport/transport-orchestrator";
+  initialTransportState,
+  reduceTransportState,
+  type TransportEvent,
+  type TransportFailureContext,
+} from "./transport/state/transport-state-machine";
 
 type UseConnectionCoordinatorArgs = {
   createTransport: (url: string) => TerminalTransport;
@@ -260,14 +269,40 @@ export function useConnectionCoordinator({
       setStatusFlag,
     ],
   );
-  const transport: TransportOrchestrator = useTransportOrchestrator({
-    createTransport,
+  const [transportState, setTransportState] = useState(initialTransportState);
+  const transportStateRef = useRef(initialTransportState);
+  const dispatchTransportEvent = useCallback((event: TransportEvent) => {
+    const nextState = reduceTransportState(transportStateRef.current, event);
+    transportStateRef.current = nextState;
+    setTransportState(nextState);
+  }, []);
+  const runtimeContextRef = useRef({
     wsUrl,
     handlers: transportHandlers,
     hasSessionContext: sessionTransportContext.hasSessionContext,
     onSocketFailure: reportSocketFailure,
-    scheduler,
   });
+  runtimeContextRef.current = {
+    wsUrl,
+    handlers: transportHandlers,
+    hasSessionContext: sessionTransportContext.hasSessionContext,
+    onSocketFailure: reportSocketFailure,
+  };
+  const transportLifecycle = useMemo(() => {
+    return new TransportLifecycleService({
+      createTransport,
+      scheduler,
+      getRuntimeContext: () => runtimeContextRef.current,
+      getState: () => transportStateRef.current,
+      dispatchEvent: dispatchTransportEvent,
+    });
+  }, [createTransport, dispatchTransportEvent, scheduler]);
+  useEffect(
+    () => () => {
+      transportLifecycle.dispose();
+    },
+    [transportLifecycle],
+  );
   const {
     connect,
     dispose,
@@ -276,11 +311,7 @@ export function useConnectionCoordinator({
     reconnectNow: reconnectTransportNow,
     reconnectWithEndpointChange,
     scheduleFreshConnection: scheduleFreshTransportConnection,
-    status: transportStatus,
-    reconnectAttempt,
-    latencyMs,
-    lastSocketFailure,
-  } = transport;
+  } = transportLifecycle;
   sendPayloadRef.current = sendPayload;
   markPongRef.current = markPong;
 
@@ -331,9 +362,9 @@ export function useConnectionCoordinator({
   useEffect(() => {
     dispatchStatusEvent({
       type: "transport-status",
-      status: transportStatus,
+      status: transportState.status,
     });
-  }, [transportStatus]);
+  }, [transportState.status]);
 
   return {
     runtime: {
@@ -346,9 +377,9 @@ export function useConnectionCoordinator({
     },
     transport: {
       status: bootstrapFailure ? "error" : statusState.status,
-      reconnectAttempt,
-      latencyMs,
-      lastSocketFailure,
+      reconnectAttempt: transportState.reconnectAttempt,
+      latencyMs: transportState.latencyMs,
+      lastSocketFailure: transportState.lastSocketFailure,
       reconnectNow,
       scheduleFreshConnection,
     },

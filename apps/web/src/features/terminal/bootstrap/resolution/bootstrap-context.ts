@@ -4,7 +4,6 @@ import type {
 } from "../../contracts/backend-resolution";
 import { redactTokenInUrlForNotice } from "../../shared/sanitization/redact-token-in-url";
 import { resolveTerminalBackendEndpoints } from "../backend-endpoint-resolver";
-import { resolveSocketUrl } from "../url/socket-url-resolution";
 
 export type AuthTokenResolution = {
   token: string | undefined;
@@ -62,14 +61,17 @@ export function resolveBrowserAuthToken(
     return { token: fromWindow };
   }
 
-  const socketResolution = resolveSocketUrl(windowRef, envSocketUrl);
-  if (!socketResolution.ok) {
+  const backendResolution = resolveTerminalBackendEndpoints(
+    windowRef,
+    envSocketUrl,
+  );
+  if (!backendResolution.ok) {
     return {
       token: undefined,
-      issue: socketResolution.issue,
+      issue: backendResolution.issue,
     };
   }
-  return readAuthTokenFromUrlResult(socketResolution.socketUrl);
+  return readAuthTokenFromUrlResult(backendResolution.endpoints.terminalWsUrl);
 }
 
 export function resolveBrowserBackendEndpoints(

@@ -67,7 +67,6 @@ describe("transport socket session", () => {
     const secondGeneration = session.attach(secondSocket, createHandlers());
 
     expect(secondGeneration).toBe(2);
-    expect(session.currentGeneration()).toBe(2);
     expect(session.current()).toBe(secondSocket);
     expect(firstDetach).toHaveBeenCalledTimes(1);
 
@@ -96,15 +95,22 @@ describe("transport socket session", () => {
     const secondSocket = new SocketDouble();
 
     const firstGeneration = session.attach(firstSocket, createHandlers());
-    session.attach(secondSocket, createHandlers());
+    const secondGeneration = session.attach(secondSocket, createHandlers());
 
-    expect(session.releaseIfCurrent(firstSocket, firstGeneration)).toBe(false);
+    expect(
+      session.releaseIfCurrentWithIntent(firstSocket, firstGeneration),
+    ).toEqual({
+      released: false,
+      closeIntent: "normal",
+    });
     expect(session.current()).toBe(secondSocket);
 
-    const currentGeneration = session.currentGeneration();
-    expect(session.releaseIfCurrent(secondSocket, currentGeneration)).toBe(
-      true,
-    );
+    expect(
+      session.releaseIfCurrentWithIntent(secondSocket, secondGeneration),
+    ).toEqual({
+      released: true,
+      closeIntent: "normal",
+    });
     expect(session.current()).toBeNull();
 
     session.attach(firstSocket, createHandlers());
