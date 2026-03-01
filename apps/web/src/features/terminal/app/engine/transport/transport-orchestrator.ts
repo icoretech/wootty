@@ -109,46 +109,17 @@ export function useTransportOrchestrator({
     [lifecycleService],
   );
 
-  const sendPayload = useCallback(
-    (payload: TerminalClientMessage) => lifecycleService.sendPayload(payload),
-    [lifecycleService],
-  );
-  const markPong = useCallback(
-    () => lifecycleService.markPong(),
-    [lifecycleService],
-  );
-  const connect = useCallback(
-    () => lifecycleService.connect(),
-    [lifecycleService],
-  );
-  const reconnectNow = useCallback(
-    () => lifecycleService.reconnectNow(),
-    [lifecycleService],
-  );
-  const reconnectWithEndpointChange = useCallback(
-    () => lifecycleService.reconnectWithEndpointChange(),
-    [lifecycleService],
-  );
-  const scheduleFreshConnection = useCallback(
-    () => lifecycleService.scheduleFreshConnection(),
-    [lifecycleService],
-  );
-  const dispose = useCallback(
-    () => lifecycleService.dispose(),
-    [lifecycleService],
-  );
-
   return {
     status: state.status,
     reconnectAttempt: state.reconnectAttempt,
     latencyMs: state.latencyMs,
     lastSocketFailure: state.lastSocketFailure,
-    sendPayload,
-    markPong,
-    connect,
-    reconnectNow,
-    reconnectWithEndpointChange,
-    scheduleFreshConnection,
-    dispose,
+    sendPayload: lifecycleService.sendPayload,
+    markPong: lifecycleService.markPong,
+    connect: lifecycleService.connect,
+    reconnectNow: lifecycleService.reconnectNow,
+    reconnectWithEndpointChange: lifecycleService.reconnectWithEndpointChange,
+    scheduleFreshConnection: lifecycleService.scheduleFreshConnection,
+    dispose: lifecycleService.dispose,
   };
 }
