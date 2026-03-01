@@ -1,14 +1,10 @@
+import type { StorageAccessFailure } from "../../contracts/storage-access";
 import {
   SESSION_HISTORY_STORAGE_KEY,
   type SessionStorageKey,
 } from "./storage-keys";
 
-export type StorageAccessFailure = {
-  operation: "read" | "write" | "remove" | "parse";
-  key: string;
-  reason?: "schema_mismatch" | "invalid_value";
-  cause?: unknown;
-};
+export type { StorageAccessFailure } from "../../contracts/storage-access";
 
 type StorageReadSessionIdResult = {
   sessionId: string | null;

@@ -1,8 +1,8 @@
 import { useCallback, useMemo } from "react";
 import type { TerminalBackendResolution } from "../../contracts/backend-resolution";
+import type { SessionsFetchResult } from "../../contracts/sessions-fetch";
 import type { TerminalPlatformEnvironment } from "../../environment/terminal-environment-contract";
 import type { Scheduler } from "../../platform/scheduler";
-import type { SessionsFetchResult } from "../../session/protocol/sessions-fetch-contract";
 
 function useFetchSessions(
   environment: TerminalPlatformEnvironment,

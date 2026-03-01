@@ -1,12 +1,45 @@
-import type { TerminalServerErrorCode } from "../protocol/server-error-codes";
-import type { TerminalProtocolFailureDetail } from "../protocol/terminal-protocol";
-import type { BackendResolutionIssueCode } from "./backend-resolution";
 import { TRANSPORT_FAILURE_REASON_CODES } from "./transport-failure-reason";
 
-export type NoticeProtocolFailureDetail = TerminalProtocolFailureDetail;
-export type NoticeServerErrorReason = TerminalServerErrorCode;
+export const NOTICE_PROTOCOL_FAILURE_DETAILS = [
+  "non_text_frame",
+  "json_parse_error",
+  "payload_not_object",
+  "invalid_message_type",
+  "unsupported_message_type",
+  "missing_ready_session_id",
+  "invalid_ready_read_only",
+  "invalid_output_data",
+  "invalid_exit_payload",
+  "missing_error_message",
+  "wire_version_mismatch",
+] as const;
 
-export type NoticeBootstrapIssueCode = BackendResolutionIssueCode;
+export type NoticeProtocolFailureDetail =
+  (typeof NOTICE_PROTOCOL_FAILURE_DETAILS)[number];
+
+export const NOTICE_SERVER_ERROR_REASONS = [
+  "session_not_found",
+  "attach_forbidden",
+  "incompatible_version",
+  "attach_required",
+  "read_only_forbidden",
+  "session_not_writable",
+  "session_not_resizable",
+] as const;
+
+export type NoticeServerErrorReason =
+  (typeof NOTICE_SERVER_ERROR_REASONS)[number];
+
+export const NOTICE_BOOTSTRAP_ISSUE_CODES = [
+  "env_socket_url_invalid_format",
+  "env_socket_url_requires_window_host",
+  "env_socket_url_unsupported_protocol",
+  "socket_url_invalid_format",
+  "socket_url_unsupported_protocol",
+] as const;
+
+export type NoticeBootstrapIssueCode =
+  (typeof NOTICE_BOOTSTRAP_ISSUE_CODES)[number];
 
 const TRANSPORT_NOTICE_REASON_CODES = [
   "attach_handshake_send_failed",

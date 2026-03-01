@@ -1,10 +1,10 @@
+import type { StorageAccessFailure } from "../../contracts/storage-access";
 import {
   clampFontSize,
   DEFAULT_FONT_SIZE,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
 } from "../../preferences/font-size-policy";
-import type { StorageAccessFailure } from "../../session/persistence/session-storage";
 
 const FONT_SIZE_STORAGE_KEY = "wootty.fontSize";
 export { clampFontSize, DEFAULT_FONT_SIZE, FONT_SIZE_MAX, FONT_SIZE_MIN };

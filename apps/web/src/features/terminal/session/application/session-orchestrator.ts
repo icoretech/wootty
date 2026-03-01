@@ -5,15 +5,15 @@ import {
   useRef,
   useState,
 } from "react";
-import type { FailureNoticeState } from "../../app/reliability/failure-notice-throttle";
 import type { NoticeDetails } from "../../contracts/notice";
 import type { AttachMode, SessionSnapshot } from "../../contracts/session";
+import type { SessionsFetchResult } from "../../contracts/sessions-fetch";
 import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
+import type { FailureNoticeState } from "../../notifications/failure-notice-throttle";
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { Scheduler } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
-import type { SessionsFetchResult } from "../../session/protocol/sessions-fetch-contract";
 import { parseSessionsResponse } from "../../session/protocol/sessions-payload-parser";
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import { useSessionNoticeChannel } from "./session-notice-channel";

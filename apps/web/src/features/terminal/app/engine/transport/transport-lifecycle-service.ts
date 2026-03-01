@@ -1,7 +1,3 @@
-import {
-  type FailureNoticeState,
-  notifyWithFailureThrottle,
-} from "../../../app/reliability/failure-notice-throttle";
 import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
 import type {
   TerminalTransport,
@@ -12,6 +8,10 @@ import type {
 } from "../../../contracts/transport";
 import { TRANSPORT_READY_STATE } from "../../../contracts/transport";
 import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
+import {
+  type FailureNoticeState,
+  notifyWithFailureThrottle,
+} from "../../../notifications/failure-notice-throttle";
 import type {
   Scheduler,
   SchedulerTimerHandle,

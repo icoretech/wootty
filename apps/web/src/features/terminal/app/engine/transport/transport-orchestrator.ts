@@ -57,31 +57,6 @@ export function useTransportOrchestrator({
 }: UseTransportOrchestratorArgs): TransportOrchestrator {
   const [state, setState] = useState(initialTransportState);
   const stateRef = useRef(initialTransportState);
-  const createTransportRef = useRef(createTransport);
-  const hasSessionContextRef = useRef(hasSessionContext);
-  const onSocketFailureRef = useRef(onSocketFailure);
-  const handlersRef = useRef(handlers);
-  const wsUrlRef = useRef(wsUrl);
-
-  useEffect(() => {
-    handlersRef.current = handlers;
-  }, [handlers]);
-
-  useEffect(() => {
-    createTransportRef.current = createTransport;
-  }, [createTransport]);
-
-  useEffect(() => {
-    hasSessionContextRef.current = hasSessionContext;
-  }, [hasSessionContext]);
-
-  useEffect(() => {
-    onSocketFailureRef.current = onSocketFailure;
-  }, [onSocketFailure]);
-
-  useEffect(() => {
-    wsUrlRef.current = wsUrl;
-  }, [wsUrl]);
 
   const dispatchEvent = useCallback((event: TransportEvent) => {
     const nextState = reduceTransportState(stateRef.current, event);
@@ -92,23 +67,24 @@ export function useTransportOrchestrator({
   const lifecycleService = useMemo(
     () =>
       new TransportLifecycleService({
-        createTransport: (url) => createTransportRef.current(url),
-        getWsUrl: () => wsUrlRef.current,
-        getHandlers: () => handlersRef.current,
-        hasSessionContext: () => hasSessionContextRef.current(),
+        createTransport,
+        getWsUrl: () => wsUrl,
+        getHandlers: () => handlers,
+        hasSessionContext,
         scheduler,
-        onSocketFailure: (source, code, reasonCode, debugDetail, cause) =>
-          onSocketFailureRef.current(
-            source,
-            code,
-            reasonCode,
-            debugDetail,
-            cause,
-          ),
+        onSocketFailure,
         getState: () => stateRef.current,
         dispatchEvent,
       }),
-    [dispatchEvent, scheduler],
+    [
+      createTransport,
+      dispatchEvent,
+      handlers,
+      hasSessionContext,
+      onSocketFailure,
+      scheduler,
+      wsUrl,
+    ],
   );
 
   useEffect(

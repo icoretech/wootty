@@ -1,14 +1,11 @@
 import type { TerminalBackendResolution } from "../contracts/backend-resolution";
+import type { SessionsFetchResult } from "../contracts/sessions-fetch";
+import type { StorageAccessResult } from "../contracts/storage-access";
 import type { TerminalTransport } from "../contracts/transport";
 import type { Scheduler } from "../platform/scheduler";
 import type { TerminalRuntime } from "../runtime/xterm-runtime-contract";
-import type { StorageAccessFailure } from "../session/persistence/session-storage";
-import type { SessionsFetchResult } from "../session/protocol/sessions-fetch-contract";
 
-export type TerminalStorageAccessResult = {
-  storage: Storage | null;
-  error: StorageAccessFailure | null;
-};
+export type TerminalStorageAccessResult = StorageAccessResult;
 
 export type TerminalPlatformEnvironment = {
   documentRef: Document | null;
