@@ -4,8 +4,10 @@ import { normalizeCauseToMessage } from "./cause-message";
 
 export function toProtocolNotice(details: ProtocolNotice): string {
   switch (details.reason) {
-    case "unsupported_type":
-      return "Received an unsupported server message type.";
+    case "unsupported_type": {
+      const rawTypeSuffix = details.rawType ? ` (type=${details.rawType})` : "";
+      return `Received an unsupported server message type${rawTypeSuffix}.`;
+    }
     case "malformed_payload": {
       const cause = normalizeCauseToMessage(details.cause);
       const detailSuffix = details.detail ? ` [detail=${details.detail}]` : "";

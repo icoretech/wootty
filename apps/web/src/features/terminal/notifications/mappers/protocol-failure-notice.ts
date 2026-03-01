@@ -13,6 +13,14 @@ function toNoticeProtocolFailureDetail(
 export function toProtocolFailureNotice(
   failure: TerminalProtocolFailure,
 ): ProtocolNotice {
+  if (failure.reason === "unsupported_type") {
+    return {
+      context: "protocol",
+      reason: "unsupported_type",
+      rawType: failure.rawType,
+    };
+  }
+
   if (failure.reason === "malformed_payload") {
     return {
       context: "protocol",

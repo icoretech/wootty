@@ -54,6 +54,7 @@ export type TerminalProtocolFailureDetail =
 export type TerminalProtocolFailure = {
   reason: TerminalProtocolFailureReason;
   detail?: TerminalProtocolFailureDetail;
+  rawType?: string;
   cause?: unknown;
 };
 
@@ -184,10 +185,13 @@ function parseKnownMessage(
     return { message: { type: TERMINAL_SERVER_MESSAGE_TYPE.PONG } };
   }
   if (typeof type === "string") {
+    const normalizedType = type.trim();
     return {
       failure: {
         reason: "unsupported_type",
         detail: "unsupported_message_type",
+        rawType:
+          normalizedType.length > 0 ? normalizedType.slice(0, 64) : undefined,
       },
     };
   }

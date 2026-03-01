@@ -21,8 +21,9 @@ describe("notice formatters direct coverage", () => {
       toProtocolNotice({
         context: "protocol",
         reason: "unsupported_type",
+        rawType: "future",
       }),
-    ).toBe("Received an unsupported server message type.");
+    ).toBe("Received an unsupported server message type (type=future).");
     expect(
       toProtocolNotice({
         context: "protocol",

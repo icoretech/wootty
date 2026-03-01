@@ -46,10 +46,12 @@ describe("notice mapper adapters", () => {
     expect(
       toProtocolFailureNotice({
         reason: "unsupported_type",
+        rawType: "future",
       }),
     ).toEqual({
       context: "protocol",
       reason: "unsupported_type",
+      rawType: "future",
     });
   });
 
