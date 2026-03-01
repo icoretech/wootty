@@ -1,5 +1,21 @@
 import type { BackendResolutionIssueCode } from "../../contracts/backend-resolution";
-import type { BootstrapNotice } from "../../contracts/notice";
+import {
+  type BootstrapNotice,
+  NOTICE_BOOTSTRAP_ISSUE_CODES,
+  type NoticeBootstrapIssueCode,
+} from "../../contracts/notice";
+
+function toNoticeBootstrapIssueCode(
+  code?: BackendResolutionIssueCode,
+): NoticeBootstrapIssueCode | undefined {
+  if (!code) {
+    return undefined;
+  }
+  if ((NOTICE_BOOTSTRAP_ISSUE_CODES as readonly string[]).includes(code)) {
+    return code;
+  }
+  return undefined;
+}
 
 export function toBackendResolutionNotice(issue: {
   details: string;
@@ -9,6 +25,6 @@ export function toBackendResolutionNotice(issue: {
     context: "bootstrap",
     reason: "backend_resolution_failed",
     details: issue.details,
-    code: issue.code,
+    code: toNoticeBootstrapIssueCode(issue.code),
   };
 }

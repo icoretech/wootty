@@ -1,4 +1,4 @@
-import type { StorageAccessFailure } from "../session/persistence/session-storage";
+import type { StorageAccessFailure } from "../contracts/storage-access";
 
 type BrowserStorageKind = "localStorage" | "sessionStorage";
 

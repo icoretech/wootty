@@ -1,5 +1,21 @@
-import type { ProtocolNotice } from "../../contracts/notice";
+import {
+  NOTICE_PROTOCOL_FAILURE_DETAILS,
+  type NoticeProtocolFailureDetail,
+  type ProtocolNotice,
+} from "../../contracts/notice";
 import type { TerminalProtocolFailure } from "../../protocol/terminal-protocol";
+
+function toNoticeProtocolFailureDetail(
+  detail: TerminalProtocolFailure["detail"],
+): NoticeProtocolFailureDetail | undefined {
+  if (!detail) {
+    return undefined;
+  }
+  if ((NOTICE_PROTOCOL_FAILURE_DETAILS as readonly string[]).includes(detail)) {
+    return detail;
+  }
+  return undefined;
+}
 
 export function toProtocolFailureNotice(
   failure: TerminalProtocolFailure,
@@ -8,7 +24,7 @@ export function toProtocolFailureNotice(
     return {
       context: "protocol",
       reason: "malformed_payload",
-      detail: failure.detail,
+      detail: toNoticeProtocolFailureDetail(failure.detail),
       cause: failure.cause,
     };
   }
