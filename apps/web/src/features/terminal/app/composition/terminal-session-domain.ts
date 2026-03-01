@@ -43,25 +43,31 @@ type InitialFontSizeState = {
   bootstrapStorageFailures: StorageAccessFailure[];
 };
 
+function readInitialFontSizeState(
+  getLocalStorage: TerminalDomainEnvironment["getLocalStorage"],
+): InitialFontSizeState {
+  const bootstrapStorageFailures: StorageAccessFailure[] = [];
+  const access = getLocalStorage();
+  if (access.error) {
+    bootstrapStorageFailures.push(access.error);
+  }
+  const result = readInitialFontSizeResult(access.storage);
+  if (result.error) {
+    bootstrapStorageFailures.push(result.error);
+  }
+  return {
+    initialFontSize: result.fontSize,
+    bootstrapStorageFailures,
+  };
+}
+
 function useControllerUiState(
   getLocalStorage: TerminalDomainEnvironment["getLocalStorage"],
   onStorageFailure?: (failure: StorageAccessFailure) => void,
 ): ControllerUiState {
   const { initialFontSize, bootstrapStorageFailures } =
     useMemo<InitialFontSizeState>(() => {
-      const bootstrapStorageFailures: StorageAccessFailure[] = [];
-      const access = getLocalStorage();
-      if (access.error) {
-        bootstrapStorageFailures.push(access.error);
-      }
-      const result = readInitialFontSizeResult(access.storage);
-      if (result.error) {
-        bootstrapStorageFailures.push(result.error);
-      }
-      return {
-        initialFontSize: result.fontSize,
-        bootstrapStorageFailures,
-      };
+      return readInitialFontSizeState(getLocalStorage);
     }, [getLocalStorage]);
 
   useEffect(() => {

@@ -69,8 +69,8 @@
       "description": "protocol parsing owned by the terminal feature."
     },
     {
-      "path": "apps/web/src/features/terminal/orchestration/*",
-      "description": "transport orchestration adapters owned by the terminal feature."
+      "path": "apps/web/src/features/terminal/adapters/*",
+      "description": "transport adapters owned by the terminal feature."
     },
     {
       "path": "apps/web/src/features/terminal/runtime/*",

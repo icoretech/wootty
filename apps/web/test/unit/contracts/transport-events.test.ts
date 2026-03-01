@@ -4,7 +4,7 @@ import {
   normalizeTransportErrorEvent,
   normalizeTransportMessageEvent,
   normalizeTransportOpenEvent,
-} from "../../../src/features/terminal/orchestration/transport-event-normalizer";
+} from "../../../src/features/terminal/adapters/transport-event-normalizer";
 
 describe("transport event normalization", () => {
   it("normalizes open and message events", () => {

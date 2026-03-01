@@ -8,7 +8,7 @@ export type TransportBootstrapFailureReasonCode =
   | "endpoint_unsupported_protocol"
   | "bootstrap_failed";
 
-export type TransportBootstrapResult =
+type TransportBootstrapResult =
   | { ok: true; socket: TerminalTransport }
   | {
       ok: false;

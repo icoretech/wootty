@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { FailureNoticeState } from "../../../src/features/terminal/app/engine/notice-throttle";
+import type { FailureNoticeState } from "../../../src/features/terminal/notifications/notice-throttle";
 import type { Scheduler } from "../../../src/features/terminal/platform/scheduler";
 import { useSessionNoticeChannel } from "../../../src/features/terminal/session/application/session-notice-channel";
 

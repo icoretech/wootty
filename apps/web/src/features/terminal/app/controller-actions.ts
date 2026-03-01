@@ -110,41 +110,35 @@ export function useTerminalCommandActions({
 } {
   const runRuntimeCommand = useCallback(
     (command: TerminalRuntimeCommand) => {
-      switch (command) {
-        case TERMINAL_RUNTIME_COMMAND.RECONNECT:
-          reconnectNow();
-          return;
-        case TERMINAL_RUNTIME_COMMAND.CLEAR:
-          clearTerminal();
-          return;
-        default:
-          assertNever(command);
-      }
+      const runtimeCommandHandlers = {
+        [TERMINAL_RUNTIME_COMMAND.RECONNECT]: reconnectNow,
+        [TERMINAL_RUNTIME_COMMAND.CLEAR]: clearTerminal,
+      } satisfies Record<TerminalRuntimeCommand, () => void>;
+      runtimeCommandHandlers[command]();
     },
     [clearTerminal, reconnectNow],
   );
 
   const runViewportCommand = useCallback(
     (command: ViewportUiCommand) => {
-      switch (command) {
-        case VIEWPORT_UI_COMMAND.DECREASE_FONT:
+      const viewportCommandHandlers = {
+        [VIEWPORT_UI_COMMAND.DECREASE_FONT]: () => {
           applyFontSize(readFontSize() - 1);
-          return;
-        case VIEWPORT_UI_COMMAND.INCREASE_FONT:
+        },
+        [VIEWPORT_UI_COMMAND.INCREASE_FONT]: () => {
           applyFontSize(readFontSize() + 1);
-          return;
-        case VIEWPORT_UI_COMMAND.RESET_FONT:
+        },
+        [VIEWPORT_UI_COMMAND.RESET_FONT]: () => {
           applyFontSize(DEFAULT_FONT_SIZE);
-          return;
-        case VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN:
+        },
+        [VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN]: () => {
           void toggleFullscreen();
-          return;
-        case VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS:
+        },
+        [VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS]: () => {
           setControlsOpen((previous) => !previous);
-          return;
-        default:
-          assertNever(command);
-      }
+        },
+      } satisfies Record<ViewportUiCommand, () => void>;
+      viewportCommandHandlers[command]();
     },
     [applyFontSize, readFontSize, setControlsOpen, toggleFullscreen],
   );
