@@ -24,14 +24,6 @@ export type NoticeDetails =
   | ServerNotice
   | BootstrapNotice;
 
+export type NoticePublisher = (details: NoticeDetails) => void;
+
 export type SessionNoticePublisher = (details: SessionNotice) => void;
-
-export type ConnectionNoticePublisher = (
-  details: ProtocolNotice | ServerNotice,
-) => void;
-
-export type RuntimeNoticePublisher = (
-  details: RuntimeNotice | FullscreenNotice,
-) => void;
-
-export type TransportNoticePublisher = (details: TransportNotice) => void;

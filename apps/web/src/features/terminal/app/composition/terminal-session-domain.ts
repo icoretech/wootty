@@ -9,7 +9,7 @@ import {
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
-import type { SessionNoticePublisher } from "../../notifications/notice-contract";
+import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import {
@@ -121,7 +121,7 @@ function useControllerUiState(
 
 function useBackendResolutionNotice(
   backendResolution: TerminalPlatformContext["backendResolution"],
-  publishNotice: SessionNoticePublisher,
+  publishNotice: NoticePublisher,
 ): void {
   const lastBootstrapIssueRef = useRef<string | null>(null);
 
@@ -169,7 +169,7 @@ export function useTerminalSessionDomain({
 
   useBackendResolutionNotice(
     platform.backendResolution,
-    sessionActions.publishSessionNoticeDetails,
+    sessionActions.publishNoticeDetails,
   );
 
   return {

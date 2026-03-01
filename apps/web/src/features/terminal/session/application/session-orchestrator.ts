@@ -14,11 +14,8 @@ import type { TerminalStorageAccessResult } from "../../environment/terminal-env
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type {
-  ConnectionNoticePublisher,
   NoticeDetails,
-  RuntimeNoticePublisher,
-  SessionNoticePublisher,
-  TransportNoticePublisher,
+  NoticePublisher,
 } from "../../notifications/notice-contract";
 import type { FailureNoticeState } from "../../notifications/notice-throttle";
 import type { Scheduler } from "../../platform/scheduler";
@@ -58,10 +55,7 @@ type SessionOrchestratorState = {
   };
   actions: {
     setSessionMenuOpen: Dispatch<SetStateAction<boolean>>;
-    publishSessionNoticeDetails: SessionNoticePublisher;
-    publishRuntimeNoticeDetails: RuntimeNoticePublisher;
-    publishConnectionNoticeDetails: ConnectionNoticePublisher;
-    publishTransportNoticeDetails: TransportNoticePublisher;
+    publishNoticeDetails: NoticePublisher;
     publishSessionNotice: (message: string) => void;
     clearSessionNotice: () => void;
     reportStorageFailure: (failure: StorageAccessFailure) => void;
@@ -194,28 +188,7 @@ export function useSessionOrchestrator({
     });
   }, [requestSessionRefresh, scheduler]);
 
-  const publishSessionNoticeDetails = useCallback<SessionNoticePublisher>(
-    (details) => {
-      publishNotice(details);
-    },
-    [publishNotice],
-  );
-
-  const publishRuntimeNoticeDetails = useCallback<RuntimeNoticePublisher>(
-    (details) => {
-      publishNotice(details);
-    },
-    [publishNotice],
-  );
-
-  const publishConnectionNoticeDetails = useCallback<ConnectionNoticePublisher>(
-    (details) => {
-      publishNotice(details);
-    },
-    [publishNotice],
-  );
-
-  const publishTransportNoticeDetails = useCallback<TransportNoticePublisher>(
+  const publishNoticeDetails = useCallback<NoticePublisher>(
     (details) => {
       publishNotice(details);
     },
@@ -289,10 +262,7 @@ export function useSessionOrchestrator({
     },
     actions: {
       setSessionMenuOpen: setSessionMenuOpenState,
-      publishSessionNoticeDetails,
-      publishRuntimeNoticeDetails,
-      publishConnectionNoticeDetails,
-      publishTransportNoticeDetails,
+      publishNoticeDetails,
       publishSessionNotice,
       clearSessionNotice,
       reportStorageFailure,

@@ -2,7 +2,7 @@ import { type RefObject, useCallback } from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
-import type { RuntimeNoticePublisher } from "../../notifications/notice-contract";
+import type { NoticePublisher } from "../../notifications/notice-contract";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,
@@ -21,11 +21,11 @@ type CommandDispatchers = {
 function useFullscreenCommand({
   appViewportRef,
   documentRef,
-  publishRuntimeNotice,
+  publishNotice,
 }: {
   appViewportRef: RefObject<HTMLElement | null>;
   documentRef: Document | null;
-  publishRuntimeNotice: RuntimeNoticePublisher;
+  publishNotice: NoticePublisher;
 }): () => Promise<void> {
   return useCallback(async () => {
     const host = appViewportRef.current;
@@ -39,9 +39,9 @@ function useFullscreenCommand({
       }
       await host.requestFullscreen();
     } catch (error) {
-      publishRuntimeNotice({ context: "fullscreen", cause: error });
+      publishNotice({ context: "fullscreen", cause: error });
     }
-  }, [appViewportRef, documentRef, publishRuntimeNotice]);
+  }, [appViewportRef, documentRef, publishNotice]);
 }
 
 function useApplyFontSizeAction({
@@ -85,7 +85,7 @@ export function useUiBindingsController({
   const toggleFullscreen = useFullscreenCommand({
     appViewportRef,
     documentRef: platform.documentRef,
-    publishRuntimeNotice: session.sessionActions.publishRuntimeNoticeDetails,
+    publishNotice: session.sessionActions.publishNoticeDetails,
   });
 
   const { dispatchSessionMenu } = useSessionMenuActions({
@@ -137,7 +137,7 @@ export function useUiBindingsController({
     terminalReady: connection.runtime.terminalReady,
     terminalElementRef: connection.runtime.terminalElementRef,
     runShortcutAction: dispatchShortcutAction,
-    publishNotice: session.sessionActions.publishSessionNoticeDetails,
+    publishNotice: session.sessionActions.publishNoticeDetails,
   });
 
   return {

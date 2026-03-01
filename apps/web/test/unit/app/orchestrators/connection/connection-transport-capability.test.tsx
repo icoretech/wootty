@@ -61,14 +61,14 @@ function createOrchestratorDouble(): TransportOrchestrator {
 }
 
 function createTransportCapabilityArgs() {
+  const publishNotice = vi.fn();
   return {
     createTransport: vi.fn(),
     wsUrl: "wss://terminal.example/ws",
     attachMode: "watch" as const,
     sessionId: "session-42",
     hasSessionContext: () => true,
-    publishConnectionNotice: vi.fn(),
-    publishTransportNotice: vi.fn(),
+    publishNotice,
     setStatusFlag: vi.fn(),
     setSessionMode: vi.fn(),
     applyReadySession: vi.fn(),
@@ -118,7 +118,7 @@ describe("connection transport capability", () => {
       });
     });
 
-    expect(args.publishTransportNotice).toHaveBeenCalledWith({
+    expect(args.publishNotice).toHaveBeenCalledWith({
       context: "transport",
       source: "error",
       reasonCode: "socket_failure",
@@ -153,7 +153,7 @@ describe("connection transport capability", () => {
         watch: true,
       }),
     );
-    expect(args.publishTransportNotice).toHaveBeenCalledWith({
+    expect(args.publishNotice).toHaveBeenCalledWith({
       context: "transport",
       reasonCode: "attach_handshake_send_failed",
     });
@@ -177,7 +177,7 @@ describe("connection transport capability", () => {
         malformed: "invalid json",
       });
     });
-    expect(args.publishConnectionNotice).toHaveBeenCalledWith({
+    expect(args.publishNotice).toHaveBeenCalledWith({
       context: "protocol",
       reason: "malformed_transport_event",
       details: "invalid json",

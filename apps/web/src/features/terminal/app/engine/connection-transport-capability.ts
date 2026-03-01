@@ -4,10 +4,7 @@ import type {
   TerminalTransport,
   TerminalTransportMessageEvent,
 } from "../../contracts/transport/transport";
-import type {
-  ConnectionNoticePublisher,
-  TransportNoticePublisher,
-} from "../../notifications/notice-contract";
+import type { NoticePublisher } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
@@ -26,8 +23,7 @@ type UseConnectionTransportCapabilityArgs = {
   attachMode: AttachMode;
   sessionId: string | null;
   hasSessionContext: () => boolean;
-  publishConnectionNotice: ConnectionNoticePublisher;
-  publishTransportNotice: TransportNoticePublisher;
+  publishNotice: NoticePublisher;
   setStatusFlag: (next: ConnectionStatusFlag | null) => void;
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
@@ -49,8 +45,7 @@ export function useConnectionTransportCapability({
   attachMode,
   sessionId,
   hasSessionContext,
-  publishConnectionNotice,
-  publishTransportNotice,
+  publishNotice,
   setStatusFlag,
   setSessionMode,
   applyReadySession,
@@ -67,7 +62,7 @@ export function useConnectionTransportCapability({
 }: UseConnectionTransportCapabilityArgs): TransportOrchestrator {
   const reportSocketFailure = useCallback<TransportFailureSink>(
     ({ source, code, reasonCode, technicalDetail, cause, noticeMessage }) => {
-      publishTransportNotice({
+      publishNotice({
         context: "transport",
         source,
         reasonCode: reasonCode ?? "socket_failure",
@@ -77,11 +72,11 @@ export function useConnectionTransportCapability({
         cause,
       });
     },
-    [publishTransportNotice],
+    [publishNotice],
   );
 
   const { handleSocketMessage } = useConnectionMessageGateway({
-    publishNotice: publishConnectionNotice,
+    publishNotice,
     setStatusFlag,
     applyReadySession,
     clearMissingSession,
@@ -112,14 +107,14 @@ export function useConnectionTransportCapability({
         if (attachSent) {
           return;
         }
-        publishTransportNotice({
+        publishNotice({
           context: "transport",
           reasonCode: "attach_handshake_send_failed",
         });
       },
       onMessage: (event: TerminalTransportMessageEvent) => {
         if (event.malformed) {
-          publishConnectionNotice({
+          publishNotice({
             context: "protocol",
             reason: "malformed_transport_event",
             details: event.malformed,
@@ -132,8 +127,7 @@ export function useConnectionTransportCapability({
     [
       attachMode,
       handleSocketMessage,
-      publishConnectionNotice,
-      publishTransportNotice,
+      publishNotice,
       runtimeFitSizeRef,
       sendNow,
       sessionId,

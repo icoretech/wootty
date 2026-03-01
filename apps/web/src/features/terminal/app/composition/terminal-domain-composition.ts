@@ -47,11 +47,7 @@ export function useTerminalDomainController({
     attachMode: session.sessionState.attachMode,
     hasActiveSession: session.sessionState.hasActiveSession,
     transportEnabled: platform.backendResolution.ok,
-    publishConnectionNotice:
-      session.sessionActions.publishConnectionNoticeDetails,
-    publishRuntimeNotice: session.sessionActions.publishRuntimeNoticeDetails,
-    publishTransportNotice:
-      session.sessionActions.publishTransportNoticeDetails,
+    publishNotice: session.sessionActions.publishNoticeDetails,
     setSessionMode: session.sessionActions.setSessionMode,
     applyReadySession: session.sessionActions.applyReadySession,
     clearMissingSession: session.sessionActions.clearMissingSession,
