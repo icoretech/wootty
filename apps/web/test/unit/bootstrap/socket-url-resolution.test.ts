@@ -68,6 +68,18 @@ describe("socket url resolution", () => {
     });
   });
 
+  it("maps root-relative env path to terminal websocket route", () => {
+    const resolution = resolveSocketUrl(
+      createWindow("https:", "app.example.test"),
+      "/",
+    );
+
+    expect(resolution).toEqual({
+      ok: true,
+      socketUrl: `wss://app.example.test${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`,
+    });
+  });
+
   it("returns unsupported protocol issue for invalid env protocol", () => {
     const backendHost = "api.example.test";
     const ftpSocketUrl = `ftp://${backendHost}/socket`;

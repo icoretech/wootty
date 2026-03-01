@@ -27,7 +27,10 @@ import {
 } from "./protocol/connection-status-projector";
 import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
 import type { TransportFailureSink } from "./transport/contracts/transport-failure-contract";
-import { TransportLifecycleService } from "./transport/lifecycle/transport-lifecycle-service";
+import {
+  type TransportLifecycleRuntimeRef,
+  TransportLifecycleService,
+} from "./transport/lifecycle/transport-lifecycle-service";
 import {
   initialTransportState,
   reduceTransportState,
@@ -52,25 +55,6 @@ type UseConnectionCoordinatorArgs = {
   clearMissingSession: () => void;
   requestTransportRefresh: () => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
-};
-
-type SessionTransportContext = {
-  attachMode: AttachMode;
-  sessionId: string | null;
-  hasSessionContext: () => boolean;
-  setSessionMode: (mode: AttachMode) => void;
-  applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
-  clearMissingSession: () => void;
-  requestTransportRefresh: () => Promise<SessionRefreshResult>;
-};
-
-type RuntimeIoTransportContext = {
-  sendNow: (payload: TerminalClientMessage) => boolean;
-  runtimeFitSizeRef: { current: { cols: number; rows: number } };
-  writeServerError: (message: string) => void;
-  flushAfterReady: () => void;
-  writeOutputAndTrackBytes: (data: string) => void;
-  writeExit: (code: number, signal: number) => void;
 };
 
 type ConnectionCoordinatorState = {
@@ -160,44 +144,6 @@ export function useConnectionCoordinator({
       flag: next,
     });
   }, []);
-  const sessionTransportContext = useMemo<SessionTransportContext>(
-    () => ({
-      attachMode,
-      sessionId,
-      hasSessionContext,
-      setSessionMode,
-      applyReadySession,
-      clearMissingSession,
-      requestTransportRefresh,
-    }),
-    [
-      applyReadySession,
-      attachMode,
-      clearMissingSession,
-      hasSessionContext,
-      requestTransportRefresh,
-      sessionId,
-      setSessionMode,
-    ],
-  );
-  const runtimeIoContext = useMemo<RuntimeIoTransportContext>(
-    () => ({
-      sendNow,
-      runtimeFitSizeRef: runtimeBridge.runtimeFitSizeRef,
-      writeServerError: runtimeBridge.writeServerError,
-      flushAfterReady: runtimeBridge.flushAfterReady,
-      writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
-      writeExit: runtimeBridge.writeExit,
-    }),
-    [
-      runtimeBridge.flushAfterReady,
-      runtimeBridge.runtimeFitSizeRef,
-      runtimeBridge.writeExit,
-      runtimeBridge.writeOutputAndTrackBytes,
-      runtimeBridge.writeServerError,
-      sendNow,
-    ],
-  );
   const reportSocketFailure = useCallback<TransportFailureSink>(
     ({ source, code, reasonCode, technicalDetail, cause, noticeMessage }) => {
       publishNotice({
@@ -215,14 +161,14 @@ export function useConnectionCoordinator({
   const { handleSocketMessage } = useConnectionMessageGateway({
     publishNotice,
     setStatusFlag,
-    applyReadySession: sessionTransportContext.applyReadySession,
-    clearMissingSession: sessionTransportContext.clearMissingSession,
-    requestTransportRefresh: sessionTransportContext.requestTransportRefresh,
-    setSessionMode: sessionTransportContext.setSessionMode,
-    writeServerError: runtimeIoContext.writeServerError,
-    flushAfterReady: runtimeIoContext.flushAfterReady,
-    writeOutputAndTrackBytes: runtimeIoContext.writeOutputAndTrackBytes,
-    writeExit: runtimeIoContext.writeExit,
+    applyReadySession,
+    clearMissingSession,
+    requestTransportRefresh,
+    setSessionMode,
+    writeServerError: runtimeBridge.writeServerError,
+    flushAfterReady: runtimeBridge.flushAfterReady,
+    writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
+    writeExit: runtimeBridge.writeExit,
     markPong: () => {
       markPongRef.current();
     },
@@ -231,13 +177,13 @@ export function useConnectionCoordinator({
     () => ({
       onOpen: () => {
         setStatusFlag(null);
-        const fitSize = runtimeIoContext.runtimeFitSizeRef.current;
-        const attachSent = runtimeIoContext.sendNow(
+        const fitSize = runtimeBridge.runtimeFitSizeRef.current;
+        const attachSent = sendNow(
           createAttachMessage({
-            sessionId: sessionTransportContext.sessionId,
+            sessionId,
             cols: fitSize.cols,
             rows: fitSize.rows,
-            watch: sessionTransportContext.attachMode === "watch",
+            watch: attachMode === "watch",
           }),
         );
         if (attachSent) {
@@ -261,11 +207,12 @@ export function useConnectionCoordinator({
       },
     }),
     [
+      attachMode,
       handleSocketMessage,
       publishNotice,
-      runtimeIoContext,
-      sessionTransportContext.attachMode,
-      sessionTransportContext.sessionId,
+      runtimeBridge.runtimeFitSizeRef,
+      sendNow,
+      sessionId,
       setStatusFlag,
     ],
   );
@@ -276,33 +223,29 @@ export function useConnectionCoordinator({
     transportStateRef.current = nextState;
     setTransportState(nextState);
   }, []);
-  const runtimeContextRef = useRef({
-    wsUrl,
-    handlers: transportHandlers,
-    hasSessionContext: sessionTransportContext.hasSessionContext,
-    onSocketFailure: reportSocketFailure,
-  });
-  runtimeContextRef.current = {
-    wsUrl,
-    handlers: transportHandlers,
-    hasSessionContext: sessionTransportContext.hasSessionContext,
-    onSocketFailure: reportSocketFailure,
-  };
+  const runtimeContext = useMemo<TransportLifecycleRuntimeRef>(() => {
+    return {
+      wsUrl,
+      handlers: transportHandlers,
+      hasSessionContext: hasSessionContext(),
+      onSocketFailure: reportSocketFailure,
+    };
+  }, [hasSessionContext, reportSocketFailure, transportHandlers, wsUrl]);
+  const initialRuntimeContextRef = useRef(runtimeContext);
   const transportLifecycle = useMemo(() => {
     return new TransportLifecycleService({
       createTransport,
       scheduler,
-      getRuntimeContext: () => runtimeContextRef.current,
+      runtime: initialRuntimeContextRef.current,
       getState: () => transportStateRef.current,
       dispatchEvent: dispatchTransportEvent,
     });
   }, [createTransport, dispatchTransportEvent, scheduler]);
-  useEffect(
-    () => () => {
-      transportLifecycle.dispose();
-    },
-    [transportLifecycle],
-  );
+
+  useEffect(() => {
+    transportLifecycle.updateRuntime(runtimeContext);
+  }, [runtimeContext, transportLifecycle]);
+
   const {
     connect,
     dispose,

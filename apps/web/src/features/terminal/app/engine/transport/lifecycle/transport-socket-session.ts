@@ -48,22 +48,10 @@ export class TransportSocketSession {
     return this.generation;
   }
 
-  closeActive(code: number, reason: string): boolean {
-    if (
-      this.socket === null ||
-      this.socket.readyState >= TRANSPORT_READY_STATE.CLOSING
-    ) {
-      return false;
-    }
-    this.closeIntent = "normal";
-    this.socket.close(code, reason);
-    return true;
-  }
-
-  closeActiveWithIntent(
+  closeActive(
     code: number,
     reason: string,
-    closeIntent: SocketCloseIntent,
+    closeIntent: SocketCloseIntent = "normal",
   ): boolean {
     if (
       this.socket === null ||
