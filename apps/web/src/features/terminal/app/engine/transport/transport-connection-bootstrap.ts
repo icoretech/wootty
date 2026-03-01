@@ -56,7 +56,7 @@ export class TransportConnectionBootstrap {
       return {
         ok: false,
         reasonCode: "bootstrap_failed",
-        debugDetail: reason,
+        debugDetail: redactTokenInUrlForNotice(reason),
         cause: error,
       };
     }

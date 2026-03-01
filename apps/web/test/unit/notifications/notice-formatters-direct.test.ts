@@ -85,5 +85,21 @@ describe("notice formatters direct coverage", () => {
     ).toBe(
       "Connection problem (transport failure). (close code=1006 detail=abnormal closure)",
     );
+    expect(
+      toTransportNotice({
+        context: "transport",
+        reasonCode: "bootstrap_failed",
+        source: "error",
+        debugDetail: "failed wss://host/api/terminal?token=secret",
+      }),
+    ).toContain("token=[redacted]");
+    expect(
+      toTransportNotice({
+        context: "transport",
+        reasonCode: "bootstrap_failed",
+        source: "error",
+        debugDetail: "failed wss://host/api/terminal?token=secret",
+      }),
+    ).not.toContain("token=secret");
   });
 });

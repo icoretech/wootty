@@ -20,6 +20,7 @@ function createWindowLikeRef(url: string): Window {
 }
 
 describe("terminal environment backend endpoint resolution", () => {
+  // @trace FR-1 terminal-environment-endpoint-resolution
   it("derives HTTP sessions endpoint from configured websocket endpoint", () => {
     const appWindowUrl = `${HTTPS_PROTOCOL}//${APP_HOST}`;
     const configuredSocketUrl = `${WSS_PROTOCOL}//${WS_HOST}/api/terminal`;

@@ -20,22 +20,30 @@ describe("connection coordinator", () => {
 
     const { result } = renderHook(() => {
       return useConnectionCoordinator({
-        createTransport,
-        loadRuntime,
-        wsUrl: "ws://127.0.0.1/api/terminal",
-        documentRef: null,
-        initialFontSize: 11,
-        sessionId: null,
-        attachMode: "control",
-        hasActiveSession: false,
-        transportEnabled: true,
-        bootstrapFailure: false,
-        publishNotice,
-        setSessionMode: vi.fn(),
-        applyReadySession: vi.fn(),
-        clearMissingSession: vi.fn(),
-        requestTransportRefresh: async () => ({ ok: true }),
-        scheduler: browserScheduler,
+        transport: {
+          createTransport,
+          wsUrl: "ws://127.0.0.1/api/terminal",
+          transportEnabled: true,
+          bootstrapFailure: false,
+          scheduler: browserScheduler,
+        },
+        runtime: {
+          loadRuntime,
+          documentRef: null,
+          initialFontSize: 11,
+        },
+        session: {
+          sessionId: null,
+          attachMode: "control",
+          hasActiveSession: false,
+          setSessionMode: vi.fn(),
+          applyReadySession: vi.fn(),
+          clearMissingSession: vi.fn(),
+          requestTransportRefresh: async () => ({ ok: true }),
+        },
+        notifications: {
+          publishNotice,
+        },
       });
     });
 
@@ -58,22 +66,30 @@ describe("connection coordinator", () => {
 
     const { result } = renderHook(() => {
       return useConnectionCoordinator({
-        createTransport,
-        loadRuntime,
-        wsUrl: null,
-        documentRef: null,
-        initialFontSize: 11,
-        sessionId: null,
-        attachMode: "control",
-        hasActiveSession: false,
-        transportEnabled: false,
-        bootstrapFailure: true,
-        publishNotice,
-        setSessionMode: vi.fn(),
-        applyReadySession: vi.fn(),
-        clearMissingSession: vi.fn(),
-        requestTransportRefresh: async () => ({ ok: true }),
-        scheduler: browserScheduler,
+        transport: {
+          createTransport,
+          wsUrl: null,
+          transportEnabled: false,
+          bootstrapFailure: true,
+          scheduler: browserScheduler,
+        },
+        runtime: {
+          loadRuntime,
+          documentRef: null,
+          initialFontSize: 11,
+        },
+        session: {
+          sessionId: null,
+          attachMode: "control",
+          hasActiveSession: false,
+          setSessionMode: vi.fn(),
+          applyReadySession: vi.fn(),
+          clearMissingSession: vi.fn(),
+          requestTransportRefresh: async () => ({ ok: true }),
+        },
+        notifications: {
+          publishNotice,
+        },
       });
     });
 

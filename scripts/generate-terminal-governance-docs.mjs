@@ -40,6 +40,24 @@ function hasExecutableTestPattern(linkedPath, source) {
   return /\b(it|test)\s*\(/.test(source);
 }
 
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasTraceIdBoundToTestCase(linkedPath, source, traceId) {
+  const escapedTraceId = escapeRegExp(traceId);
+  if (linkedPath.endsWith("_test.go")) {
+    return new RegExp(
+      `//\\s*${escapedTraceId}\\s*$\\n(?:\\s*//[^\\n]*\\n)*\\s*func\\s+Test[A-Za-z0-9_]+\\s*\\(`,
+      "m",
+    ).test(source);
+  }
+  return new RegExp(
+    `//\\s*${escapedTraceId}\\s*$\\n(?:\\s*//[^\\n]*\\n)*\\s*(it|test)\\s*\\(`,
+    "m",
+  ).test(source);
+}
+
 function requirementIdFromLabel(requirementLabel) {
   const match = /^FR-\d+\b/.exec(requirementLabel);
   return match ? match[0] : null;
@@ -170,9 +188,9 @@ async function assertGovernancePathsExist() {
           `${requirement.id}: assertion path has no executable tests ${assertion.path}`,
         );
       }
-      if (!source.includes(traceId)) {
+      if (!hasTraceIdBoundToTestCase(assertion.path, source, traceId)) {
         semanticTraceabilityFailures.push(
-          `${requirement.id}: traceId not found in ${assertion.path}: ${traceId}`,
+          `${requirement.id}: traceId is not bound to an executable test case in ${assertion.path}: ${traceId}`,
         );
       }
     }

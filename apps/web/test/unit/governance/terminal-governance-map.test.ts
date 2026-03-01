@@ -21,7 +21,7 @@ type TraceabilityAssertionManifest = {
     assertions: Array<{
       lane: "unitIntegration" | "e2e";
       path: string;
-      contains: string;
+      traceId: string;
     }>;
   }>;
 };
@@ -61,6 +61,28 @@ function hasExecutableTestPattern(linkedPath: string, source: string): boolean {
     return /\bfunc\s+Test[A-Za-z0-9_]+\s*\(/.test(source);
   }
   return /\b(it|test)\s*\(/.test(source);
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function hasTraceIdBoundToTestCase(
+  linkedPath: string,
+  source: string,
+  traceId: string,
+): boolean {
+  const escapedTraceId = escapeRegExp(traceId);
+  if (linkedPath.endsWith("_test.go")) {
+    return new RegExp(
+      `//\\s*${escapedTraceId}\\s*$\\n(?:\\s*//[^\\n]*\\n)*\\s*func\\s+Test[A-Za-z0-9_]+\\s*\\(`,
+      "m",
+    ).test(source);
+  }
+  return new RegExp(
+    `//\\s*${escapedTraceId}\\s*$\\n(?:\\s*//[^\\n]*\\n)*\\s*(it|test)\\s*\\(`,
+    "m",
+  ).test(source);
 }
 
 function requirementIdFromLabel(label: string): string | null {
@@ -162,7 +184,9 @@ describe("terminal governance map", () => {
         if (isTraceabilityTestFile(assertion.path)) {
           expect(hasExecutableTestPattern(assertion.path, source)).toBe(true);
         }
-        expect(source.includes(assertion.contains)).toBe(true);
+        expect(
+          hasTraceIdBoundToTestCase(assertion.path, source, assertion.traceId),
+        ).toBe(true);
       }
 
       expect(coveredLanes.has("unitIntegration")).toBe(true);

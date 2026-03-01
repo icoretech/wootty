@@ -29,29 +29,35 @@ describe("controller bindings", () => {
 
     renderHook(() =>
       useControllerBindings({
-        documentRef: document,
-        windowRef: window,
-        fitAndSyncSize: () => {
-          // no-op
+        platform: {
+          documentRef: document,
+          windowRef: window,
+          scheduler,
         },
-        setIsFullscreen: () => {
-          // no-op
+        session: {
+          sessionMenuOpen: false,
+          sessionMenuRef: { current: document.createElement("div") },
+          sessionButtonRef: { current: document.createElement("div") },
+          closeSessionMenu: () => {
+            // no-op
+          },
+          requestSessionRefresh: async () => ({ ok: true }),
+          attachMode: "control",
+          sessionId: "session-a",
+          publishNotice,
         },
-        sessionMenuOpen: false,
-        sessionMenuRef: { current: document.createElement("div") },
-        sessionButtonRef: { current: document.createElement("div") },
-        closeSessionMenu: () => {
-          // no-op
+        terminal: {
+          fitAndSyncSize: () => {
+            // no-op
+          },
+          setIsFullscreen: () => {
+            // no-op
+          },
+          status: "connected",
+          terminalReady: true,
+          terminalElementRef,
+          runShortcutAction,
         },
-        requestSessionRefresh: async () => ({ ok: true }),
-        scheduler,
-        attachMode: "control",
-        sessionId: "session-a",
-        status: "connected",
-        terminalReady: true,
-        terminalElementRef,
-        runShortcutAction,
-        publishNotice,
       }),
     );
 

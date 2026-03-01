@@ -36,16 +36,11 @@ function createHarness({
     onOpen: vi.fn(),
     onMessage: vi.fn(),
   };
-  let currentHandlers = handlers;
-  let currentHasSessionContext = true;
-  let currentOnSocketFailure = onSocketFailure;
-  const runtime = {
-    wsUrl: () => currentWsUrl,
-    handlers: () => currentHandlers,
-    hasSessionContext: () => currentHasSessionContext,
-    onSocketFailure: (failure: TransportFailure) => {
-      currentOnSocketFailure(failure);
-    },
+  let runtime = {
+    wsUrl: currentWsUrl,
+    handlers,
+    hasSessionContext: true,
+    onSocketFailure,
   };
 
   const service = new TransportLifecycleService({
@@ -70,6 +65,7 @@ function createHarness({
     transportUrls,
     setWsUrl: (nextWsUrl: string | null) => {
       currentWsUrl = nextWsUrl;
+      runtime.wsUrl = nextWsUrl;
     },
     swapRuntime: (next: {
       wsUrl: string | null;
@@ -77,10 +73,8 @@ function createHarness({
       hasSessionContext: boolean;
       onSocketFailure: (failure: TransportFailure) => void;
     }) => {
-      currentWsUrl = next.wsUrl;
-      currentHandlers = next.handlers;
-      currentHasSessionContext = next.hasSessionContext;
-      currentOnSocketFailure = next.onSocketFailure;
+      runtime = next;
+      service.updateRuntime(next);
     },
     state: () => state,
     events,

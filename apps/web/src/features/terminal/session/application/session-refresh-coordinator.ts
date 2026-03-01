@@ -134,27 +134,51 @@ export function useSessionRefreshCoordinator({
         null;
       const refreshTimeoutToken = Symbol("refresh_timeout");
       let timedOut = false;
-      let responseOrTimeout: SessionsFetchResult | typeof refreshTimeoutToken;
       try {
-        responseOrTimeout = await Promise.race<
-          SessionsFetchResult | typeof refreshTimeoutToken
-        >([
-          fetchSessions({
-            signal: refreshController.signal,
-          }),
-          new Promise<typeof refreshTimeoutToken>((resolve) => {
-            refreshTimeoutHandle = scheduler.setTimeout(() => {
-              timedOut = true;
-              refreshController.abort();
-              resolve(refreshTimeoutToken);
-            }, SESSION_REFRESH_CALL_TIMEOUT_MS);
-          }),
-        ]);
-      } catch (error) {
-        if (isStaleRequest()) {
-          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+        let responseOrTimeout: SessionsFetchResult | typeof refreshTimeoutToken;
+        try {
+          responseOrTimeout = await Promise.race<
+            SessionsFetchResult | typeof refreshTimeoutToken
+          >([
+            fetchSessions({
+              signal: refreshController.signal,
+            }),
+            new Promise<typeof refreshTimeoutToken>((resolve) => {
+              refreshTimeoutHandle = scheduler.setTimeout(() => {
+                timedOut = true;
+                refreshController.abort();
+                resolve(refreshTimeoutToken);
+              }, SESSION_REFRESH_CALL_TIMEOUT_MS);
+            }),
+          ]);
+        } catch (error) {
+          if (isStaleRequest()) {
+            return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+          }
+          if (timedOut) {
+            const timeoutFailure: SessionRefreshFailure = {
+              source: "lifecycle",
+              reason: "request_timeout",
+            };
+            onRefreshFailure(timeoutFailure);
+            return { ok: false, failure: timeoutFailure };
+          }
+          if (
+            request.signal?.aborted ||
+            (error instanceof DOMException && error.name === "AbortError")
+          ) {
+            return { ok: false, failure: REQUEST_ABORTED_FAILURE };
+          }
+          const failure: SessionRefreshFailure = {
+            source: "fetch",
+            reason: "network_error",
+            cause: error,
+          };
+          onRefreshFailure(failure);
+          return { ok: false, failure };
         }
-        if (timedOut) {
+
+        if (responseOrTimeout === refreshTimeoutToken) {
           const timeoutFailure: SessionRefreshFailure = {
             source: "lifecycle",
             reason: "request_timeout",
@@ -162,65 +186,47 @@ export function useSessionRefreshCoordinator({
           onRefreshFailure(timeoutFailure);
           return { ok: false, failure: timeoutFailure };
         }
-        if (
-          request.signal?.aborted ||
-          (error instanceof DOMException && error.name === "AbortError")
-        ) {
-          return { ok: false, failure: REQUEST_ABORTED_FAILURE };
-        }
-        const failure: SessionRefreshFailure = {
-          source: "fetch",
-          reason: "network_error",
-          cause: error,
-        };
-        onRefreshFailure(failure);
-        return { ok: false, failure };
-      }
-      if (responseOrTimeout === refreshTimeoutToken) {
-        const timeoutFailure: SessionRefreshFailure = {
-          source: "lifecycle",
-          reason: "request_timeout",
-        };
-        onRefreshFailure(timeoutFailure);
-        return { ok: false, failure: timeoutFailure };
-      }
-      const response = responseOrTimeout;
-      if (isStaleRequest()) {
-        return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
-      }
-      if (!response.ok) {
-        if (shouldNotifyRefreshFailure(response.failure)) {
-          onRefreshFailure(response.failure);
-        }
-        return { ok: false, failure: response.failure };
-      }
 
-      try {
-        const parsed = parseSessionsResponse(response.payload);
+        const response = responseOrTimeout;
         if (isStaleRequest()) {
           return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
-        if (!parsed.ok) {
-          if (shouldNotifyRefreshFailure(parsed.failure)) {
-            onRefreshFailure(parsed.failure);
+        if (!response.ok) {
+          if (shouldNotifyRefreshFailure(response.failure)) {
+            onRefreshFailure(response.failure);
           }
-          return { ok: false, failure: parsed.failure };
+          return { ok: false, failure: response.failure };
         }
 
-        onRefreshSuccess(parsed.sessions);
-        if (parsed.invalidEntries > 0) {
-          onInvalidEntries(parsed.invalidEntries);
+        let parsedResponse: ReturnType<typeof parseSessionsResponse>;
+        try {
+          parsedResponse = parseSessionsResponse(response.payload);
+        } catch (error) {
+          if (isStaleRequest()) {
+            return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+          }
+          const failure = toRefreshPipelineFailure(error);
+          if (shouldNotifyRefreshFailure(failure)) {
+            onRefreshFailure(failure);
+          }
+          return { ok: false, failure };
+        }
+
+        if (isStaleRequest()) {
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+        }
+        if (!parsedResponse.ok) {
+          if (shouldNotifyRefreshFailure(parsedResponse.failure)) {
+            onRefreshFailure(parsedResponse.failure);
+          }
+          return { ok: false, failure: parsedResponse.failure };
+        }
+
+        onRefreshSuccess(parsedResponse.sessions);
+        if (parsedResponse.invalidEntries > 0) {
+          onInvalidEntries(parsedResponse.invalidEntries);
         }
         return { ok: true };
-      } catch (error) {
-        if (isStaleRequest()) {
-          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
-        }
-        const failure = toRefreshPipelineFailure(error);
-        if (shouldNotifyRefreshFailure(failure)) {
-          onRefreshFailure(failure);
-        }
-        return { ok: false, failure };
       } finally {
         if (refreshTimeoutHandle !== null) {
           scheduler.clearTimeout(refreshTimeoutHandle);

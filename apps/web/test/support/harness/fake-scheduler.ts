@@ -62,7 +62,7 @@ export class FakeScheduler implements Scheduler {
         if (
           !nextTask ||
           task.dueAtMs < nextTask.dueAtMs ||
-          (task.dueAtMs === nextTask.dueAtMs && task.id > nextTask.id)
+          (task.dueAtMs === nextTask.dueAtMs && task.id < nextTask.id)
         ) {
           nextTask = task;
         }

@@ -39,22 +39,30 @@ import {
 } from "./transport/state/transport-state-machine";
 
 type UseConnectionCoordinatorArgs = {
-  createTransport: (url: string) => TerminalTransport;
-  loadRuntime: () => Promise<TerminalRuntime>;
-  wsUrl: string | null;
-  documentRef: Document | null;
-  initialFontSize: number;
-  sessionId: string | null;
-  attachMode: AttachMode;
-  hasActiveSession: boolean;
-  transportEnabled: boolean;
-  bootstrapFailure: boolean;
-  publishNotice: NoticePublisher;
-  setSessionMode: (mode: AttachMode) => void;
-  applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
-  clearMissingSession: () => void;
-  requestTransportRefresh: () => Promise<SessionRefreshResult>;
-  scheduler: Scheduler;
+  transport: {
+    createTransport: (url: string) => TerminalTransport;
+    wsUrl: string | null;
+    transportEnabled: boolean;
+    bootstrapFailure: boolean;
+    scheduler: Scheduler;
+  };
+  runtime: {
+    loadRuntime: () => Promise<TerminalRuntime>;
+    documentRef: Document | null;
+    initialFontSize: number;
+  };
+  session: {
+    sessionId: string | null;
+    attachMode: AttachMode;
+    hasActiveSession: boolean;
+    setSessionMode: (mode: AttachMode) => void;
+    applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
+    clearMissingSession: () => void;
+    requestTransportRefresh: () => Promise<SessionRefreshResult>;
+  };
+  notifications: {
+    publishNotice: NoticePublisher;
+  };
 };
 
 type ConnectionCoordinatorState = {
@@ -82,47 +90,39 @@ type ConnectionCoordinatorState = {
 };
 
 export function useConnectionCoordinator({
-  createTransport,
-  loadRuntime,
-  wsUrl,
-  documentRef,
-  initialFontSize,
-  sessionId,
-  attachMode,
-  hasActiveSession,
-  transportEnabled,
-  bootstrapFailure,
-  publishNotice,
-  setSessionMode,
-  applyReadySession,
-  clearMissingSession,
-  requestTransportRefresh,
-  scheduler,
+  transport,
+  runtime,
+  session,
+  notifications,
 }: UseConnectionCoordinatorArgs): ConnectionCoordinatorState {
+  const {
+    createTransport,
+    wsUrl,
+    transportEnabled,
+    bootstrapFailure,
+    scheduler,
+  } = transport;
+  const { loadRuntime, documentRef, initialFontSize } = runtime;
+  const {
+    sessionId,
+    attachMode,
+    hasActiveSession,
+    setSessionMode,
+    applyReadySession,
+    clearMissingSession,
+    requestTransportRefresh,
+  } = session;
+  const { publishNotice } = notifications;
   const sendPayloadRef = useRef<(payload: TerminalClientMessage) => boolean>(
     () => false,
   );
   const markPongRef = useRef<() => void>(() => {
     // no-op
   });
-  const hasSessionContextRef = useRef(hasActiveSession);
-  const wsUrlRef = useRef(wsUrl);
   const [statusState, dispatchStatusEvent] = useReducer(
     reduceConnectionStatusState,
     initialConnectionStatusState,
   );
-
-  useEffect(() => {
-    hasSessionContextRef.current = hasActiveSession;
-  }, [hasActiveSession]);
-
-  useEffect(() => {
-    wsUrlRef.current = wsUrl;
-  }, [wsUrl]);
-
-  const hasSessionContext = useCallback(() => {
-    return hasSessionContextRef.current;
-  }, []);
 
   const sendNow = useCallback((payload: TerminalClientMessage): boolean => {
     return sendPayloadRef.current(payload);
@@ -163,10 +163,6 @@ export function useConnectionCoordinator({
     },
     [publishNotice],
   );
-  const reportSocketFailureRef = useRef(reportSocketFailure);
-  useEffect(() => {
-    reportSocketFailureRef.current = reportSocketFailure;
-  }, [reportSocketFailure]);
   const { handleSocketMessage } = useConnectionMessageGateway({
     publishNotice,
     setStatusFlag,
@@ -225,10 +221,6 @@ export function useConnectionCoordinator({
       setStatusFlag,
     ],
   );
-  const transportHandlersRef = useRef(transportHandlers);
-  useEffect(() => {
-    transportHandlersRef.current = transportHandlers;
-  }, [transportHandlers]);
   const [transportState, setTransportState] = useState(initialTransportState);
   const transportStateRef = useRef(initialTransportState);
   const dispatchTransportEvent = useCallback((event: TransportEvent) => {
@@ -236,35 +228,28 @@ export function useConnectionCoordinator({
     transportStateRef.current = nextState;
     setTransportState(nextState);
   }, []);
-  const transportLifecycleRuntime =
-    useMemo<TransportLifecycleRuntimeRef>(() => {
-      return {
-        wsUrl: () => {
-          return wsUrlRef.current;
-        },
-        handlers: () => {
-          return transportHandlersRef.current;
-        },
-        hasSessionContext,
-        onSocketFailure: (failure) => {
-          reportSocketFailureRef.current(failure);
-        },
-      };
-    }, [hasSessionContext]);
+  const runtimeContext = useMemo<TransportLifecycleRuntimeRef>(() => {
+    return {
+      wsUrl,
+      handlers: transportHandlers,
+      hasSessionContext: hasActiveSession,
+      onSocketFailure: reportSocketFailure,
+    };
+  }, [hasActiveSession, reportSocketFailure, transportHandlers, wsUrl]);
+  const initialRuntimeContextRef = useRef(runtimeContext);
   const transportLifecycle = useMemo(() => {
     return new TransportLifecycleService({
       createTransport,
       scheduler,
-      runtime: transportLifecycleRuntime,
+      runtime: initialRuntimeContextRef.current,
       getState: () => transportStateRef.current,
       dispatchEvent: dispatchTransportEvent,
     });
-  }, [
-    createTransport,
-    dispatchTransportEvent,
-    scheduler,
-    transportLifecycleRuntime,
-  ]);
+  }, [createTransport, dispatchTransportEvent, scheduler]);
+
+  useEffect(() => {
+    transportLifecycle.updateRuntime(runtimeContext);
+  }, [runtimeContext, transportLifecycle]);
 
   const {
     connect,
