@@ -1,4 +1,4 @@
-import type { FullscreenNotice } from "../../contracts/notice";
+import type { FullscreenNotice } from "../notice-contract";
 import { normalizeCauseToMessage } from "./cause-message";
 
 export function toFullscreenNotice(details: FullscreenNotice): string {

@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useControllerBindings } from "../../../src/features/terminal/app/controller-bindings";
 import type { ShortcutAction } from "../../../src/features/terminal/commands/shortcut-actions";
-import type { NoticeDetails } from "../../../src/features/terminal/contracts/notice";
+import type { NoticeDetails } from "../../../src/features/terminal/notifications/notice-contract";
 import { toUserNotice } from "../../../src/features/terminal/notifications/user-notice";
 import type { Scheduler } from "../../../src/features/terminal/platform/scheduler";
 

@@ -1,8 +1,8 @@
 import { type RefObject, useCallback } from "react";
 import type { ShortcutAction } from "../commands/shortcut-actions";
 import type { ConnectionStatus } from "../contracts/connection";
-import type { NoticePublisher } from "../contracts/notice";
 import type { AttachMode } from "../contracts/session";
+import type { NoticePublisher } from "../notifications/notice-contract";
 import type { Scheduler } from "../platform/scheduler";
 import { useSessionRefreshBinding } from "../session/application/bindings/session-refresh-binding";
 import type {

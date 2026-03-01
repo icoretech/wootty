@@ -1,4 +1,4 @@
-import type { TransportNotice } from "../../contracts/notice";
+import type { TransportNotice } from "../notice-contract";
 import { normalizeCauseToMessage } from "./cause-message";
 
 const TRANSPORT_NOTICE_MESSAGES: Record<TransportNotice["reasonCode"], string> =

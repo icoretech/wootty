@@ -2,8 +2,8 @@ import { type RefObject, useCallback } from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
-import type { NoticePublisher } from "../../contracts/notice";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
+import type { NoticePublisher } from "../../notifications/notice-contract";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,

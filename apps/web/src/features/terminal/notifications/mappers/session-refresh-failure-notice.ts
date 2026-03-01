@@ -1,6 +1,6 @@
-import type { NoticeDetails } from "../../contracts/notice";
 import { assertNever } from "../../lib/assert-never";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
+import type { NoticeDetails } from "../notice-contract";
 import { toBackendResolutionNotice } from "./backend-resolution-notice";
 
 type SessionRefreshFailureNotice = {

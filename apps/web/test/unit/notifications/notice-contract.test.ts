@@ -5,7 +5,7 @@ import type {
   NoticeDetails,
   NoticeProtocolFailureDetail,
   NoticeServerErrorReason,
-} from "../../../src/features/terminal/contracts/notice";
+} from "../../../src/features/terminal/notifications/notice-contract";
 import { NOTICE_CONTEXTS } from "../../../src/features/terminal/notifications/user-notice";
 import type { TerminalServerErrorCode } from "../../../src/features/terminal/protocol/server-error-codes";
 import type { TerminalProtocolFailureDetail } from "../../../src/features/terminal/protocol/terminal-protocol";

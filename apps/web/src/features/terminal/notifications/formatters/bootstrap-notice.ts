@@ -1,4 +1,4 @@
-import type { BootstrapNotice } from "../../contracts/notice";
+import type { BootstrapNotice } from "../notice-contract";
 
 export function toBootstrapNotice(details: BootstrapNotice): string {
   const codeSuffix = details.code ? ` [code=${details.code}]` : "";

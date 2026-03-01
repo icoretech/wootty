@@ -7,11 +7,11 @@ import {
   useRef,
   useState,
 } from "react";
-import type { NoticePublisher } from "../../contracts/notice";
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
+import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import {

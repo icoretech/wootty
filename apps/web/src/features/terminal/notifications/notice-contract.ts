@@ -1,4 +1,4 @@
-import { TRANSPORT_FAILURE_REASON_CODES } from "./transport-failure-reason";
+import { TRANSPORT_FAILURE_REASON_CODES } from "../contracts/transport-failure-reason";
 
 export const NOTICE_PROTOCOL_FAILURE_DETAILS = [
   "non_text_frame",

@@ -1,8 +1,13 @@
 const ONE_KIBIBYTE = 2 ** 10;
 const OUTBOX_MAX_BYTES = 512 * ONE_KIBIBYTE;
 
+type OutboxChunk = {
+  data: string;
+  bytes: number;
+};
+
 interface OutboxState {
-  readonly chunks: string[];
+  readonly chunks: OutboxChunk[];
   head: number;
   bytes: number;
   droppedBytes: number;
@@ -47,9 +52,12 @@ export function enqueueOutbox(
   if (chunk.length === 0) {
     return;
   }
-  const bytes = byteLength(chunk);
-  outbox.chunks.push(chunk);
-  outbox.bytes += bytes;
+  const queuedChunk: OutboxChunk = {
+    data: chunk,
+    bytes: byteLength(chunk),
+  };
+  outbox.chunks.push(queuedChunk);
+  outbox.bytes += queuedChunk.bytes;
 
   while (outbox.bytes > maxBytes && outbox.head < outbox.chunks.length) {
     const removed = outbox.chunks[outbox.head];
@@ -57,9 +65,8 @@ export function enqueueOutbox(
     if (removed === undefined) {
       break;
     }
-    const removedBytes = byteLength(removed);
-    outbox.bytes -= removedBytes;
-    outbox.droppedBytes += removedBytes;
+    outbox.bytes -= removed.bytes;
+    outbox.droppedBytes += removed.bytes;
   }
   compactOutbox(outbox);
 }
@@ -71,20 +78,19 @@ export function flushOutbox(
   let sentBytes = 0;
 
   while (outbox.head < outbox.chunks.length) {
-    const chunk = outbox.chunks[outbox.head];
-    if (chunk === undefined) {
+    const queuedChunk = outbox.chunks[outbox.head];
+    if (queuedChunk === undefined) {
       break;
     }
 
-    const delivered = send(chunk);
+    const delivered = send(queuedChunk.data);
     if (!delivered) {
       break;
     }
 
     outbox.head += 1;
-    const bytes = byteLength(chunk);
-    sentBytes += bytes;
-    outbox.bytes -= bytes;
+    sentBytes += queuedChunk.bytes;
+    outbox.bytes -= queuedChunk.bytes;
   }
 
   outbox.bytes = Math.max(0, outbox.bytes);

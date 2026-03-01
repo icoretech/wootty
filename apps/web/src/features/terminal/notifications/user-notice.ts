@@ -1,4 +1,3 @@
-import type { NoticeDetails } from "../contracts/notice";
 import { toBootstrapNotice } from "./formatters/bootstrap-notice";
 import { toFullscreenNotice } from "./formatters/fullscreen-notice";
 import { toProtocolNotice } from "./formatters/protocol-notice";
@@ -7,6 +6,7 @@ import { toServerNotice } from "./formatters/server-notice";
 import { toSessionRefreshNotice } from "./formatters/session-refresh-notice";
 import { toStorageNotice } from "./formatters/storage-notice";
 import { toTransportNotice } from "./formatters/transport-notice";
+import type { NoticeDetails } from "./notice-contract";
 
 type NoticeFormatterRegistry = {
   [Context in NoticeDetails["context"]]: (
