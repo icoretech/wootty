@@ -1,4 +1,4 @@
-export type WebsocketEndpointValidation =
+type WebsocketEndpointValidation =
   | {
       ok: true;
       endpoint: string;
