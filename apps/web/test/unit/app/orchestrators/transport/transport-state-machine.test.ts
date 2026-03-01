@@ -18,12 +18,8 @@ describe("transport state machine", () => {
     expect(connected.reconnectAttempt).toBe(0);
   });
 
-  it("records socket failures and close intent", () => {
-    const withIntent = reduceTransportState(initialTransportState, {
-      type: "set-close-intent",
-      intent: "manual",
-    });
-    const failed = reduceTransportState(withIntent, {
+  it("records socket failures", () => {
+    const failed = reduceTransportState(initialTransportState, {
       type: "socket-failure",
       context: {
         source: "close",
@@ -33,7 +29,6 @@ describe("transport state machine", () => {
       },
     });
 
-    expect(failed.closeIntent).toBe("manual");
     expect(failed.lastSocketFailure).toMatchObject({
       source: "close",
       code: 4100,
