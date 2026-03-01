@@ -23,66 +23,92 @@ export class TransportCommandExecutor {
     this.deps = deps;
   }
 
-  reconnectNow(): void {
-    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.deps.setCloseIntent("manual");
+  private executeLifecycleCommand(options: {
+    clearReconnectAttempts?: boolean;
+    closeIntent?: SocketCloseIntent;
+    tryClose: () => boolean;
+    fallback: () => void;
+  }): void {
+    if (options.clearReconnectAttempts) {
+      this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
+    }
+    if (options.closeIntent) {
+      this.deps.setCloseIntent(options.closeIntent);
+    }
     this.deps.clearLifecycleTimers();
-    if (
-      this.deps.closeActiveSocket(
-        TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
-        "manual reconnect",
-      )
-    ) {
+    if (options.tryClose()) {
       return;
     }
-    this.deps.connect();
+    options.fallback();
+  }
+
+  reconnectNow(): void {
+    this.executeLifecycleCommand({
+      clearReconnectAttempts: true,
+      closeIntent: "manual",
+      tryClose: () => {
+        return this.deps.closeActiveSocket(
+          TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+          "manual reconnect",
+        );
+      },
+      fallback: () => {
+        this.deps.connect();
+      },
+    });
   }
 
   reconnectWithEndpointChange(): void {
-    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.deps.clearLifecycleTimers();
-
-    const previousSocket = this.deps.detachSocketForSwap();
-    if (
-      previousSocket &&
-      previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
-    ) {
-      // Detach before reconnect so connect() is not blocked by old socket state.
-      this.deps.connect();
-      previousSocket.close(
-        TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
-        "endpoint changed",
-      );
-      return;
-    }
-
-    this.deps.connect();
+    this.executeLifecycleCommand({
+      clearReconnectAttempts: true,
+      tryClose: () => {
+        const previousSocket = this.deps.detachSocketForSwap();
+        if (
+          previousSocket &&
+          previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
+        ) {
+          // Detach before reconnect so connect() is not blocked by old socket state.
+          this.deps.connect();
+          previousSocket.close(
+            TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+            "endpoint changed",
+          );
+          return true;
+        }
+        return false;
+      },
+      fallback: () => {
+        this.deps.connect();
+      },
+    });
   }
 
   scheduleFreshConnection(): void {
-    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.deps.setCloseIntent("fresh");
-    this.deps.clearLifecycleTimers();
-
-    if (
-      this.deps.closeActiveSocket(
-        TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
-        "start fresh session",
-      )
-    ) {
-      return;
-    }
-
-    this.deps.connect();
+    this.executeLifecycleCommand({
+      clearReconnectAttempts: true,
+      closeIntent: "fresh",
+      tryClose: () => {
+        return this.deps.closeActiveSocket(
+          TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
+          "start fresh session",
+        );
+      },
+      fallback: () => {
+        this.deps.connect();
+      },
+    });
   }
 
   dispose(): void {
-    this.deps.setCloseIntent("dispose");
-    this.deps.clearLifecycleTimers();
-    if (this.deps.closeActiveSocket(1000, "component unmount")) {
-      return;
-    }
-    this.deps.clearSocket();
-    this.deps.dispatchEvent({ type: "socket-closed" });
+    this.executeLifecycleCommand({
+      closeIntent: "dispose",
+      tryClose: () => {
+        return this.deps.closeActiveSocket(1000, "component unmount");
+      },
+      fallback: () => {
+        this.deps.clearSocket();
+        this.deps.dispatchEvent({ type: "socket-closed" });
+      },
+    });
   }
 }
