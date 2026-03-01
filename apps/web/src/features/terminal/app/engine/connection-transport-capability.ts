@@ -1,9 +1,7 @@
 import { type MutableRefObject, useCallback, useMemo } from "react";
 import type { AttachMode } from "../../contracts/session/session";
-import type { TransportFailureReasonCode } from "../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
-  TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
 } from "../../contracts/transport/transport";
 import type {
@@ -19,6 +17,7 @@ import type {
 } from "../../session/application/session-refresh-result";
 import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
 import type { ConnectionStatusFlag } from "./protocol/connection-status-projector";
+import type { TransportFailureSink } from "./transport/transport-failure-contract";
 import {
   type TransportOrchestrator,
   useTransportOrchestrator,
@@ -71,15 +70,8 @@ export function useConnectionTransportCapability({
   markPongRef,
   scheduler,
 }: UseConnectionTransportCapabilityArgs): TransportOrchestrator {
-  const reportSocketFailure = useCallback(
-    (
-      source: "error" | "close",
-      code?: TerminalTransportFailureCode,
-      reasonCode?: TransportFailureReasonCode,
-      technicalDetail?: string,
-      cause?: unknown,
-      noticeMessage?: string,
-    ) => {
+  const reportSocketFailure = useCallback<TransportFailureSink>(
+    ({ source, code, reasonCode, technicalDetail, cause, noticeMessage }) => {
       publishTransportNotice({
         context: "transport",
         source,

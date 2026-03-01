@@ -1,14 +1,14 @@
-import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
-import type { TerminalTransportFailureCode } from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
 } from "../../../shared/reliability/failure-notice-throttle";
+import type {
+  TransportFailure,
+  TransportFailureSink,
+} from "./transport-failure-contract";
 
 const SOCKET_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
-
-export type SocketFailureSource = "error" | "close";
 
 type TransportFailureReporterDeps = {
   scheduler: Scheduler;
@@ -16,30 +16,19 @@ type TransportFailureReporterDeps = {
   onSocketFailure: TransportFailureSink;
 };
 
-type TransportFailureSink = (
-  source: SocketFailureSource,
-  code?: TerminalTransportFailureCode,
-  reasonCode?: TransportFailureReasonCode,
-  technicalDetail?: string,
-  cause?: unknown,
-  noticeMessage?: string,
-) => void;
-
-function socketFailureContext(
-  source: SocketFailureSource,
-  reasonCode?: TransportFailureReasonCode,
-  code?: TerminalTransportFailureCode,
-  technicalDetail?: string,
-): string {
-  const contextParts: string[] = [source];
-  if (reasonCode) {
-    contextParts.push(`reason=${reasonCode}`);
+function socketFailureContext(failure: TransportFailure): string {
+  const contextParts: string[] = [failure.source];
+  if (failure.reasonCode) {
+    contextParts.push(`reason=${failure.reasonCode}`);
   }
-  if (typeof code === "number" || typeof code === "string") {
-    contextParts.push(`code=${code}`);
+  if (typeof failure.code === "number" || typeof failure.code === "string") {
+    contextParts.push(`code=${failure.code}`);
   }
-  if (typeof technicalDetail === "string" && technicalDetail.length > 0) {
-    contextParts.push(`detail=${technicalDetail}`);
+  if (
+    typeof failure.technicalDetail === "string" &&
+    failure.technicalDetail.length > 0
+  ) {
+    contextParts.push(`detail=${failure.technicalDetail}`);
   }
   return contextParts.join(" ");
 }
@@ -62,26 +51,15 @@ export class TransportFailureReporter {
     this.onSocketFailure = next;
   }
 
-  report(
-    source: SocketFailureSource,
-    code?: TerminalTransportFailureCode,
-    reasonCode?: TransportFailureReasonCode,
-    technicalDetail?: string,
-    cause?: unknown,
-  ): void {
-    const context = socketFailureContext(
-      source,
-      reasonCode,
-      code,
-      technicalDetail,
-    );
+  report(failure: Omit<TransportFailure, "noticeMessage">): void {
+    const context = socketFailureContext(failure);
     this.deps.dispatchSocketFailure(context);
 
-    const noticeKey = `${source}|${String(code ?? "")}|${reasonCode ?? ""}|${technicalDetail ?? ""}`;
+    const noticeKey = `${failure.source}|${String(failure.code ?? "")}|${failure.reasonCode ?? ""}|${failure.technicalDetail ?? ""}`;
     const baseReason =
-      technicalDetail && technicalDetail.length > 0
-        ? technicalDetail
-        : (reasonCode ?? "transport failure");
+      failure.technicalDetail && failure.technicalDetail.length > 0
+        ? failure.technicalDetail
+        : (failure.reasonCode ?? "transport failure");
     const nextNoticeState = notifyWithFailureThrottle({
       current: this.socketFailureNotice,
       key: noticeKey,
@@ -89,14 +67,10 @@ export class TransportFailureReporter {
       cooldownMs: SOCKET_FAILURE_NOTICE_COOLDOWN_MS,
       baseMessage: baseReason,
       notify: (message) => {
-        this.onSocketFailure(
-          source,
-          code,
-          reasonCode,
-          technicalDetail,
-          cause,
-          message,
-        );
+        this.onSocketFailure({
+          ...failure,
+          noticeMessage: message,
+        });
       },
     });
     this.socketFailureNotice = nextNoticeState.next;
