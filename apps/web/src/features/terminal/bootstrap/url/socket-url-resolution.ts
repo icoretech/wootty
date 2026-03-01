@@ -58,9 +58,10 @@ function resolveAbsoluteHttpSocketUrl(
   try {
     const parsedHttpUrl = new URL(configured);
     const protocol = parsedHttpUrl.protocol === "https:" ? "wss:" : "ws:";
+    const terminalPath = deriveTerminalPathFromHttpUrl(parsedHttpUrl.pathname);
     return {
       ok: true,
-      socketUrl: `${protocol}//${parsedHttpUrl.host}${parsedHttpUrl.pathname}${parsedHttpUrl.search}`,
+      socketUrl: `${protocol}//${parsedHttpUrl.host}${terminalPath}${parsedHttpUrl.search}`,
     };
   } catch {
     return {
@@ -68,6 +69,27 @@ function resolveAbsoluteHttpSocketUrl(
       issue: invalidFormatIssue(configured),
     };
   }
+}
+
+function deriveTerminalPathFromHttpUrl(pathname: string): string {
+  const normalizedPath =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.slice(0, -1)
+      : pathname;
+
+  if (normalizedPath.endsWith(TERMINAL_BACKEND_ROUTE.TERMINAL_WS)) {
+    return normalizedPath;
+  }
+  if (normalizedPath.endsWith(TERMINAL_BACKEND_ROUTE.SESSIONS_HTTP)) {
+    return `${normalizedPath.slice(
+      0,
+      -TERMINAL_BACKEND_ROUTE.SESSIONS_HTTP.length,
+    )}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`;
+  }
+  if (normalizedPath === "" || normalizedPath === "/") {
+    return TERMINAL_BACKEND_ROUTE.TERMINAL_WS;
+  }
+  return `${normalizedPath}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`;
 }
 
 function resolveRelativeSocketUrl(

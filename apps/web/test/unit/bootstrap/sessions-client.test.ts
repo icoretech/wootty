@@ -106,4 +106,28 @@ describe("sessions client", () => {
       },
     });
   });
+
+  it("surfaces auth token resolution issues as bootstrap errors", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const client = createBrowserSessionsClient(() => ({
+      token: undefined,
+      issue: {
+        code: "socket_url_invalid_format",
+        details: "unable to parse websocket URL",
+      },
+    }));
+
+    await expect(client(SESSIONS_ENDPOINT)).resolves.toEqual({
+      ok: false,
+      failure: {
+        source: "fetch",
+        reason: "bootstrap_error",
+        issue: "unable to parse websocket URL",
+        issueCode: "socket_url_invalid_format",
+      },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });

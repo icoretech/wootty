@@ -96,6 +96,17 @@ export function createBrowserSessionsClient(
 ) => Promise<SessionsFetchResult> {
   return (sessionsHttpUrl, options) => {
     const tokenResolution = authTokenProvider();
+    if (tokenResolution.issue) {
+      return Promise.resolve({
+        ok: false,
+        failure: {
+          source: "fetch",
+          reason: "bootstrap_error",
+          issue: tokenResolution.issue.details,
+          issueCode: tokenResolution.issue.code,
+        },
+      });
+    }
     return fetchSessionsFromEndpoint(
       sessionsHttpUrl,
       tokenResolution.token,
