@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconnectDelayMs } from "../../../src/features/terminal/app/engine/transport-policy";
+import { reconnectDelayMs } from "../../../src/features/terminal/app/engine/transport/transport-policy";
 import {
   formatBytes,
   formatLatency,

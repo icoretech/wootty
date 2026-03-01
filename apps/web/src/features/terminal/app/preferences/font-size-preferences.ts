@@ -34,8 +34,21 @@ export function readInitialFontSizeResult(storage: Storage | null): {
     return { fontSize: DEFAULT_FONT_SIZE, error: null };
   }
 
-  const parsed = Number.parseInt(raw, 10);
-  if (!Number.isFinite(parsed)) {
+  const normalized = raw.trim();
+  if (!/^\d+$/u.test(normalized)) {
+    return {
+      fontSize: DEFAULT_FONT_SIZE,
+      error: {
+        operation: "parse",
+        key: FONT_SIZE_STORAGE_KEY,
+        reason: "invalid_value",
+        cause: raw,
+      },
+    };
+  }
+
+  const parsed = Number(normalized);
+  if (!Number.isInteger(parsed)) {
     return {
       fontSize: DEFAULT_FONT_SIZE,
       error: {

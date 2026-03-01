@@ -1,4 +1,4 @@
-import type { ConnectionStatus } from "../../contracts/connection";
+import type { ConnectionStatus } from "../../../contracts/connection";
 
 export type SocketCloseIntent = "normal" | "fresh" | "manual";
 

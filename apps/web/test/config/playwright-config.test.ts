@@ -101,4 +101,15 @@ describe("playwright config", () => {
     expect(resolveE2ePort("70000")).toBe(DEFAULT_E2E_PORT);
     expect(config.use.baseURL).toBe(expected.baseURL);
   });
+
+  it("falls back to default port when env value is partially numeric", async () => {
+    process.env.WOOTTY_E2E_PORT = "4310abc";
+    delete process.env.WOOTTY_E2E_CROSS;
+
+    const config = await loadConfig();
+    const expected = resolveE2eRuntime({ WOOTTY_E2E_PORT: "4310abc" });
+
+    expect(resolveE2ePort("4310abc")).toBe(DEFAULT_E2E_PORT);
+    expect(config.use.baseURL).toBe(expected.baseURL);
+  });
 });

@@ -11,15 +11,18 @@ import type {
   TerminalTransportErrorEvent,
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
-} from "../../contracts/transport";
-import { TRANSPORT_READY_STATE } from "../../contracts/transport";
+} from "../../../contracts/transport";
+import { TRANSPORT_READY_STATE } from "../../../contracts/transport";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
-} from "../../notifications/failure-notice-throttle";
-import type { Scheduler, SchedulerTimerHandle } from "../../platform/scheduler";
-import { createPingMessage } from "../../protocol/terminal-client-messages";
-import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
+} from "../../../notifications/failure-notice-throttle";
+import type {
+  Scheduler,
+  SchedulerTimerHandle,
+} from "../../../platform/scheduler";
+import { createPingMessage } from "../../../protocol/terminal-client-messages";
+import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 import {
   isRecoverableTransportClose,
   reconnectDelayMs,

@@ -1,7 +1,7 @@
-import { TERMINAL_RUNTIME_COMMAND } from "../../commands/runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../../commands/viewport-commands";
-import type { FloatingControlMetadata } from "../contracts/floating-control-metadata";
+import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
+import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
 import type { FloatingControlCommand } from "./actions";
+import type { FloatingControlMetadata } from "./floating-control-metadata";
 
 const FLOATING_CONTROL_METADATA_BY_COMMAND: Record<
   FloatingControlCommand,

@@ -1,4 +1,7 @@
-import type { StorageNotice } from "../../notifications/notice-contract";
+import type {
+  NoticePublisher,
+  StorageNotice,
+} from "../../notifications/notice-contract";
 import type { StorageAccessFailure } from "../persistence/session-storage";
 
 function describeStorageFailureReason(
@@ -25,4 +28,11 @@ export function toStorageFailureNoticeDetails(
     key: failure.key,
     reason: describeStorageFailureReason(failure),
   };
+}
+
+export function publishStorageFailureNotice(
+  publishNotice: NoticePublisher,
+  failure: StorageAccessFailure,
+): void {
+  publishNotice(toStorageFailureNoticeDetails(failure));
 }

@@ -138,24 +138,45 @@ function toStorageNotice(details: StorageNotice): string {
   return `Browser storage ${details.operation} failed for '${details.key}'${reasonSuffix}. In-memory state remains active.`;
 }
 
+type NoticeFormatterRegistry = {
+  [Context in NoticeDetails["context"]]: (
+    details: Extract<NoticeDetails, { context: Context }>,
+  ) => string;
+};
+
+const NOTICE_FORMATTERS: NoticeFormatterRegistry = {
+  sessions_refresh: toSessionRefreshNotice,
+  fullscreen: toFullscreenNotice,
+  runtime: toRuntimeNotice,
+  protocol: toProtocolNotice,
+  transport: toTransportNotice,
+  server: toServerNotice,
+  bootstrap: toBootstrapNotice,
+  storage: toStorageNotice,
+};
+
+export const NOTICE_CONTEXTS = Object.freeze(
+  Object.keys(NOTICE_FORMATTERS) as NoticeDetails["context"][],
+);
+
 export function toUserNotice(details: NoticeDetails): string {
   switch (details.context) {
     case "sessions_refresh":
-      return toSessionRefreshNotice(details);
+      return NOTICE_FORMATTERS.sessions_refresh(details);
     case "fullscreen":
-      return toFullscreenNotice(details);
+      return NOTICE_FORMATTERS.fullscreen(details);
     case "runtime":
-      return toRuntimeNotice(details);
+      return NOTICE_FORMATTERS.runtime(details);
     case "protocol":
-      return toProtocolNotice(details);
+      return NOTICE_FORMATTERS.protocol(details);
     case "transport":
-      return toTransportNotice(details);
+      return NOTICE_FORMATTERS.transport(details);
     case "server":
-      return toServerNotice(details);
+      return NOTICE_FORMATTERS.server(details);
     case "bootstrap":
-      return toBootstrapNotice(details);
+      return NOTICE_FORMATTERS.bootstrap(details);
     case "storage":
-      return toStorageNotice(details);
+      return NOTICE_FORMATTERS.storage(details);
     default:
       return assertNever(details);
   }

@@ -1,6 +1,4 @@
-import type { FloatingControlsModel } from "../components/models/floating-controls-model";
-import type { SessionMenuModel } from "../components/models/session-menu-model";
-import type { StatusBarModel } from "../components/models/status-bar-model";
+import { buildFloatingControlDescriptors } from "../commands/floating-controls/descriptors";
 import type { ConnectionStatus } from "../contracts/connection";
 import {
   DEFAULT_FONT_SIZE,
@@ -17,7 +15,9 @@ import {
 } from "../presentation/formatters";
 import { presentSessionCandidate } from "../presentation/session-menu-presenter";
 import { deriveSessionCandidates } from "../session/domain/session-candidates";
-import { buildFloatingControlDescriptors } from "./floating-controls/descriptors";
+import type { FloatingControlsModel } from "../view-models/floating-controls-model";
+import type { SessionMenuModel } from "../view-models/session-menu-model";
+import type { StatusBarModel } from "../view-models/status-bar-model";
 
 type TerminalViewModelInput = {
   controlsOpen: boolean;

@@ -1,10 +1,10 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useConnectionMessageGateway } from "../../../../src/features/terminal/app/engine/connection-message-gateway";
-import { handleIncomingServerMessage } from "../../../../src/features/terminal/app/engine/connection-message-policy";
+import { useConnectionMessageGateway } from "../../../../src/features/terminal/app/engine/protocol/connection-message-gateway";
+import { handleIncomingServerMessage } from "../../../../src/features/terminal/app/engine/protocol/connection-message-policy";
 
 vi.mock(
-  "../../../../src/features/terminal/app/engine/connection-message-policy",
+  "../../../../src/features/terminal/app/engine/protocol/connection-message-policy",
   () => ({
     handleIncomingServerMessage: vi.fn(),
   }),

@@ -5,13 +5,13 @@ import {
   useRef,
   useState,
 } from "react";
-import { readTerminalTheme } from "../../runtime/terminal-theme";
+import { readTerminalTheme } from "../../../runtime/terminal-theme";
 import type {
   TerminalRuntime,
   TerminalRuntimeDisposable,
   TerminalRuntimeFitAddon,
   TerminalRuntimeTerminal,
-} from "../../runtime/xterm-runtime-contract";
+} from "../../../runtime/xterm-runtime-contract";
 
 type UseRuntimeOrchestratorArgs = {
   documentRef: Document | null;

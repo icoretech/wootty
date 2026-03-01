@@ -1,12 +1,12 @@
 import { useCallback } from "react";
-import type { AttachMode } from "../../contracts/session";
-import type { NoticePublisher } from "../../notifications/notice-contract";
-import { resolveServerErrorPolicy } from "../../protocol/policies/server-error-policy";
-import type { TerminalServerErrorCode } from "../../protocol/server-error-codes";
+import type { AttachMode } from "../../../contracts/session";
+import type { NoticePublisher } from "../../../notifications/notice-contract";
+import { resolveServerErrorPolicy } from "../../../protocol/policies/server-error-policy";
+import type { TerminalServerErrorCode } from "../../../protocol/server-error-codes";
 import type {
   SessionRefreshRequest,
   SessionRefreshResult,
-} from "../../session/application/session-refresh-result";
+} from "../../../session/application/session-refresh-result";
 import { handleIncomingServerMessage } from "./connection-message-policy";
 import type { ConnectionStatusFlag } from "./connection-status-projector";
 

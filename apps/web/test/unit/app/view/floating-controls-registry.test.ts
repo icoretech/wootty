@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { FLOATING_CONTROL_REGISTRY } from "../../../../src/features/terminal/commands/floating-controls/registry";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../../src/features/terminal/commands/viewport-commands";
-import { FLOATING_CONTROL_REGISTRY } from "../../../../src/features/terminal/view/floating-controls/registry";
 
 describe("floating controls registry", () => {
   it("declares a stable ordered mapping between actions and metadata keys", () => {

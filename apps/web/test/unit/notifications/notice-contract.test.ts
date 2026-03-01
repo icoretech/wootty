@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  NOTICE_CONTEXTS,
-  type NoticeDetails,
-} from "../../../src/features/terminal/notifications/notice-contract";
+import type { NoticeDetails } from "../../../src/features/terminal/notifications/notice-contract";
+import { NOTICE_CONTEXTS } from "../../../src/features/terminal/notifications/user-notice";
 
 describe("notice contract", () => {
   it("exposes a stable list of supported notice contexts", () => {

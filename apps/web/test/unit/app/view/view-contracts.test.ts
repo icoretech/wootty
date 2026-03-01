@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { FloatingControlsAction } from "../../../../src/features/terminal/commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../../../src/features/terminal/commands/session-menu-actions";
 import type { StatusBarAction } from "../../../../src/features/terminal/commands/status-bar-actions";
-import type { FloatingControlsModel } from "../../../../src/features/terminal/components/models/floating-controls-model";
-import type { SessionMenuModel } from "../../../../src/features/terminal/components/models/session-menu-model";
-import type { StatusBarModel } from "../../../../src/features/terminal/components/models/status-bar-model";
-import type { FloatingControlsAction } from "../../../../src/features/terminal/view/floating-controls/actions";
+import type { FloatingControlsModel } from "../../../../src/features/terminal/view-models/floating-controls-model";
+import type { SessionMenuModel } from "../../../../src/features/terminal/view-models/session-menu-model";
+import type { StatusBarModel } from "../../../../src/features/terminal/view-models/status-bar-model";
 
 describe("view contracts", () => {
   it("defines stable floating/session/status action unions", () => {

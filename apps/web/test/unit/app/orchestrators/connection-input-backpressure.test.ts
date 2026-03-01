@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useConnectionInputBackpressure } from "../../../../src/features/terminal/app/engine/connection-input-backpressure";
+import { useConnectionInputBackpressure } from "../../../../src/features/terminal/app/engine/runtime/connection-input-backpressure";
 import {
   createInputMessage,
   createResizeMessage,

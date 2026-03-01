@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COMMAND_DESCRIPTORS } from "../../../src/features/terminal/commands/command-descriptors";
+import { FLOATING_CONTROL_REGISTRY } from "../../../src/features/terminal/commands/floating-controls/registry";
 import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
 
 describe("command descriptors", () => {
@@ -12,10 +13,10 @@ describe("command descriptors", () => {
     expect(shortcuts.size).toBe(COMMAND_DESCRIPTORS.length);
   });
 
-  it("keeps toggle-controls out of floating controls", () => {
-    const floatingControlIds = COMMAND_DESCRIPTORS.filter(
-      (descriptor) => descriptor.floatingControlId,
-    ).map((descriptor) => descriptor.id);
+  it("keeps toggle-controls out of floating-control registry actions", () => {
+    const floatingControlIds = FLOATING_CONTROL_REGISTRY.map(
+      (descriptor) => descriptor.action,
+    );
     expect(floatingControlIds).not.toContain(
       VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS,
     );

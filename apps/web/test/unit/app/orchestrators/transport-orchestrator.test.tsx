@@ -1,12 +1,12 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useTransportOrchestrator } from "../../../../src/features/terminal/app/engine/transport-orchestrator";
+import { useTransportOrchestrator } from "../../../../src/features/terminal/app/engine/transport/transport-orchestrator";
 import {
   reconnectDelayMs,
   TERMINAL_CLOSE_CODE,
   TERMINAL_HEARTBEAT_MS,
   TERMINAL_RECONNECT_POLICY,
-} from "../../../../src/features/terminal/app/engine/transport-policy";
+} from "../../../../src/features/terminal/app/engine/transport/transport-policy";
 import {
   type TerminalTransport,
   type TerminalTransportCloseEvent,

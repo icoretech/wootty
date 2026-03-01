@@ -2,7 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useControllerBindings } from "../../../src/features/terminal/app/controller-bindings";
 import type { ShortcutAction } from "../../../src/features/terminal/commands/shortcut-actions";
-import { createNoticePublisher } from "../../../src/features/terminal/notifications/notice-publisher";
+import type { NoticeDetails } from "../../../src/features/terminal/notifications/notice-contract";
 import { toUserNotice } from "../../../src/features/terminal/notifications/user-notice";
 import type { Scheduler } from "../../../src/features/terminal/platform/scheduler";
 
@@ -22,10 +22,9 @@ describe("controller bindings", () => {
   it("wires app bindings when menu polling is disabled", () => {
     const runShortcutAction = vi.fn<(action: ShortcutAction) => void>();
     const publishSessionNotice = vi.fn();
-    const publishNotice = createNoticePublisher(
-      publishSessionNotice,
-      toUserNotice,
-    );
+    const publishNotice = (details: NoticeDetails) => {
+      publishSessionNotice(toUserNotice(details));
+    };
     const terminalElementRef = { current: document.createElement("div") };
 
     renderHook(() =>

@@ -2,14 +2,12 @@ import {
   type Dispatch,
   type SetStateAction,
   useCallback,
-  useMemo,
   useRef,
   useState,
 } from "react";
 import type { AttachMode, SessionSnapshot } from "../../contracts/session";
 import type { FailureNoticeState } from "../../notifications/failure-notice-throttle";
 import type { NoticeDetails } from "../../notifications/notice-contract";
-import { createNoticePublisher } from "../../notifications/notice-publisher";
 import type { Scheduler } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
 import type { SessionsFetchResult } from "../../session/protocol/sessions-fetch-contract";
@@ -22,7 +20,7 @@ import type {
   SessionRefreshRequest,
   SessionRefreshResult,
 } from "./session-refresh-result";
-import { toStorageFailureNoticeDetails } from "./storage-failure-notice";
+import { publishStorageFailureNotice } from "./storage-failure-notice";
 
 type UseSessionOrchestratorArgs = {
   fetchSessions: (options?: {
@@ -59,6 +57,7 @@ type SessionOrchestratorState = {
   };
   actions: {
     setSessionMenuOpen: Dispatch<SetStateAction<boolean>>;
+    publishNotice: (details: NoticeDetails) => void;
     publishSessionNotice: (message: string) => void;
     clearSessionNotice: () => void;
     setSessionMode: (mode: AttachMode) => void;
@@ -82,6 +81,7 @@ export function useSessionOrchestrator({
   formatNotice,
 }: UseSessionOrchestratorArgs): SessionOrchestratorState {
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
+  const lastNoticeMessageRef = useRef<string | null>(null);
   const latestRefreshRequestIdRef = useRef(0);
   const activeRefreshControllerRef = useRef<AbortController | null>(null);
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
@@ -96,14 +96,24 @@ export function useSessionOrchestrator({
   } = useSessionNoticeChannel({
     scheduler,
   });
-  const publishNotice = useMemo(
-    () => createNoticePublisher(publishSessionNotice, formatNotice),
+  const publishNotice = useCallback(
+    (details: NoticeDetails) => {
+      const message = formatNotice(details).trim();
+      if (message.length === 0) {
+        return;
+      }
+      if (message === lastNoticeMessageRef.current) {
+        return;
+      }
+      lastNoticeMessageRef.current = message;
+      publishSessionNotice(message);
+    },
     [formatNotice, publishSessionNotice],
   );
 
   const reportStorageFailure = useCallback(
     (failure: StorageAccessFailure) => {
-      publishNotice(toStorageFailureNoticeDetails(failure));
+      publishStorageFailureNotice(publishNotice, failure);
     },
     [publishNotice],
   );
@@ -130,7 +140,7 @@ export function useSessionOrchestrator({
       }
       const message = formatNotice(noticeData.notice);
       if (!noticeData.failureKey) {
-        publishSessionNotice(message);
+        publishNotice(noticeData.notice);
         return;
       }
       publishThrottledSessionNotice({
@@ -140,7 +150,7 @@ export function useSessionOrchestrator({
         cooldownMs: REFRESH_FAILURE_NOTICE_COOLDOWN_MS,
       });
     },
-    [formatNotice, publishSessionNotice, publishThrottledSessionNotice],
+    [formatNotice, publishNotice, publishThrottledSessionNotice],
   );
 
   const refreshLiveSessions = useCallback(
@@ -190,13 +200,11 @@ export function useSessionOrchestrator({
         refreshFailureNoticeRef.current = null;
         setLiveSessions(parsed.sessions);
         if (parsed.invalidEntries > 0) {
-          publishSessionNotice(
-            formatNotice({
-              context: "sessions_refresh",
-              reason: "invalid_entries",
-              count: parsed.invalidEntries,
-            }),
-          );
+          publishNotice({
+            context: "sessions_refresh",
+            reason: "invalid_entries",
+            count: parsed.invalidEntries,
+          });
         }
         return { ok: true };
       } catch (error) {
@@ -225,7 +233,7 @@ export function useSessionOrchestrator({
         }
       }
     },
-    [fetchSessions, formatNotice, publishRefreshFailure, publishSessionNotice],
+    [fetchSessions, publishNotice, publishRefreshFailure],
   );
 
   const setSessionMode = useCallback((mode: AttachMode) => {
@@ -295,6 +303,7 @@ export function useSessionOrchestrator({
     },
     actions: {
       setSessionMenuOpen: setSessionMenuOpenState,
+      publishNotice,
       publishSessionNotice,
       clearSessionNotice,
       setSessionMode,

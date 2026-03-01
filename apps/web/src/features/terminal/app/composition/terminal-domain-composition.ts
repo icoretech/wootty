@@ -1,52 +1,24 @@
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { type RefObject, useCallback } from "react";
+import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import type { NoticePublisher } from "../../notifications/notice-contract";
-import { createNoticePublisher } from "../../notifications/notice-publisher";
-import { toUserNotice } from "../../notifications/user-notice";
-import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
-import { toStorageFailureNoticeDetails } from "../../session/application/storage-failure-notice";
-import type { StorageAccessFailure } from "../../session/persistence/session-storage";
-import type { FloatingControlsAction } from "../../view/floating-controls/actions";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,
 } from "../controller-actions";
 import { useControllerBindings } from "../controller-bindings";
 import { useConnectionCoordinator } from "../engine/connection-coordinator";
-import {
-  clampFontSize,
-  readInitialFontSizeResult,
-  writeFontSizePreferenceResult,
-} from "../preferences/font-size-preferences";
 import type { TerminalPlatformContext } from "./terminal-platform-composition";
-
-type ControllerUiState = {
-  initialFontSize: number;
-  fontSize: number;
-  controlsOpen: boolean;
-  isFullscreen: boolean;
-  setControlsOpen: (value: boolean | ((previous: boolean) => boolean)) => void;
-  setIsFullscreen: (value: boolean) => void;
-  readFontSize: () => number;
-  applyFontSize: (
-    next: number,
-    applyToRuntime: (size: number, onResized: () => void) => void,
-    onResized: () => void,
-  ) => void;
-};
+import {
+  type ControllerUiState,
+  useTerminalSessionDomain,
+} from "./terminal-session-domain";
 
 type TerminalDomainController = {
   uiState: ControllerUiState;
-  sessionState: ReturnType<typeof useSessionOrchestrator>["state"];
+  sessionState: ReturnType<typeof useTerminalSessionDomain>["sessionState"];
   connectionRuntime: ReturnType<typeof useConnectionCoordinator>["runtime"];
   connectionTransport: ReturnType<typeof useConnectionCoordinator>["transport"];
   connectionTelemetry: ReturnType<typeof useConnectionCoordinator>["telemetry"];
@@ -54,53 +26,6 @@ type TerminalDomainController = {
   dispatchSessionMenu: (action: SessionMenuAction) => void;
   dispatchStatusBar: (action: StatusBarAction) => void;
 };
-
-function useControllerUiState(
-  getLocalStorage: () => Storage | null,
-  onStorageFailure?: (failure: StorageAccessFailure) => void,
-): ControllerUiState {
-  const initialFontSize = useMemo(() => {
-    const result = readInitialFontSizeResult(getLocalStorage());
-    if (result.error && onStorageFailure) {
-      onStorageFailure(result.error);
-    }
-    return result.fontSize;
-  }, [getLocalStorage, onStorageFailure]);
-  const fontSizeRef = useRef(initialFontSize);
-  const [fontSize, setFontSize] = useState<number>(initialFontSize);
-  const [controlsOpen, setControlsOpen] = useState<boolean>(true);
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
-
-  const applyFontSize = useCallback(
-    (
-      next: number,
-      applyToRuntime: (size: number, onResized: () => void) => void,
-      onResized: () => void,
-    ) => {
-      const normalized = clampFontSize(next);
-      fontSizeRef.current = normalized;
-      setFontSize(normalized);
-      const storage = getLocalStorage();
-      const writeResult = writeFontSizePreferenceResult(storage, normalized);
-      if (writeResult.error && onStorageFailure) {
-        onStorageFailure(writeResult.error);
-      }
-      applyToRuntime(normalized, onResized);
-    },
-    [getLocalStorage, onStorageFailure],
-  );
-
-  return {
-    initialFontSize,
-    fontSize,
-    controlsOpen,
-    isFullscreen,
-    setControlsOpen,
-    setIsFullscreen,
-    readFontSize: () => fontSizeRef.current,
-    applyFontSize,
-  };
-}
 
 function useFullscreenCommand({
   appViewportRef,
@@ -164,54 +89,11 @@ export function useTerminalDomainController({
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
 }): TerminalDomainController {
-  const session = useSessionOrchestrator({
-    fetchSessions: platform.fetchSessions,
-    scheduler: platform.scheduler,
-    getLocalStorage: environment.getLocalStorage,
-    getSessionStorage: environment.getSessionStorage,
-    formatNotice: toUserNotice,
-  });
-  const sessionState = session.state;
-  const sessionActions = session.actions;
-  const publishNotice = useMemo(
-    () =>
-      createNoticePublisher(sessionActions.publishSessionNotice, toUserNotice),
-    [sessionActions.publishSessionNotice],
-  );
-
-  const reportStorageFailure = useCallback(
-    (failure: StorageAccessFailure) => {
-      publishNotice(toStorageFailureNoticeDetails(failure));
-    },
-    [publishNotice],
-  );
-  const uiState = useControllerUiState(
-    environment.getLocalStorage,
-    reportStorageFailure,
-  );
-  const lastBootstrapIssueRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (platform.backendResolution.ok) {
-      lastBootstrapIssueRef.current = null;
-      return;
-    }
-    const issueKey = `${platform.backendResolution.issue.code}:${platform.backendResolution.issue.details}`;
-    if (lastBootstrapIssueRef.current === issueKey) {
-      return;
-    }
-    lastBootstrapIssueRef.current = issueKey;
-    publishNotice({
-      context: "bootstrap",
-      reason: "backend_resolution_failed",
-      details: platform.backendResolution.issue.details,
-      code: platform.backendResolution.issue.code,
+  const { uiState, sessionState, sessionActions, publishNotice, wsUrl } =
+    useTerminalSessionDomain({
+      environment,
+      platform,
     });
-  }, [platform.backendResolution, publishNotice]);
-
-  const wsUrl = platform.backendResolution.ok
-    ? platform.backendResolution.endpoints.terminalWsUrl
-    : null;
 
   const connection = useConnectionCoordinator({
     createTransport: environment.createTransport,

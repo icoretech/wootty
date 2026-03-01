@@ -49,6 +49,9 @@ describe("terminal-theme helpers", () => {
 
     storage.setItem("wootty.fontSize", "invalid");
     expect(readInitialFontSizeResult(storage).fontSize).toBe(DEFAULT_FONT_SIZE);
+
+    storage.setItem("wootty.fontSize", "19px");
+    expect(readInitialFontSizeResult(storage).fontSize).toBe(DEFAULT_FONT_SIZE);
   });
 
   it("returns fallback terminal theme colors without a document", () => {

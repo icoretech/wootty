@@ -16,14 +16,14 @@ import type {
   SessionRefreshRequest,
   SessionRefreshResult,
 } from "../../session/application/session-refresh-result";
-import { useConnectionMessageGateway } from "./connection-message-gateway";
-import { useConnectionRuntimeIoBridge } from "./connection-runtime-io-bridge";
+import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
 import {
   type ConnectionStatusFlag,
   projectConnectionStatus,
   shouldClearStatusOverride,
-} from "./connection-status-projector";
-import { useTransportOrchestrator } from "./transport-orchestrator";
+} from "./protocol/connection-status-projector";
+import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
+import { useTransportOrchestrator } from "./transport/transport-orchestrator";
 
 type UseConnectionCoordinatorArgs = {
   createTransport: (url: string) => TerminalTransport;

@@ -1,6 +1,3 @@
-import type { ServerErrorNoticePayload } from "../protocol/policies/server-error-policy";
-import type { TerminalProtocolFailureDetail } from "../protocol/terminal-protocol";
-
 export type SessionsRefreshNotice =
   | { context: "sessions_refresh"; reason: "generic" }
   | { context: "sessions_refresh"; reason: "http"; status: number }
@@ -35,12 +32,25 @@ export type RuntimeNotice = {
   reason?: string;
 };
 
+export type NoticeProtocolFailureDetail =
+  | "non_text_frame"
+  | "json_parse_error"
+  | "payload_not_object"
+  | "invalid_message_type"
+  | "unsupported_message_type"
+  | "missing_ready_session_id"
+  | "invalid_ready_read_only"
+  | "invalid_output_data"
+  | "invalid_exit_payload"
+  | "missing_error_message"
+  | "wire_version_mismatch";
+
 export type ProtocolNotice =
   | { context: "protocol"; reason: "unsupported_type" }
   | {
       context: "protocol";
       reason: "malformed_payload";
-      detail?: TerminalProtocolFailureDetail;
+      detail?: NoticeProtocolFailureDetail;
       cause?: unknown;
     }
   | { context: "protocol"; reason: "empty_transport_message" }
@@ -58,9 +68,16 @@ export type TransportNotice = {
   reason?: string;
 };
 
-export type ServerNotice = {
-  context: "server";
-} & ServerErrorNoticePayload;
+export type ServerNotice =
+  | { context: "server"; reason: "session_not_found" }
+  | { context: "server"; reason: "attach_forbidden" }
+  | { context: "server"; reason: "incompatible_version" }
+  | { context: "server"; reason: "attach_required" }
+  | { context: "server"; reason: "read_only_forbidden" }
+  | { context: "server"; reason: "session_not_writable" }
+  | { context: "server"; reason: "session_not_resizable" }
+  | { context: "server"; reason: "missing_code" }
+  | { context: "server"; reason: "raw_code"; code: string };
 
 export type BootstrapNotice = {
   context: "bootstrap";
@@ -87,14 +104,3 @@ export type NoticeDetails =
   | StorageNotice;
 
 export type NoticePublisher = (details: NoticeDetails) => void;
-
-export const NOTICE_CONTEXTS = [
-  "sessions_refresh",
-  "fullscreen",
-  "runtime",
-  "protocol",
-  "transport",
-  "server",
-  "bootstrap",
-  "storage",
-] as const;

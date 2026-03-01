@@ -1,4 +1,4 @@
-import type { FloatingControlMetadata } from "../contracts/floating-control-metadata";
+import type { FloatingControlMetadata } from "./floating-control-metadata";
 import { floatingControlMetadata } from "./metadata";
 import {
   FLOATING_CONTROL_REGISTRY,
