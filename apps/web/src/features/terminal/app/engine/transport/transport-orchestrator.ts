@@ -34,7 +34,7 @@ type UseTransportOrchestratorArgs = {
   ) => void;
 };
 
-type TransportOrchestrator = {
+export type TransportOrchestrator = {
   status: TransportState["status"];
   reconnectAttempt: number;
   latencyMs: number | null;

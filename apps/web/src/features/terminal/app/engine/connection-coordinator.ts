@@ -1,34 +1,27 @@
 import type { RefObject } from "react";
-import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { useCallback, useEffect, useReducer, useRef } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
 import type { AttachMode } from "../../contracts/session/session";
-import type { TransportFailureReasonCode } from "../../contracts/transport/failure-reason";
-import type {
-  TerminalTransport,
-  TerminalTransportFailureCode,
-  TerminalTransportMessageEvent,
-} from "../../contracts/transport/transport";
+import type { TerminalTransport } from "../../contracts/transport/transport";
 import type {
   ConnectionNoticePublisher,
   RuntimeNoticePublisher,
   TransportNoticePublisher,
 } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
-import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
 import type { TerminalRuntime } from "../../runtime/xterm-runtime-contract";
 import type {
   SessionRefreshRequest,
   SessionRefreshResult,
 } from "../../session/application/session-refresh-result";
-import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
+import { useConnectionTransportCapability } from "./connection-transport-capability";
 import {
   type ConnectionStatusFlag,
   initialConnectionStatusState,
   reduceConnectionStatusState,
 } from "./protocol/connection-status-projector";
 import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
-import { useTransportOrchestrator } from "./transport/transport-orchestrator";
 
 type UseConnectionCoordinatorArgs = {
   createTransport: (url: string) => TerminalTransport;
@@ -134,103 +127,33 @@ export function useConnectionCoordinator({
     publishNotice: publishRuntimeNotice,
     onRuntimeBootError: handleRuntimeBootError,
   });
+  const setStatusFlag = useCallback((next: ConnectionStatusFlag | null) => {
+    dispatchStatusEvent({
+      type: "status-flag",
+      flag: next,
+    });
+  }, []);
 
-  const reportSocketFailure = useCallback(
-    (
-      source: "error" | "close",
-      code?: TerminalTransportFailureCode,
-      reasonCode?: TransportFailureReasonCode,
-      technicalDetail?: string,
-      cause?: unknown,
-      noticeMessage?: string,
-    ) => {
-      publishTransportNotice({
-        context: "transport",
-        source,
-        reasonCode: reasonCode ?? "socket_failure",
-        code,
-        debugDetail: technicalDetail,
-        noticeMessage,
-        cause,
-      });
-    },
-    [publishTransportNotice],
-  );
-
-  const { handleSocketMessage } = useConnectionMessageGateway({
-    publishNotice: publishConnectionNotice,
-    setStatusFlag: (next: ConnectionStatusFlag | null) => {
-      dispatchStatusEvent({
-        type: "status-flag",
-        flag: next,
-      });
-    },
+  const transport = useConnectionTransportCapability({
+    createTransport,
+    wsUrl,
+    attachMode,
+    sessionId,
+    hasSessionContext,
+    publishConnectionNotice,
+    publishTransportNotice,
+    setStatusFlag,
+    setSessionMode,
     applyReadySession,
     clearMissingSession,
     requestSessionRefresh,
-    setSessionMode,
     writeServerError: runtimeBridge.writeServerError,
     flushAfterReady: runtimeBridge.flushAfterReady,
     writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
     writeExit: runtimeBridge.writeExit,
-    markPong: () => {
-      markPongRef.current();
-    },
-  });
-
-  const transportHandlers = useMemo(
-    () => ({
-      onOpen: () => {
-        dispatchStatusEvent({
-          type: "status-flag",
-          flag: null,
-        });
-        const fitSize = runtimeBridge.runtimeFitSizeRef.current;
-        const attachSent = sendNow(
-          createAttachMessage({
-            sessionId,
-            cols: fitSize.cols,
-            rows: fitSize.rows,
-            watch: attachMode === "watch",
-          }),
-        );
-        if (attachSent) {
-          return;
-        }
-        publishTransportNotice({
-          context: "transport",
-          reasonCode: "attach_handshake_send_failed",
-        });
-      },
-      onMessage: (event: TerminalTransportMessageEvent) => {
-        if (event.malformed) {
-          publishConnectionNotice({
-            context: "protocol",
-            reason: "malformed_transport_event",
-            details: event.malformed,
-          });
-          return;
-        }
-        handleSocketMessage(event.data);
-      },
-    }),
-    [
-      attachMode,
-      handleSocketMessage,
-      publishConnectionNotice,
-      publishTransportNotice,
-      runtimeBridge,
-      sendNow,
-      sessionId,
-    ],
-  );
-
-  const transport = useTransportOrchestrator({
-    createTransport,
-    wsUrl,
-    handlers: transportHandlers,
-    hasSessionContext,
-    onSocketFailure: reportSocketFailure,
+    sendNow,
+    runtimeFitSizeRef: runtimeBridge.runtimeFitSizeRef,
+    markPongRef,
     scheduler,
   });
   const {
