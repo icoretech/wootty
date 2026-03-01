@@ -381,6 +381,36 @@ describe("session orchestrator", () => {
     });
   });
 
+  it("applies timeout failures uniformly for transport-triggered refresh requests", async () => {
+    vi.useFakeTimers();
+    try {
+      const localStorageRef = new StorageDouble();
+      const sessionStorageRef = new StorageDouble();
+      const fetchSessions = vi.fn(async (): Promise<SessionsFetchResult> => {
+        return new Promise<SessionsFetchResult>(() => {
+          // Keep request pending to exercise timeout handling in orchestrator.
+        });
+      });
+
+      render(
+        <SessionProbe
+          localStorageRef={localStorageRef}
+          sessionStorageRef={sessionStorageRef}
+          fetchSessions={fetchSessions}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId("transport-refresh"));
+      await vi.advanceTimersByTimeAsync(15_001);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(screen.getByTestId("refresh-result").textContent).toBe(
+        "request_timeout",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  }, 20_000);
+
   it("can republish non-throttled refresh notices after clearing", async () => {
     const localStorageRef = new StorageDouble();
     const sessionStorageRef = new StorageDouble();

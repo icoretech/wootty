@@ -9,8 +9,6 @@ import {
   SESSION_REFRESH_FAILURE_LIMIT,
 } from "../session-refresh-policy";
 
-const SESSION_REFRESH_CALL_TIMEOUT_MS = 15_000;
-
 import type {
   SessionRefreshRequest,
   SessionRefreshResult,
@@ -93,28 +91,10 @@ export function useSessionRefreshBinding({
       const refreshController = new AbortController();
       activeRefreshController = refreshController;
       try {
-        let refreshTimeout: SchedulerTimerHandle | null = null;
-        const refreshResult = await Promise.race([
-          refreshLiveSessions({
-            trigger: "poll",
-            signal: refreshController.signal,
-          }),
-          new Promise<SessionRefreshResult>((resolve) => {
-            refreshTimeout = scheduler.setTimeout(() => {
-              refreshController.abort();
-              resolve({
-                ok: false,
-                failure: {
-                  source: "lifecycle",
-                  reason: "request_timeout",
-                },
-              });
-            }, SESSION_REFRESH_CALL_TIMEOUT_MS);
-          }),
-        ]);
-        if (refreshTimeout !== null) {
-          scheduler.clearTimeout(refreshTimeout);
-        }
+        const refreshResult = await refreshLiveSessions({
+          trigger: "poll",
+          signal: refreshController.signal,
+        });
 
         if (refreshResult.ok) {
           consecutiveFailures = 0;
