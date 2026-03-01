@@ -70,6 +70,15 @@ function SessionProbe({
       >
         refresh
       </button>
+      <button
+        type="button"
+        data-testid="clear-notice"
+        onClick={() => {
+          session.actions.clearSessionNotice();
+        }}
+      >
+        clear-notice
+      </button>
     </section>
   );
 }
@@ -243,5 +252,60 @@ describe("session orchestrator", () => {
       expect(signals.length).toBe(2);
     });
     expect(signals[0]?.aborted).toBe(true);
+  });
+
+  it("can republish non-throttled refresh notices after clearing", async () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    const fetchSessions = vi.fn(async () => {
+      return {
+        ok: true,
+        payload: {
+          sessions: [
+            {
+              id: "session-a",
+              hasController: true,
+              canControl: true,
+              watchers: 0,
+              createdAtMs: Date.now(),
+              lastActivityMs: Date.now(),
+            },
+            {
+              id: "session-b",
+              hasController: true,
+              canControl: true,
+              watchers: "oops",
+              createdAtMs: Date.now(),
+              lastActivityMs: Date.now(),
+            },
+          ],
+        },
+      } as const;
+    });
+
+    render(
+      <SessionProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        fetchSessions={fetchSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("refresh"));
+    await waitFor(() => {
+      expect(screen.getByTestId("notice").textContent).toContain(
+        "Skipped 1 malformed session",
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("clear-notice"));
+    expect(screen.getByTestId("notice").textContent).toBe("");
+
+    fireEvent.click(screen.getByTestId("refresh"));
+    await waitFor(() => {
+      expect(screen.getByTestId("notice").textContent).toContain(
+        "Skipped 1 malformed session",
+      );
+    });
   });
 });

@@ -81,7 +81,6 @@ export function useSessionOrchestrator({
   formatNotice,
 }: UseSessionOrchestratorArgs): SessionOrchestratorState {
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
-  const lastNoticeMessageRef = useRef<string | null>(null);
   const latestRefreshRequestIdRef = useRef(0);
   const activeRefreshControllerRef = useRef<AbortController | null>(null);
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
@@ -102,10 +101,6 @@ export function useSessionOrchestrator({
       if (message.length === 0) {
         return;
       }
-      if (message === lastNoticeMessageRef.current) {
-        return;
-      }
-      lastNoticeMessageRef.current = message;
       publishSessionNotice(message);
     },
     [formatNotice, publishSessionNotice],
