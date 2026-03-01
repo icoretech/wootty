@@ -18,6 +18,14 @@ type CommandDispatchers = {
   dispatchStatusBar: (action: StatusBarAction) => void;
 };
 
+type TerminalUiSessionPort = Pick<
+  TerminalSessionDomain["sessionActions"],
+  | "publishNoticeDetails"
+  | "setSessionMenuOpen"
+  | "transitionSessionContext"
+  | "requestSessionRefresh"
+>;
+
 function useFullscreenCommand({
   appViewportRef,
   documentRef,
@@ -73,6 +81,7 @@ export function useUiBindingsController({
   sessionButtonRef,
   platform,
   session,
+  sessionPort,
   connection,
 }: {
   appViewportRef: RefObject<HTMLElement | null>;
@@ -80,18 +89,19 @@ export function useUiBindingsController({
   sessionButtonRef: RefObject<HTMLDivElement | null>;
   platform: TerminalPlatformContext;
   session: TerminalSessionDomain;
+  sessionPort: TerminalUiSessionPort;
   connection: ConnectionCoordinatorState;
 }): CommandDispatchers {
   const toggleFullscreen = useFullscreenCommand({
     appViewportRef,
     documentRef: platform.documentRef,
-    publishNotice: session.sessionActions.publishNoticeDetails,
+    publishNotice: sessionPort.publishNoticeDetails,
   });
 
   const { dispatchSessionMenu } = useSessionMenuActions({
     lastSessionId: session.sessionState.lastSessionId,
     resetRuntimeBuffers: connection.runtime.resetRuntimeBuffers,
-    transitionSessionContext: session.sessionActions.transitionSessionContext,
+    transitionSessionContext: sessionPort.transitionSessionContext,
     scheduleFreshConnection: connection.transport.scheduleFreshConnection,
     reconnectNow: connection.transport.reconnectNow,
   });
@@ -113,12 +123,10 @@ export function useUiBindingsController({
     toggleFullscreen,
     readFontSize: session.uiState.readFontSize,
     setControlsOpen: session.uiState.setControlsOpen,
-    setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
+    setSessionMenuOpen: sessionPort.setSessionMenuOpen,
   });
 
-  const closeSessionMenu = useCloseSessionMenu(
-    session.sessionActions.setSessionMenuOpen,
-  );
+  const closeSessionMenu = useCloseSessionMenu(sessionPort.setSessionMenuOpen);
 
   useControllerBindings({
     documentRef: platform.documentRef,
@@ -129,7 +137,7 @@ export function useUiBindingsController({
     sessionMenuRef,
     sessionButtonRef,
     closeSessionMenu,
-    requestSessionRefresh: session.sessionActions.requestSessionRefresh,
+    requestSessionRefresh: sessionPort.requestSessionRefresh,
     scheduler: platform.scheduler,
     attachMode: session.sessionState.attachMode,
     sessionId: session.sessionState.sessionId,
@@ -137,7 +145,7 @@ export function useUiBindingsController({
     terminalReady: connection.runtime.terminalReady,
     terminalElementRef: connection.runtime.terminalElementRef,
     runShortcutAction: dispatchShortcutAction,
-    publishNotice: session.sessionActions.publishNoticeDetails,
+    publishNotice: sessionPort.publishNoticeDetails,
   });
 
   return {
