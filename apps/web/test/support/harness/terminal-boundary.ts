@@ -1,5 +1,5 @@
 import { createTerminalAppEnvironment } from "../../../src/features/terminal/bootstrap/terminal-environment";
-import type { TerminalTransport } from "../../../src/features/terminal/contracts/transport";
+import type { TerminalTransport } from "../../../src/features/terminal/contracts/transport/transport";
 import type { TerminalAppEnvironment } from "../../../src/features/terminal/environment/terminal-environment-contract";
 import type { TerminalRuntime } from "../../../src/features/terminal/runtime/xterm-runtime-contract";
 

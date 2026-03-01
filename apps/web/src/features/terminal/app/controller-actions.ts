@@ -12,7 +12,7 @@ import {
   VIEWPORT_UI_COMMAND,
   type ViewportUiCommand,
 } from "../commands/viewport-commands";
-import type { AttachMode } from "../contracts/session";
+import type { AttachMode } from "../contracts/session/session";
 import { assertNever } from "../lib/assert-never";
 import { DEFAULT_FONT_SIZE } from "./preferences/font-size-preferences";
 

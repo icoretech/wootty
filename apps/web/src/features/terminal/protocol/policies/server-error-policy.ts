@@ -1,9 +1,6 @@
 import type { TerminalServerErrorCode } from "../server-error-codes";
 
-type ServerErrorStatusFlag =
-  | "session_not_found"
-  | "attach_forbidden"
-  | "protocol_incompatible";
+type ServerErrorStatusFlag = "session_not_found" | "protocol_incompatible";
 
 type KnownServerErrorNoticePayload = { reason: TerminalServerErrorCode };
 export type ServerErrorNoticePayload =
@@ -30,7 +27,6 @@ const SERVER_ERROR_SIDE_EFFECTS: Partial<
     refreshSessions: true,
   },
   attach_forbidden: {
-    statusFlag: "attach_forbidden",
     nextAttachMode: "watch",
   },
   incompatible_version: {

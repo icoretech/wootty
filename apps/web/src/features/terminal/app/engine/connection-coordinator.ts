@@ -1,13 +1,13 @@
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
-import type { AttachMode } from "../../contracts/session";
+import type { AttachMode } from "../../contracts/session/session";
+import type { TransportFailureReasonCode } from "../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
-} from "../../contracts/transport";
-import type { TransportFailureReasonCode } from "../../contracts/transport-failure-reason";
+} from "../../contracts/transport/transport";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
@@ -46,7 +46,7 @@ type UseConnectionCoordinatorArgs = {
   scheduler: Scheduler;
 };
 
-type ConnectionCoordinatorState = {
+export type ConnectionCoordinatorState = {
   runtime: {
     terminalElementRef: RefObject<HTMLDivElement | null>;
     terminalReady: boolean;

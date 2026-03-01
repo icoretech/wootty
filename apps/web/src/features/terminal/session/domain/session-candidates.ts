@@ -1,7 +1,7 @@
 import type {
   SessionCandidate,
   SessionSnapshot,
-} from "../../contracts/session";
+} from "../../contracts/session/session";
 
 type SessionCandidateInput = {
   readonly liveSessions: SessionSnapshot[];

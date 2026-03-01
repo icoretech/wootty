@@ -1,13 +1,13 @@
 import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
+import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
   TerminalTransportCloseEvent,
   TerminalTransportErrorEvent,
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
-} from "../../../contracts/transport";
-import { TRANSPORT_READY_STATE } from "../../../contracts/transport";
-import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
+} from "../../../contracts/transport/transport";
+import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
 import type {
   Scheduler,
   SchedulerTimerHandle,

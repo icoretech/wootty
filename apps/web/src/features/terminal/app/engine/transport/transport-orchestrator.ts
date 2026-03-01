@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
   TerminalTransportFailureCode,
-} from "../../../contracts/transport";
-import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
+} from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 import {

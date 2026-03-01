@@ -8,9 +8,9 @@ import {
   useTerminalCommandActions,
 } from "../controller-actions";
 import { useControllerBindings } from "../controller-bindings";
-import type { SessionAttachmentController } from "./session-domain-adapter";
+import type { ConnectionCoordinatorState } from "../engine/connection-coordinator";
 import type { TerminalPlatformContext } from "./terminal-platform-composition";
-import type { TransportRuntimeBridge } from "./transport-runtime-adapter";
+import type { TerminalSessionDomain } from "./terminal-session-domain";
 
 export type CommandDispatchers = {
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
@@ -49,7 +49,7 @@ function useApplyFontSizeAction({
   updateFontSize,
   fitAndSyncSize,
 }: {
-  applyFontSize: SessionAttachmentController["uiState"]["applyFontSize"];
+  applyFontSize: TerminalSessionDomain["uiState"]["applyFontSize"];
   updateFontSize: (fontSize: number, onResized: () => void) => void;
   fitAndSyncSize: () => void;
 }): (next: number) => void {
@@ -73,14 +73,14 @@ export function useUiBindingsController({
   sessionButtonRef,
   platform,
   session,
-  bridge,
+  connection,
 }: {
   appViewportRef: RefObject<HTMLElement | null>;
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
   platform: TerminalPlatformContext;
-  session: SessionAttachmentController;
-  bridge: TransportRuntimeBridge;
+  session: TerminalSessionDomain;
+  connection: ConnectionCoordinatorState;
 }): CommandDispatchers {
   const toggleFullscreen = useFullscreenCommand({
     appViewportRef,
@@ -90,16 +90,16 @@ export function useUiBindingsController({
 
   const { dispatchSessionMenu } = useSessionMenuActions({
     lastSessionId: session.sessionState.lastSessionId,
-    resetRuntimeBuffers: bridge.connectionRuntime.resetRuntimeBuffers,
+    resetRuntimeBuffers: connection.runtime.resetRuntimeBuffers,
     transitionSessionContext: session.sessionActions.transitionSessionContext,
-    scheduleFreshConnection: bridge.connectionTransport.scheduleFreshConnection,
-    reconnectNow: bridge.connectionTransport.reconnectNow,
+    scheduleFreshConnection: connection.transport.scheduleFreshConnection,
+    reconnectNow: connection.transport.reconnectNow,
   });
 
   const applyFontSize = useApplyFontSizeAction({
     applyFontSize: session.uiState.applyFontSize,
-    updateFontSize: bridge.connectionRuntime.updateFontSize,
-    fitAndSyncSize: bridge.connectionRuntime.fitAndSyncSize,
+    updateFontSize: connection.runtime.updateFontSize,
+    fitAndSyncSize: connection.runtime.fitAndSyncSize,
   });
 
   const {
@@ -108,8 +108,8 @@ export function useUiBindingsController({
     dispatchStatusBar,
   } = useTerminalCommandActions({
     applyFontSize,
-    clearTerminal: bridge.connectionRuntime.clearTerminal,
-    reconnectNow: bridge.connectionTransport.reconnectNow,
+    clearTerminal: connection.runtime.clearTerminal,
+    reconnectNow: connection.transport.reconnectNow,
     toggleFullscreen,
     readFontSize: session.uiState.readFontSize,
     setControlsOpen: session.uiState.setControlsOpen,
@@ -123,7 +123,7 @@ export function useUiBindingsController({
   useControllerBindings({
     documentRef: platform.documentRef,
     windowRef: platform.windowRef,
-    fitAndSyncSize: bridge.connectionRuntime.fitAndSyncSize,
+    fitAndSyncSize: connection.runtime.fitAndSyncSize,
     setIsFullscreen: session.uiState.setIsFullscreen,
     sessionMenuOpen: session.sessionState.sessionMenuOpen,
     sessionMenuRef,
@@ -133,9 +133,9 @@ export function useUiBindingsController({
     scheduler: platform.scheduler,
     attachMode: session.sessionState.attachMode,
     sessionId: session.sessionState.sessionId,
-    status: bridge.connectionTransport.status,
-    terminalReady: bridge.connectionRuntime.terminalReady,
-    terminalElementRef: bridge.connectionRuntime.terminalElementRef,
+    status: connection.transport.status,
+    terminalReady: connection.runtime.terminalReady,
+    terminalElementRef: connection.runtime.terminalElementRef,
     runShortcutAction: dispatchShortcutAction,
     publishNotice: session.publishNotice,
   });

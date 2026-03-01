@@ -222,7 +222,7 @@ Frontend module ownership:
 
 Transport responsibilities are split by contract:
 
-- `apps/web/src/features/terminal/contracts/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
+- `apps/web/src/features/terminal/contracts/transport/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
 - `apps/web/src/features/terminal/app/engine/transport/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
 - `apps/web/src/features/terminal/orchestration/transport-event-normalizer.ts` adapts browser runtime events into typed contract payloads.
 

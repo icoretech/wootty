@@ -1,6 +1,6 @@
 import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AttachMode } from "../../../contracts/session";
+import type { AttachMode } from "../../../contracts/session/session";
 import {
   createOutbox,
   enqueueOutbox,

@@ -1,4 +1,4 @@
-import type { SessionsFetchResult } from "../contracts/sessions-fetch";
+import type { SessionsFetchResult } from "../contracts/session/sessions-fetch";
 import { TERMINAL_AUTH_POLICY } from "./auth-policy";
 import type { AuthTokenProvider } from "./auth-token-provider";
 

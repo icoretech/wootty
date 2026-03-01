@@ -1,9 +1,9 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useTerminalPlatformContext } from "../../../src/features/terminal/app/composition/terminal-platform-composition";
+import type { SessionsFetchResult } from "../../../src/features/terminal/contracts/session/sessions-fetch";
 import type { TerminalAppEnvironment } from "../../../src/features/terminal/environment/terminal-environment-contract";
 import { browserScheduler } from "../../../src/features/terminal/platform/scheduler";
-import type { SessionsFetchResult } from "../../../src/features/terminal/session/protocol/sessions-fetch-contract";
 
 type PlatformProbeProps = {
   environment: TerminalAppEnvironment;

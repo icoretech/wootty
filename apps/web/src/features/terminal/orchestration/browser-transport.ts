@@ -4,7 +4,7 @@ import {
   type TerminalTransportListener,
   type TerminalTransportReadyState,
   TRANSPORT_READY_STATE,
-} from "../contracts/transport";
+} from "../contracts/transport/transport";
 import {
   normalizeTransportCloseEvent,
   normalizeTransportErrorEvent,

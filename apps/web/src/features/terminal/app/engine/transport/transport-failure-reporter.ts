@@ -1,5 +1,5 @@
-import type { TerminalTransportFailureCode } from "../../../contracts/transport";
-import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
+import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
+import type { TerminalTransportFailureCode } from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import {
   type FailureNoticeState,
