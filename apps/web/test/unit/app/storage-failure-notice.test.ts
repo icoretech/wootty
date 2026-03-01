@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { toStorageFailureNoticeDetails } from "../../../src/features/terminal/notifications/mappers/storage-failure-notice";
 import { toUserNotice } from "../../../src/features/terminal/notifications/user-notice";
-import { toStorageFailureNoticeDetails } from "../../../src/features/terminal/session/application/storage-failure-notice";
 
 describe("storage failure notice", () => {
   it("maps schema mismatch parse failures to stable wording", () => {

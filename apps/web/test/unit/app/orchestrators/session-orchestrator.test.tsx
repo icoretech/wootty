@@ -328,6 +328,59 @@ describe("session orchestrator", () => {
     });
   });
 
+  it("queues a transport refresh request and replays it after the in-flight poll completes", async () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    let resolveFirstRequest: ((result: SessionsFetchResult) => void) | null =
+      null;
+    let callCount = 0;
+    const fetchSessions = vi.fn(async (): Promise<SessionsFetchResult> => {
+      callCount += 1;
+      if (callCount === 1) {
+        return new Promise<SessionsFetchResult>((resolve) => {
+          resolveFirstRequest = resolve;
+        });
+      }
+      return {
+        ok: true,
+        payload: {
+          sessions: [],
+        },
+      };
+    });
+
+    render(
+      <SessionProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        fetchSessions={fetchSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("poll-refresh"));
+    await waitFor(() => {
+      expect(fetchSessions).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByTestId("transport-refresh"));
+    await waitFor(() => {
+      expect(screen.getByTestId("refresh-result").textContent).toBe(
+        "request_superseded",
+      );
+    });
+    expect(fetchSessions).toHaveBeenCalledTimes(1);
+
+    resolveFirstRequest?.({
+      ok: true,
+      payload: {
+        sessions: [],
+      },
+    });
+    await waitFor(() => {
+      expect(fetchSessions).toHaveBeenCalledTimes(2);
+    });
+  });
+
   it("can republish non-throttled refresh notices after clearing", async () => {
     const localStorageRef = new StorageDouble();
     const sessionStorageRef = new StorageDouble();

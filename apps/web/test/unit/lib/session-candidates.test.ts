@@ -135,6 +135,27 @@ describe("session candidates and payload contract", () => {
     });
   });
 
+  it("rejects session entries that only inherit required fields via prototype chain", () => {
+    const inheritedEntry = Object.create({
+      id: "session-inherited",
+      hasController: true,
+      canControl: true,
+      watchers: 1,
+      createdAtMs: 100,
+      lastActivityMs: 200,
+    });
+
+    const parsed = parseSessionsResponse({
+      sessions: [inheritedEntry],
+    });
+
+    expect(parsed.ok).toBe(false);
+    if (parsed.ok) {
+      throw new Error("expected inherited required fields to be rejected");
+    }
+    expect(parsed.failure.reason).toBe("all_sessions_invalid");
+  });
+
   it("derives live and history candidates with de-duplication", () => {
     const candidates = deriveSessionCandidates({
       liveSessions: [

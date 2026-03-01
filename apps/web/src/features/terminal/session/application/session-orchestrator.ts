@@ -7,6 +7,8 @@ import {
 } from "react";
 import type { AttachMode, SessionSnapshot } from "../../contracts/session";
 import type { FailureNoticeState } from "../../notifications/failure-notice-throttle";
+import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
+import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { NoticeDetails } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
@@ -15,12 +17,10 @@ import { parseSessionsResponse } from "../../session/protocol/sessions-payload-p
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import { useSessionNoticeChannel } from "./session-notice-channel";
 import { useSessionPersistence } from "./session-persistence";
-import { toSessionRefreshFailureNotice } from "./session-refresh-failure-notice";
 import type {
   SessionRefreshRequest,
   SessionRefreshResult,
 } from "./session-refresh-result";
-import { publishStorageFailureNotice } from "./storage-failure-notice";
 
 type UseSessionOrchestratorArgs = {
   fetchSessions: (options?: {
@@ -43,6 +43,22 @@ const REQUEST_ABORTED_FAILURE: SessionRefreshFailure = {
   source: "lifecycle",
   reason: "request_aborted",
 };
+
+function coalesceRefreshTrigger(
+  current: SessionRefreshRequest["trigger"] | null,
+  next: SessionRefreshRequest["trigger"],
+): SessionRefreshRequest["trigger"] {
+  if (next === "manual") {
+    return "manual";
+  }
+  if (current === "manual") {
+    return "manual";
+  }
+  if (next === "transport_event" || current === "transport_event") {
+    return "transport_event";
+  }
+  return "poll";
+}
 
 type SessionOrchestratorState = {
   state: {
@@ -83,6 +99,9 @@ export function useSessionOrchestrator({
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
   const latestRefreshRequestIdRef = useRef(0);
   const activeRefreshControllerRef = useRef<AbortController | null>(null);
+  const pendingRefreshTriggerRef = useRef<
+    SessionRefreshRequest["trigger"] | null
+  >(null);
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
   const [attachMode, setAttachMode] = useState<AttachMode>("control");
   const [sessionMenuOpen, setSessionMenuOpenState] = useState<boolean>(false);
@@ -108,7 +127,7 @@ export function useSessionOrchestrator({
 
   const reportStorageFailure = useCallback(
     (failure: StorageAccessFailure) => {
-      publishStorageFailureNotice(publishNotice, failure);
+      publishNotice(toStorageFailureNoticeDetails(failure));
     },
     [publishNotice],
   );
@@ -152,6 +171,10 @@ export function useSessionOrchestrator({
     async (request: SessionRefreshRequest): Promise<SessionRefreshResult> => {
       const previousController = activeRefreshControllerRef.current;
       if (previousController && request.trigger !== "manual") {
+        pendingRefreshTriggerRef.current = coalesceRefreshTrigger(
+          pendingRefreshTriggerRef.current,
+          request.trigger,
+        );
         return {
           ok: false,
           failure: REQUEST_SUPERSEDED_FAILURE,
@@ -232,6 +255,15 @@ export function useSessionOrchestrator({
         }
         if (activeRefreshControllerRef.current === refreshController) {
           activeRefreshControllerRef.current = null;
+        }
+        if (latestRefreshRequestIdRef.current === requestId) {
+          const pendingTrigger = pendingRefreshTriggerRef.current;
+          if (pendingTrigger) {
+            pendingRefreshTriggerRef.current = null;
+            void refreshLiveSessions({
+              trigger: pendingTrigger,
+            });
+          }
         }
       }
     },

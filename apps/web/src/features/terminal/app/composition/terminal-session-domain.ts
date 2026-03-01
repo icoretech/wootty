@@ -8,10 +8,10 @@ import {
   useState,
 } from "react";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
+import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
-import { publishStorageFailureNotice } from "../../session/application/storage-failure-notice";
 import type { StorageAccessFailure } from "../../session/persistence/session-storage";
 import {
   clampFontSize,
@@ -135,7 +135,7 @@ export function useTerminalSessionDomain({
 
   const reportStorageFailure = useCallback(
     (failure: StorageAccessFailure) => {
-      publishStorageFailureNotice(publishNotice, failure);
+      publishNotice(toStorageFailureNoticeDetails(failure));
     },
     [publishNotice],
   );
