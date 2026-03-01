@@ -2,8 +2,8 @@ import type {
   TerminalBackendResolution,
   TerminalBackendResolutionIssue,
 } from "../../contracts/backend-resolution";
+import { redactTokenInUrlForNotice } from "../../shared/sanitization/redact-token-in-url";
 import { resolveTerminalBackendEndpoints } from "../backend-endpoint-resolver";
-import { redactTokenInUrlForNotice } from "../url/redact-token-in-url";
 import { resolveSocketUrl } from "../url/socket-url-resolution";
 
 export type AuthTokenResolution = {
@@ -76,16 +76,5 @@ export function resolveBrowserBackendEndpoints(
   windowRef: Window | null,
   envSocketUrl?: string,
 ): TerminalBackendResolution {
-  const tokenResolution = resolveBrowserAuthToken(windowRef, envSocketUrl);
-  if (tokenResolution.issue) {
-    return {
-      ok: false,
-      issue: tokenResolution.issue,
-    };
-  }
-  return resolveTerminalBackendEndpoints(
-    windowRef,
-    envSocketUrl,
-    tokenResolution.token,
-  );
+  return resolveTerminalBackendEndpoints(windowRef, envSocketUrl);
 }

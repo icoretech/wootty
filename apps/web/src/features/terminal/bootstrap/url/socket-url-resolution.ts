@@ -1,8 +1,8 @@
 import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
 import { TERMINAL_BACKEND_ROUTE } from "../../protocol/generated-wire-contract";
+import { redactTokenInUrlForNotice } from "../../shared/sanitization/redact-token-in-url";
 import { validateWebsocketEndpoint } from "../../validation/websocket-endpoint";
 import { createBackendResolutionIssue } from "./backend-resolution-issue";
-import { redactTokenInUrlForNotice } from "./redact-token-in-url";
 
 type SocketUrlResolutionResult =
   | {

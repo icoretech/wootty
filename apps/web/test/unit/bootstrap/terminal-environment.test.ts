@@ -41,7 +41,6 @@ describe("terminal environment backend endpoint resolution", () => {
     const resolved = resolveTerminalBackendEndpoints(
       null,
       "ftp://invalid-url?token=token-123",
-      "token-123",
     );
 
     expect(resolved.ok).toBe(false);
@@ -63,7 +62,6 @@ describe("terminal environment backend endpoint resolution", () => {
     const resolved = resolveTerminalBackendEndpoints(
       createWindowLikeRef(`${HTTPS_PROTOCOL}//${APP_HOST}`),
       `${WSS_PROTOCOL}//${WS_HOST}/api/terminal`,
-      "secret-token",
     );
 
     expect(resolved).toEqual({
@@ -79,7 +77,6 @@ describe("terminal environment backend endpoint resolution", () => {
     const resolved = resolveTerminalBackendEndpoints(
       createWindowLikeRef(`${HTTPS_PROTOCOL}//${APP_HOST}`),
       "ws://[::1",
-      "secret-token",
     );
 
     expect(resolved).toMatchObject({
