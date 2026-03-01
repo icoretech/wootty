@@ -1,6 +1,6 @@
 import type { TerminalServerErrorCode } from "../server-error-codes";
 
-export type ServerErrorStatusFlag =
+type ServerErrorStatusFlag =
   | "session_not_found"
   | "attach_forbidden"
   | "protocol_incompatible";

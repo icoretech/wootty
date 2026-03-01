@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { TerminalAppEnvironment } from "../../../src/features/terminal/app/TerminalApp";
 
@@ -71,13 +71,29 @@ describe("terminal app bootstrap", () => {
     render(<TerminalApp environment={customEnvironment} />);
 
     expect(createTerminalAppEnvironment).not.toHaveBeenCalled();
+    expect(useTerminalController).toHaveBeenCalledTimes(1);
     expect(useTerminalController).toHaveBeenCalledWith(customEnvironment);
+    expect(screen.getByTestId("terminal-wrap").getAttribute("aria-busy")).toBe(
+      "true",
+    );
+    expect(screen.getByText("Loading terminal engine")).not.toBeNull();
   });
 
   it("creates the default environment lazily and only once per mount", () => {
     const rendered = render(<TerminalApp />);
     rendered.rerender(<TerminalApp />);
 
+    const createdEnvironment = createTerminalAppEnvironment.mock.results[0]
+      ?.value as TerminalAppEnvironment;
     expect(createTerminalAppEnvironment).toHaveBeenCalledTimes(1);
+    expect(useTerminalController).toHaveBeenCalledTimes(2);
+    expect(useTerminalController).toHaveBeenNthCalledWith(
+      1,
+      createdEnvironment,
+    );
+    expect(useTerminalController).toHaveBeenNthCalledWith(
+      2,
+      createdEnvironment,
+    );
   });
 });
