@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { normalizeCauseToMessage } from "../../../src/features/terminal/notifications/formatters/cause-message";
 import { toProtocolNotice } from "../../../src/features/terminal/notifications/formatters/protocol-notice";
 import { toRuntimeNotice } from "../../../src/features/terminal/notifications/formatters/runtime-notice";
 import { toServerNotice } from "../../../src/features/terminal/notifications/formatters/server-notice";
 import { toSessionRefreshNotice } from "../../../src/features/terminal/notifications/formatters/session-refresh-notice";
 import { toTransportNotice } from "../../../src/features/terminal/notifications/formatters/transport-notice";
+import { normalizeCauseToMessage } from "../../../src/features/terminal/shared/sanitization/normalize-cause-message";
 
 describe("notice formatters direct coverage", () => {
   it("normalizes causes with trimming, redaction, and fallback handling", () => {

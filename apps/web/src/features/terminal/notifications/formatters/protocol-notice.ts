@@ -1,6 +1,6 @@
 import { assertNever } from "../../lib/assert-never";
+import { normalizeCauseToMessage } from "../../shared/sanitization/normalize-cause-message";
 import type { ProtocolNotice } from "../contracts/protocol-notice";
-import { normalizeCauseToMessage } from "./cause-message";
 
 export function toProtocolNotice(details: ProtocolNotice): string {
   switch (details.reason) {

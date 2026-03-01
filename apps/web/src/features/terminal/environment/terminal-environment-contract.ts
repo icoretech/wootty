@@ -1,9 +1,7 @@
 import type { TerminalBackendResolution } from "../contracts/backend-resolution";
 import type { SessionsFetchResult } from "../contracts/session/sessions-fetch";
-import type {
-  StorageAccessResult,
-  TerminalTransport,
-} from "../contracts/terminal-contract-surface";
+import type { StorageAccessResult } from "../contracts/storage-access";
+import type { TerminalTransport } from "../contracts/transport/transport";
 import type { Scheduler } from "../platform/scheduler";
 import type { TerminalRuntime } from "../runtime/xterm-runtime-contract";
 

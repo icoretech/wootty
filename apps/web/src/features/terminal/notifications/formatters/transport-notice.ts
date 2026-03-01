@@ -1,5 +1,5 @@
+import { normalizeCauseToMessage } from "../../shared/sanitization/normalize-cause-message";
 import type { TransportNotice } from "../contracts/transport-notice";
-import { normalizeCauseToMessage } from "./cause-message";
 
 const TRANSPORT_NOTICE_MESSAGES: Record<TransportNotice["reasonCode"], string> =
   {
@@ -14,29 +14,10 @@ const TRANSPORT_NOTICE_MESSAGES: Record<TransportNotice["reasonCode"], string> =
     socket_failure: "Connection problem (transport failure).",
   };
 
-const MAX_DETAIL_LENGTH = 180;
-
-function sanitizeTransportDetail(
-  value: string | null | undefined,
-): string | null {
-  if (typeof value !== "string") {
-    return null;
-  }
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
-    return null;
-  }
-  const redacted = trimmed.replace(/([?&]token=)[^&\s]+/gi, "$1[redacted]");
-  if (redacted.length <= MAX_DETAIL_LENGTH) {
-    return redacted;
-  }
-  return `${redacted.slice(0, MAX_DETAIL_LENGTH - 3)}...`;
-}
-
 export function toTransportNotice(details: TransportNotice): string {
   const message = TRANSPORT_NOTICE_MESSAGES[details.reasonCode];
   const parts: string[] = [];
-  const detailMessage = sanitizeTransportDetail(
+  const detailMessage = normalizeCauseToMessage(
     details.noticeMessage ?? details.debugDetail,
   );
   if (details.source) {

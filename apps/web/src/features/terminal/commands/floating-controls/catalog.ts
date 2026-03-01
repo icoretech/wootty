@@ -1,5 +1,8 @@
 import { TerminalBootstrapInvariantError } from "../../shared/errors/terminal-bootstrap-invariant";
-import { FLOATING_CONTROL_REGISTRY as COMMAND_FLOATING_CONTROL_REGISTRY } from "../definitions/command-manifest";
+import {
+  COMMAND_FLOATING_CONTROL_METADATA,
+  FLOATING_CONTROL_REGISTRY as COMMAND_FLOATING_CONTROL_REGISTRY,
+} from "../definitions/command-manifest";
 import type { FloatingControlCommand } from "./actions";
 import type {
   FloatingControlCatalogEntry,
@@ -8,41 +11,6 @@ import type {
   FloatingControlRegistryEntry,
 } from "./contracts";
 import type { FloatingControlMetadata } from "./floating-control-metadata";
-
-const FLOATING_CONTROL_METADATA: Record<
-  FloatingControlMetadataKey,
-  FloatingControlMetadata
-> = {
-  reconnect: {
-    tooltip: "Reconnect",
-    ariaLabel: "Reconnect terminal session",
-    ariaKeyShortcuts: "Control+Shift+R Meta+Shift+R",
-  },
-  clear: {
-    tooltip: "Clear",
-    ariaLabel: "Clear terminal viewport",
-    ariaKeyShortcuts: "Control+Shift+K Meta+Shift+K",
-  },
-  decreaseFont: {
-    tooltip: "Font down",
-    ariaLabel: "Decrease terminal font size",
-    ariaKeyShortcuts: "Control+Shift+- Meta+Shift+-",
-  },
-  increaseFont: {
-    tooltip: "Font up",
-    ariaLabel: "Increase terminal font size",
-    ariaKeyShortcuts: "Control+Shift+= Meta+Shift+=",
-  },
-  resetFont: {
-    tooltip: "Reset font",
-    ariaLabel: "Reset terminal font size",
-    ariaKeyShortcuts: "Control+Shift+0 Meta+Shift+0",
-  },
-  fullscreen: {
-    tooltip: "Fullscreen",
-    ariaLabel: "Toggle fullscreen terminal",
-  },
-};
 
 const FLOATING_CONTROL_POLICY: Record<
   FloatingControlMetadataKey,
@@ -99,7 +67,7 @@ function buildFloatingControlCatalog(
         action: entry.action,
         testId: entry.testId,
         metadataKey: entry.metadataKey,
-        metadata: FLOATING_CONTROL_METADATA[entry.metadataKey],
+        metadata: COMMAND_FLOATING_CONTROL_METADATA[entry.metadataKey],
         policy: FLOATING_CONTROL_POLICY[entry.metadataKey],
       };
     }),
