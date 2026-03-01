@@ -57,10 +57,7 @@ function createSessionDomain(): TerminalSessionDomain {
     },
     sessionActions: {
       setSessionMenuOpen: vi.fn(),
-      publishSessionNoticeDetails: vi.fn(),
-      publishRuntimeNoticeDetails: vi.fn(),
-      publishConnectionNoticeDetails: vi.fn(),
-      publishTransportNoticeDetails: vi.fn(),
+      publishNoticeDetails: vi.fn(),
       publishSessionNotice: vi.fn(),
       clearSessionNotice: vi.fn(),
       reportStorageFailure: vi.fn(),

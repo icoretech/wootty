@@ -3,11 +3,7 @@ import { useCallback, useEffect, useReducer, useRef } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
 import type { AttachMode } from "../../contracts/session/session";
 import type { TerminalTransport } from "../../contracts/transport/transport";
-import type {
-  ConnectionNoticePublisher,
-  RuntimeNoticePublisher,
-  TransportNoticePublisher,
-} from "../../notifications/notice-contract";
+import type { NoticePublisher } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
 import type { TerminalRuntime } from "../../runtime/xterm-runtime-contract";
@@ -30,9 +26,7 @@ type UseConnectionCoordinatorArgs = {
   attachMode: AttachMode;
   hasActiveSession: boolean;
   transportEnabled: boolean;
-  publishConnectionNotice: ConnectionNoticePublisher;
-  publishRuntimeNotice: RuntimeNoticePublisher;
-  publishTransportNotice: TransportNoticePublisher;
+  publishNotice: NoticePublisher;
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
@@ -74,9 +68,7 @@ export function useConnectionCoordinator({
   attachMode,
   hasActiveSession,
   transportEnabled,
-  publishConnectionNotice,
-  publishRuntimeNotice,
-  publishTransportNotice,
+  publishNotice,
   setSessionMode,
   applyReadySession,
   clearMissingSession,
@@ -119,7 +111,7 @@ export function useConnectionCoordinator({
     initialFontSize,
     attachMode,
     sendNow,
-    publishNotice: publishRuntimeNotice,
+    publishNotice,
     onRuntimeBootError: handleRuntimeBootError,
   });
   const setStatusFlag = useCallback((next: ConnectionStatusFlag | null) => {
@@ -135,8 +127,7 @@ export function useConnectionCoordinator({
     attachMode,
     sessionId,
     hasSessionContext,
-    publishConnectionNotice,
-    publishTransportNotice,
+    publishNotice,
     setStatusFlag,
     setSessionMode,
     applyReadySession,

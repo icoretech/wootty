@@ -1,7 +1,7 @@
 import type { MutableRefObject, RefObject } from "react";
 import { useCallback, useState } from "react";
 import type { AttachMode } from "../../../contracts/session/session";
-import type { RuntimeNoticePublisher } from "../../../notifications/notice-contract";
+import type { NoticePublisher } from "../../../notifications/notice-contract";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 import type { TerminalRuntime } from "../../../runtime/xterm-runtime-contract";
 import { useConnectionInputBackpressure } from "./connection-input-backpressure";
@@ -13,7 +13,7 @@ type UseConnectionRuntimeIoBridgeArgs = {
   initialFontSize: number;
   attachMode: AttachMode;
   sendNow: (payload: TerminalClientMessage) => boolean;
-  publishNotice: RuntimeNoticePublisher;
+  publishNotice: NoticePublisher;
   onRuntimeBootError: () => void;
 };
 
