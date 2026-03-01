@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { floatingControlMetadata } from "../../../src/features/terminal/commands/floating-controls/metadata";
+import { floatingControlMetadata } from "../../../src/features/terminal/commands/floating-controls/catalog";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
 import { FloatingControls } from "../../../src/features/terminal/components/FloatingControls";

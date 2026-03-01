@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { COMMAND_DESCRIPTORS } from "../../../src/features/terminal/commands/command-descriptors";
-import { FLOATING_CONTROL_REGISTRY } from "../../../src/features/terminal/commands/floating-controls/registry";
+import { FLOATING_CONTROL_REGISTRY } from "../../../src/features/terminal/commands/floating-controls/catalog";
 import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
 
 describe("command descriptors", () => {

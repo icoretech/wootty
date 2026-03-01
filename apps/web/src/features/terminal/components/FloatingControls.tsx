@@ -11,9 +11,9 @@ import type { ReactNode } from "react";
 import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import {
   FLOATING_CONTROL_POLICY,
+  FLOATING_CONTROL_REGISTRY,
   type FloatingControlIconToken,
-} from "../commands/floating-controls/policy";
-import { FLOATING_CONTROL_REGISTRY } from "../commands/floating-controls/registry";
+} from "../commands/floating-controls/catalog";
 import type { FloatingControlsModel } from "../view-models/floating-controls-model";
 
 type FloatingControlsProps = {

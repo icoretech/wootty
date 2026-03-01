@@ -4,13 +4,11 @@ import { FLOATING_CONTROL_CATALOG } from "../../../src/features/terminal/command
 import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
 
 describe("floating control catalog", () => {
-  it("derives floating controls from command catalog entries", () => {
-    const expectedActions = COMMAND_CATALOG.filter(
-      (entry) => typeof entry.floatingControl !== "undefined",
-    ).map((entry) => entry.id);
-    const actualActions = FLOATING_CONTROL_CATALOG.map((entry) => entry.action);
-
-    expect(actualActions).toEqual(expectedActions);
+  it("keeps floating control actions aligned with known commands", () => {
+    const commandActions = new Set(COMMAND_CATALOG.map((entry) => entry.id));
+    for (const entry of FLOATING_CONTROL_CATALOG) {
+      expect(commandActions.has(entry.action)).toBe(true);
+    }
   });
 
   it("never includes toggle-controls as a floating control action", () => {

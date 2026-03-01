@@ -13,11 +13,16 @@ describe("command catalog", () => {
     expect(shortcuts.size).toBe(COMMAND_CATALOG.length);
   });
 
-  it("keeps floating-control metadata out of toggle-controls command", () => {
+  it("keeps toggle-controls command in the viewport command set", () => {
     const toggleControls = COMMAND_CATALOG.find(
       (entry) => entry.id === VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS,
     );
-    expect(toggleControls).toBeDefined();
-    expect(toggleControls?.floatingControl).toBeUndefined();
+    expect(toggleControls).toEqual(
+      expect.objectContaining({
+        id: VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS,
+        handler: "viewport",
+        shortcutCode: "KeyB",
+      }),
+    );
   });
 });
