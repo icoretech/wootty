@@ -1,14 +1,19 @@
+import type { TerminalRuntimeCommand } from "./runtime-commands";
 import { TERMINAL_RUNTIME_COMMAND } from "./runtime-commands";
-import type { ShortcutAction } from "./shortcut-actions";
+import type { ViewportUiCommand } from "./viewport-commands";
 import { VIEWPORT_UI_COMMAND } from "./viewport-commands";
 
-type CommandHandlerKey = "runtime" | "viewport";
-
-type CommandDescriptor = {
-  id: ShortcutAction;
-  handler: CommandHandlerKey;
-  shortcutCode: string;
-};
+type CommandDescriptor =
+  | {
+      id: TerminalRuntimeCommand;
+      handler: "runtime";
+      shortcutCode: string;
+    }
+  | {
+      id: ViewportUiCommand;
+      handler: "viewport";
+      shortcutCode: string;
+    };
 
 export const COMMAND_DESCRIPTORS: readonly CommandDescriptor[] = [
   {
