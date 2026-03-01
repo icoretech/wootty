@@ -1,10 +1,10 @@
 import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type { TerminalTransportFailureCode } from "../../../contracts/transport/transport";
-import type { Scheduler } from "../../../platform/scheduler";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
-} from "../notice-throttle";
+} from "../../../notifications/notice-throttle";
+import type { Scheduler } from "../../../platform/scheduler";
 
 const SOCKET_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
 
