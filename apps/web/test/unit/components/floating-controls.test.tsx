@@ -1,8 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { floatingControlMetadata } from "../../../src/features/terminal/commands/floating-controls/catalog";
-import { TERMINAL_RUNTIME_COMMAND } from "../../../src/features/terminal/commands/runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
 import { FloatingControls } from "../../../src/features/terminal/components/FloatingControls";
 
 describe("FloatingControls", () => {
@@ -19,22 +16,6 @@ describe("FloatingControls", () => {
           fontSizeMax: 22,
           defaultFontSize: 11,
           isFullscreen: false,
-          metadata: {
-            reconnect: floatingControlMetadata(
-              TERMINAL_RUNTIME_COMMAND.RECONNECT,
-            ),
-            clear: floatingControlMetadata(TERMINAL_RUNTIME_COMMAND.CLEAR),
-            decreaseFont: floatingControlMetadata(
-              VIEWPORT_UI_COMMAND.DECREASE_FONT,
-            ),
-            increaseFont: floatingControlMetadata(
-              VIEWPORT_UI_COMMAND.INCREASE_FONT,
-            ),
-            resetFont: floatingControlMetadata(VIEWPORT_UI_COMMAND.RESET_FONT),
-            fullscreen: floatingControlMetadata(
-              VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
-            ),
-          },
         }}
         dispatch={dispatch}
       />,

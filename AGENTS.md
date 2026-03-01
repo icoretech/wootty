@@ -35,7 +35,10 @@ cd apps/server && go run ./cmd/woottyd run --host 127.0.0.1 --port 8080
 - For deterministic terminal behavior in tests, use `WOOTTY_FAKE_PTY=1`.
 
 ## Commit & Pull Request Guidelines
-- Follow Conventional Commits seen in history: `feat: ...`, `fix: ...`, `chore: ...`.
+- Conventional Commits are required for all non-release commits.
+- Required format: `<type>(optional-scope): <summary>`.
+- Accepted types include: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`.
+- Examples: `fix: resolve Playwright webServer cwd`, `refactor(session): split transport lifecycle boundaries`.
 - Do not manually craft release commits; Release Please generates `chore(main): release ...`.
 - PRs should include:
   - concise problem/solution summary,

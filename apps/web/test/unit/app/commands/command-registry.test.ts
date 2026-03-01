@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   isRuntimeCommand,
   resolveCommandFromShortcutCode,
-} from "../../../src/features/terminal/commands/command-registry";
-import { floatingControlMetadata } from "../../../src/features/terminal/commands/floating-controls/catalog";
-import { TERMINAL_RUNTIME_COMMAND } from "../../../src/features/terminal/commands/runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
+} from "../../../../src/features/terminal/commands/command-registry";
+import { floatingControlMetadata } from "../../../../src/features/terminal/commands/floating-controls/catalog";
+import { TERMINAL_RUNTIME_COMMAND } from "../../../../src/features/terminal/commands/runtime-commands";
+import { VIEWPORT_UI_COMMAND } from "../../../../src/features/terminal/commands/viewport-commands";
 
 describe("terminal command registry", () => {
   it("maps shortcut codes to command ids", () => {

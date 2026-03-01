@@ -1,5 +1,5 @@
+import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
 import { TERMINAL_BACKEND_ROUTE } from "../../protocol/generated-wire-contract";
-import type { TerminalBackendResolutionIssue } from "../backend-resolution-contract";
 import { redactTokenInUrlForNotice } from "./redact-token-in-url";
 
 function toIssue(

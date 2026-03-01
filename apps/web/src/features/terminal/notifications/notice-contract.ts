@@ -1,3 +1,5 @@
+import type { BackendResolutionIssueCode } from "../contracts/backend-resolution";
+
 export type SessionsRefreshNotice =
   | { context: "sessions_refresh"; reason: "generic" }
   | { context: "sessions_refresh"; reason: "http"; status: number }
@@ -83,7 +85,7 @@ export type BootstrapNotice = {
   context: "bootstrap";
   reason: "backend_resolution_failed";
   details: string;
-  code?: string;
+  code?: BackendResolutionIssueCode;
 };
 
 export type StorageNotice = {

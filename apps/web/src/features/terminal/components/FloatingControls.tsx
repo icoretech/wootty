@@ -10,10 +10,11 @@ import {
 import type { ReactNode } from "react";
 import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import {
-  FLOATING_CONTROL_POLICY,
   FLOATING_CONTROL_REGISTRY,
-  type FloatingControlIconToken,
+  floatingControlDescriptor,
+  floatingControlPolicy,
 } from "../commands/floating-controls/catalog";
+import type { FloatingControlIconToken } from "../commands/floating-controls/contracts";
 import type { FloatingControlsModel } from "../view-models/floating-controls-model";
 
 type FloatingControlsProps = {
@@ -38,8 +39,8 @@ export function FloatingControls({ model, dispatch }: FloatingControlsProps) {
       aria-label="Terminal controls"
     >
       {FLOATING_CONTROL_REGISTRY.map((descriptor) => {
-        const metadata = model.metadata[descriptor.metadataKey];
-        const policy = FLOATING_CONTROL_POLICY[descriptor.action];
+        const metadata = floatingControlDescriptor(descriptor.metadataKey);
+        const policy = floatingControlPolicy(descriptor.action);
         const ariaLabel = policy.resolveLabel
           ? policy.resolveLabel(model, metadata.ariaLabel)
           : metadata.ariaLabel;

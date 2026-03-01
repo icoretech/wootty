@@ -1,171 +1,144 @@
-import type { FloatingControlsModel } from "../../view-models/floating-controls-model";
-import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
+import { COMMAND_CATALOG } from "../catalog";
 import type { FloatingControlCommand } from "./actions";
+import type {
+  FloatingControlCatalogEntry,
+  FloatingControlMetadataKey,
+  FloatingControlPolicy,
+  FloatingControlRegistryEntry,
+} from "./contracts";
 import type { FloatingControlMetadata } from "./floating-control-metadata";
 
-export type FloatingControlMetadataKey =
-  | "reconnect"
-  | "clear"
-  | "decreaseFont"
-  | "increaseFont"
-  | "resetFont"
-  | "fullscreen";
+function buildFloatingControlCatalog(): readonly FloatingControlCatalogEntry[] {
+  return COMMAND_CATALOG.flatMap((entry) => {
+    if (!("floatingControl" in entry)) {
+      return [];
+    }
 
-export type FloatingControlIconToken =
-  | "reconnect"
-  | "clear"
-  | "fontDecrease"
-  | "fontIncrease"
-  | "fontReset"
-  | "fullscreenEnter"
-  | "fullscreenExit";
+    return [
+      {
+        action: entry.id,
+        ...entry.floatingControl,
+      },
+    ];
+  });
+}
 
-export type FloatingControlPolicy = {
-  isDisabled: (model: FloatingControlsModel) => boolean;
-  resolveIcon: (model: FloatingControlsModel) => FloatingControlIconToken;
-  resolveLabel?: (model: FloatingControlsModel, defaultLabel: string) => string;
-  resolveTooltip?: (
-    model: FloatingControlsModel,
-    defaultTooltip: string,
-  ) => string;
-};
-
-type FloatingControlCatalogEntry = {
-  testId: string;
-  metadataKey: FloatingControlMetadataKey;
-  action: FloatingControlCommand;
-  metadata: FloatingControlMetadata;
-  policy: FloatingControlPolicy;
-};
-
-export const FLOATING_CONTROL_CATALOG: readonly FloatingControlCatalogEntry[] =
-  [
-    {
-      testId: "reconnect-button",
-      metadataKey: "reconnect",
-      action: TERMINAL_RUNTIME_COMMAND.RECONNECT,
-      metadata: {
-        tooltip: "Reconnect",
-        ariaLabel: "Reconnect terminal session",
-        ariaKeyShortcuts: "Control+Shift+R Meta+Shift+R",
-      },
-      policy: {
-        isDisabled: (model) => !model.terminalReady,
-        resolveIcon: () => "reconnect",
-      },
-    },
-    {
-      testId: "clear-button",
-      metadataKey: "clear",
-      action: TERMINAL_RUNTIME_COMMAND.CLEAR,
-      metadata: {
-        tooltip: "Clear",
-        ariaLabel: "Clear terminal viewport",
-        ariaKeyShortcuts: "Control+Shift+K Meta+Shift+K",
-      },
-      policy: {
-        isDisabled: (model) => !model.terminalReady,
-        resolveIcon: () => "clear",
-      },
-    },
-    {
-      testId: "font-decrease-button",
-      metadataKey: "decreaseFont",
-      action: VIEWPORT_UI_COMMAND.DECREASE_FONT,
-      metadata: {
-        tooltip: "Font down",
-        ariaLabel: "Decrease terminal font size",
-        ariaKeyShortcuts: "Control+Shift+- Meta+Shift+-",
-      },
-      policy: {
-        isDisabled: (model) =>
-          !model.terminalReady || model.fontSize <= model.fontSizeMin,
-        resolveIcon: () => "fontDecrease",
-      },
-    },
-    {
-      testId: "font-increase-button",
-      metadataKey: "increaseFont",
-      action: VIEWPORT_UI_COMMAND.INCREASE_FONT,
-      metadata: {
-        tooltip: "Font up",
-        ariaLabel: "Increase terminal font size",
-        ariaKeyShortcuts: "Control+Shift+= Meta+Shift+=",
-      },
-      policy: {
-        isDisabled: (model) =>
-          !model.terminalReady || model.fontSize >= model.fontSizeMax,
-        resolveIcon: () => "fontIncrease",
-      },
-    },
-    {
-      testId: "font-reset-button",
-      metadataKey: "resetFont",
-      action: VIEWPORT_UI_COMMAND.RESET_FONT,
-      metadata: {
-        tooltip: "Reset font",
-        ariaLabel: "Reset terminal font size",
-        ariaKeyShortcuts: "Control+Shift+0 Meta+Shift+0",
-      },
-      policy: {
-        isDisabled: (model) =>
-          !model.terminalReady || model.fontSize === model.defaultFontSize,
-        resolveIcon: () => "fontReset",
-      },
-    },
-    {
-      testId: "fullscreen-button",
-      metadataKey: "fullscreen",
-      action: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
-      metadata: {
-        tooltip: "Fullscreen",
-        ariaLabel: "Toggle fullscreen terminal",
-      },
-      policy: {
-        isDisabled: (model) => !model.terminalReady,
-        resolveIcon: (model) =>
-          model.isFullscreen ? "fullscreenExit" : "fullscreenEnter",
-        resolveLabel: (model, defaultLabel) =>
-          model.isFullscreen ? "Exit fullscreen terminal" : defaultLabel,
-        resolveTooltip: (model, defaultTooltip) =>
-          model.isFullscreen ? "Exit fullscreen" : defaultTooltip,
-      },
-    },
-  ] as const;
-
-type FloatingControlRegistryEntry = {
-  testId: string;
-  metadataKey: FloatingControlMetadataKey;
-  action: FloatingControlCommand;
-};
+export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog();
 
 export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
   FLOATING_CONTROL_CATALOG.map((entry) => ({
     testId: entry.testId,
     metadataKey: entry.metadataKey,
     action: entry.action,
-  })) as readonly FloatingControlRegistryEntry[];
+  }));
 
-export type FloatingControlDescriptors = Record<
-  FloatingControlMetadataKey,
-  FloatingControlMetadata
->;
+type FloatingControlLookup = {
+  metadataByAction: ReadonlyMap<
+    FloatingControlCommand,
+    FloatingControlMetadata
+  >;
+  policyByAction: ReadonlyMap<FloatingControlCommand, FloatingControlPolicy>;
+  metadataByKey: ReadonlyMap<
+    FloatingControlMetadataKey,
+    FloatingControlMetadata
+  >;
+};
 
-export const FLOATING_CONTROL_DESCRIPTORS = Object.fromEntries(
-  FLOATING_CONTROL_CATALOG.map((entry) => [entry.metadataKey, entry.metadata]),
-) as FloatingControlDescriptors;
+function buildFloatingControlLookup(
+  entries: readonly FloatingControlCatalogEntry[],
+): FloatingControlLookup {
+  const metadataByAction = new Map<
+    FloatingControlCommand,
+    FloatingControlMetadata
+  >();
+  const policyByAction = new Map<
+    FloatingControlCommand,
+    FloatingControlPolicy
+  >();
+  const metadataByKey = new Map<
+    FloatingControlMetadataKey,
+    FloatingControlMetadata
+  >();
 
-const FLOATING_CONTROL_METADATA_BY_ACTION = Object.fromEntries(
-  FLOATING_CONTROL_CATALOG.map((entry) => [entry.action, entry.metadata]),
-) as Record<FloatingControlCommand, FloatingControlMetadata>;
+  for (const entry of entries) {
+    insertUnique(
+      metadataByAction,
+      entry.action,
+      entry.metadata,
+      "floating-control action metadata",
+    );
+    insertUnique(
+      policyByAction,
+      entry.action,
+      entry.policy,
+      "floating-control action policy",
+    );
+    insertUnique(
+      metadataByKey,
+      entry.metadataKey,
+      entry.metadata,
+      "floating-control metadata key",
+    );
+  }
+
+  return { metadataByAction, policyByAction, metadataByKey };
+}
+
+function insertUnique<K, V>(
+  map: Map<K, V>,
+  key: K,
+  value: V,
+  label: string,
+): void {
+  if (map.has(key)) {
+    throw new Error(`Duplicate ${label} '${String(key)}'.`);
+  }
+  map.set(key, value);
+}
+
+function requireLookupValue<K, V>(
+  map: ReadonlyMap<K, V>,
+  key: K,
+  label: string,
+): V {
+  const value = map.get(key);
+  if (value !== undefined) {
+    return value;
+  }
+
+  throw new Error(`Unknown ${label} '${String(key)}'.`);
+}
+
+const FLOATING_CONTROL_LOOKUP = buildFloatingControlLookup(
+  FLOATING_CONTROL_CATALOG,
+);
 
 export function floatingControlMetadata(
   command: FloatingControlCommand,
 ): FloatingControlMetadata {
-  return FLOATING_CONTROL_METADATA_BY_ACTION[command];
+  return requireLookupValue(
+    FLOATING_CONTROL_LOOKUP.metadataByAction,
+    command,
+    "floating control action metadata",
+  );
 }
 
-export const FLOATING_CONTROL_POLICY = Object.fromEntries(
-  FLOATING_CONTROL_CATALOG.map((entry) => [entry.action, entry.policy]),
-) as Record<FloatingControlCommand, FloatingControlPolicy>;
+export function floatingControlPolicy(
+  command: FloatingControlCommand,
+): FloatingControlPolicy {
+  return requireLookupValue(
+    FLOATING_CONTROL_LOOKUP.policyByAction,
+    command,
+    "floating control action policy",
+  );
+}
+
+export function floatingControlDescriptor(
+  metadataKey: FloatingControlMetadataKey,
+): FloatingControlMetadata {
+  return requireLookupValue(
+    FLOATING_CONTROL_LOOKUP.metadataByKey,
+    metadataKey,
+    "floating control metadata",
+  );
+}
