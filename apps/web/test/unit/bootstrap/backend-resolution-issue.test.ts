@@ -32,6 +32,12 @@ describe("backend resolution issue helpers", () => {
     ).toBe(false);
     expect(
       isBackendResolutionIssue({
+        code: "not_a_real_issue_code",
+        details: "details",
+      }),
+    ).toBe(false);
+    expect(
+      isBackendResolutionIssue({
         code: "socket_url_invalid_format",
       }),
     ).toBe(false);

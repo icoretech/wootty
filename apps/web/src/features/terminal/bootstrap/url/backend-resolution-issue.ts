@@ -1,4 +1,7 @@
-import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
+import {
+  isBackendResolutionIssueCode,
+  type TerminalBackendResolutionIssue,
+} from "../../contracts/backend-resolution";
 
 export function createBackendResolutionIssue(
   code: TerminalBackendResolutionIssue["code"],
@@ -19,6 +22,7 @@ export function isBackendResolutionIssue(
 
   const candidate = value as Record<string, unknown>;
   return (
-    typeof candidate.code === "string" && typeof candidate.details === "string"
+    isBackendResolutionIssueCode(candidate.code) &&
+    typeof candidate.details === "string"
   );
 }
