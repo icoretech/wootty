@@ -15,9 +15,9 @@ function createWindow(
 }
 
 describe("socket url resolution", () => {
-  it("converts http env urls to websocket urls", () => {
+  it("converts http env urls to websocket urls anchored to terminal route", () => {
     const backendHost = "api.example.test";
-    const backendPath = "/custom/terminal";
+    const backendPath = "/custom/base";
     const httpsBackendUrl = `https://${backendHost}${backendPath}`;
     const resolution = resolveSocketUrl(
       createWindow("https:", "app.example.test"),
@@ -26,7 +26,21 @@ describe("socket url resolution", () => {
 
     expect(resolution).toEqual({
       ok: true,
-      socketUrl: `wss://${backendHost}${backendPath}`,
+      socketUrl: `wss://${backendHost}${backendPath}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`,
+    });
+  });
+
+  it("maps sessions HTTP path env urls to terminal websocket path", () => {
+    const backendHost = "api.example.test";
+    const sessionsUrl = `https://${backendHost}${TERMINAL_BACKEND_ROUTE.SESSIONS_HTTP}`;
+    const resolution = resolveSocketUrl(
+      createWindow("https:", "app.example.test"),
+      sessionsUrl,
+    );
+
+    expect(resolution).toEqual({
+      ok: true,
+      socketUrl: `wss://${backendHost}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`,
     });
   });
 
