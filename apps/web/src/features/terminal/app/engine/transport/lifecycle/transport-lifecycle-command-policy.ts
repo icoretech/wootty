@@ -11,7 +11,7 @@ import type {
 type TransportLifecycleCommandPolicyDeps = {
   dispatchEvent: (event: TransportEvent) => void;
   clearLifecycleTimers: () => void;
-  closeActiveWithIntent: (
+  closeActive: (
     code: number,
     reason: string,
     closeIntent: SocketCloseIntent,
@@ -32,7 +32,7 @@ export class TransportLifecycleCommandPolicy {
     this.executeLifecycleCommand({
       clearReconnectAttempts: true,
       tryClose: () => {
-        return this.deps.closeActiveWithIntent(
+        return this.deps.closeActive(
           TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
           "manual reconnect",
           "manual",
@@ -73,7 +73,7 @@ export class TransportLifecycleCommandPolicy {
     this.executeLifecycleCommand({
       clearReconnectAttempts: true,
       tryClose: () => {
-        return this.deps.closeActiveWithIntent(
+        return this.deps.closeActive(
           TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
           "start fresh session",
           "fresh",
@@ -88,11 +88,7 @@ export class TransportLifecycleCommandPolicy {
   dispose(): void {
     this.executeLifecycleCommand({
       tryClose: () => {
-        return this.deps.closeActiveWithIntent(
-          1000,
-          "component unmount",
-          "dispose",
-        );
+        return this.deps.closeActive(1000, "component unmount", "dispose");
       },
       fallback: () => {
         this.deps.clearSocketSession();

@@ -25,7 +25,7 @@ class SocketDouble implements TerminalTransport {
 function createPolicyHarness() {
   const events: TransportEvent[] = [];
   const clearLifecycleTimers = vi.fn();
-  const closeActiveWithIntent = vi.fn();
+  const closeActive = vi.fn();
   const detachForSocketSwap = vi.fn();
   const clearSocketSession = vi.fn();
   const connect = vi.fn();
@@ -35,7 +35,7 @@ function createPolicyHarness() {
       events.push(event);
     },
     clearLifecycleTimers,
-    closeActiveWithIntent,
+    closeActive,
     detachForSocketSwap,
     clearSocketSession,
     connect,
@@ -45,7 +45,7 @@ function createPolicyHarness() {
     policy,
     events,
     clearLifecycleTimers,
-    closeActiveWithIntent,
+    closeActive,
     detachForSocketSwap,
     clearSocketSession,
     connect,
@@ -55,13 +55,13 @@ function createPolicyHarness() {
 describe("transport lifecycle command policy", () => {
   it("clears reconnect attempts and requests a manual close for reconnectNow", () => {
     const harness = createPolicyHarness();
-    harness.closeActiveWithIntent.mockReturnValue(true);
+    harness.closeActive.mockReturnValue(true);
 
     harness.policy.reconnectNow();
 
     expect(harness.clearLifecycleTimers).toHaveBeenCalledTimes(1);
     expect(harness.events).toEqual([{ type: "clear-reconnect-attempts" }]);
-    expect(harness.closeActiveWithIntent).toHaveBeenCalledWith(
+    expect(harness.closeActive).toHaveBeenCalledWith(
       TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
       "manual reconnect",
       "manual",
@@ -87,11 +87,11 @@ describe("transport lifecycle command policy", () => {
 
   it("falls back to immediate connect when there is no active socket to close", () => {
     const harness = createPolicyHarness();
-    harness.closeActiveWithIntent.mockReturnValue(false);
+    harness.closeActive.mockReturnValue(false);
 
     harness.policy.scheduleFreshConnection();
 
-    expect(harness.closeActiveWithIntent).toHaveBeenCalledWith(
+    expect(harness.closeActive).toHaveBeenCalledWith(
       TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
       "start fresh session",
       "fresh",
@@ -101,12 +101,12 @@ describe("transport lifecycle command policy", () => {
 
   it("clears socket session and emits socket-closed when dispose has no active socket", () => {
     const harness = createPolicyHarness();
-    harness.closeActiveWithIntent.mockReturnValue(false);
+    harness.closeActive.mockReturnValue(false);
 
     harness.policy.dispose();
 
     expect(harness.clearLifecycleTimers).toHaveBeenCalledTimes(1);
-    expect(harness.closeActiveWithIntent).toHaveBeenCalledWith(
+    expect(harness.closeActive).toHaveBeenCalledWith(
       1000,
       "component unmount",
       "dispose",

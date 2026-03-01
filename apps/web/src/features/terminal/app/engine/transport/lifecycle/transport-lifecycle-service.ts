@@ -9,18 +9,12 @@ import type { Scheduler } from "../../../../platform/scheduler";
 import { createPingMessage } from "../../../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../../../protocol/terminal-wire-schema";
 import type { TransportFailureSink } from "../contracts/transport-failure-contract";
-import { TransportFailureReporter } from "../reliability/transport-failure-reporter";
-import { TransportHeartbeatMonitor } from "../reliability/transport-heartbeat-monitor";
-import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
+import { TransportSocketReliabilityCoordinator } from "../reliability/transport-socket-reliability-coordinator";
 import type {
   TransportEvent,
   TransportState,
 } from "../state/transport-state-machine";
-import {
-  type TransportBootstrapFailureReasonCode,
-  TransportConnectionBootstrap,
-} from "../transport-connection-bootstrap";
-import { TransportCloseCoordinator } from "./transport-close-coordinator";
+import { TransportConnectionBootstrap } from "../transport-connection-bootstrap";
 import { TransportLifecycleCommandPolicy } from "./transport-lifecycle-command-policy";
 import { TransportSocketSession } from "./transport-socket-session";
 
@@ -29,90 +23,62 @@ export type TransportHandlers = {
   onMessage: (event: TerminalTransportMessageEvent) => void;
 };
 
-type TransportRuntimeContext = {
+export type TransportLifecycleRuntimeRef = {
   wsUrl: string | null;
   handlers: TransportHandlers;
-  hasSessionContext: () => boolean;
+  hasSessionContext: boolean;
   onSocketFailure: TransportFailureSink;
 };
 
 type TransportLifecycleServiceDeps = {
   createTransport: (url: string) => TerminalTransport;
   scheduler: Scheduler;
-  getRuntimeContext: () => TransportRuntimeContext;
+  runtime: TransportLifecycleRuntimeRef;
   getState: () => TransportState;
   dispatchEvent: (event: TransportEvent) => void;
 };
 
 export class TransportLifecycleService {
   private readonly deps: TransportLifecycleServiceDeps;
-  private readonly heartbeatMonitor: TransportHeartbeatMonitor;
-  private readonly failureReporter: TransportFailureReporter;
   private readonly connectionBootstrap: TransportConnectionBootstrap;
-  private readonly closeCoordinator: TransportCloseCoordinator;
+  private readonly reliability: TransportSocketReliabilityCoordinator;
   private readonly commandPolicy: TransportLifecycleCommandPolicy;
   private readonly socketSession: TransportSocketSession;
-  private socketErrorGeneration: number | null = null;
+  private runtime: TransportLifecycleRuntimeRef;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
-    this.heartbeatMonitor = new TransportHeartbeatMonitor({
-      scheduler: this.deps.scheduler,
-      onPing: () => {
-        this.sendPayload(createPingMessage());
-      },
-      onPongTimeout: () => {
-        this.socketSession.closeActive(
-          TERMINAL_CLOSE_CODE.PONG_TIMEOUT,
-          "pong timeout",
-        );
-      },
-      onLatency: (latencyMs) => {
-        this.deps.dispatchEvent({
-          type: "latency",
-          latencyMs,
-        });
-      },
-    });
-    this.failureReporter = new TransportFailureReporter({
-      scheduler: this.deps.scheduler,
-      dispatchSocketFailure: (context) => {
-        this.deps.dispatchEvent({ type: "socket-failure", context });
-      },
-      onSocketFailure: (failure) => {
-        this.getRuntimeContext().onSocketFailure(failure);
-      },
-    });
+    this.runtime = deps.runtime;
     this.connectionBootstrap = new TransportConnectionBootstrap({
       createTransport: this.deps.createTransport,
     });
-    this.closeCoordinator = new TransportCloseCoordinator({
+    this.socketSession = new TransportSocketSession();
+    this.reliability = new TransportSocketReliabilityCoordinator({
       scheduler: this.deps.scheduler,
       dispatchEvent: this.deps.dispatchEvent,
+      onSocketFailure: (failure) => {
+        this.runtime.onSocketFailure(failure);
+      },
       connect: () => {
         this.connect();
       },
-      reportCloseFailure: (closeCode, closeReason) => {
-        this.failureReporter.report({
-          source: "close",
-          code: closeCode,
-          reasonCode: "socket_failure",
-          technicalDetail: closeReason,
-        });
+      getReconnectAttempt: () => {
+        return this.deps.getState().reconnectAttempt;
+      },
+      sendPing: () => {
+        this.sendPayload(createPingMessage());
+      },
+      closeActive: (code, reason) => {
+        return this.socketSession.closeActive(code, reason);
       },
     });
-    this.socketSession = new TransportSocketSession();
     this.commandPolicy = new TransportLifecycleCommandPolicy({
       dispatchEvent: this.deps.dispatchEvent,
       clearLifecycleTimers: () => {
-        this.clearLifecycleTimers();
+        this.reliability.clearLifecycleTimers();
       },
-      closeActiveWithIntent: (code, reason, closeIntent) => {
-        return this.socketSession.closeActiveWithIntent(
-          code,
-          reason,
-          closeIntent,
-        );
+      closeActive: (code, reason, closeIntent) => {
+        return this.socketSession.closeActive(code, reason, closeIntent);
       },
       detachForSocketSwap: () => {
         return this.socketSession.detachForSocketSwap();
@@ -136,41 +102,34 @@ export class TransportLifecycleService {
       socket.send(JSON.stringify(payload));
       return true;
     } catch (error) {
-      const reason =
-        error instanceof Error && error.message.length > 0
-          ? error.message
-          : "transport send failed";
-      this.failureReporter.report({
-        source: "error",
-        reasonCode: "send_failed",
-        technicalDetail: reason,
-        cause: error,
-      });
-      this.deps.dispatchEvent({ type: "socket-error" });
+      this.reliability.reportSendFailure(error);
       return false;
     }
   };
 
   markPong = (): void => {
-    this.heartbeatMonitor.markPong();
+    this.reliability.markPong();
   };
+
+  updateRuntime(nextRuntime: TransportLifecycleRuntimeRef): void {
+    this.runtime = nextRuntime;
+  }
 
   connect = (): void => {
     if (this.socketSession.hasActiveConnection()) {
       return;
     }
-    const runtimeContext = this.getRuntimeContext();
 
     this.deps.dispatchEvent({
       type: "set-connecting",
-      reconnecting: runtimeContext.hasSessionContext(),
+      reconnecting: this.runtime.hasSessionContext,
     });
 
     const bootstrapResult = this.connectionBootstrap.createSocket(
-      runtimeContext.wsUrl,
+      this.runtime.wsUrl,
     );
     if (!bootstrapResult.ok) {
-      this.failConnectionBootstrap(
+      this.reliability.reportBootstrapFailure(
         bootstrapResult.reasonCode,
         bootstrapResult.debugDetail,
         bootstrapResult.cause,
@@ -181,20 +140,16 @@ export class TransportLifecycleService {
     const ws = bootstrapResult.socket;
     const socketGeneration = this.socketSession.attach(ws, {
       onOpen: () => {
-        if (!this.socketSession.isCurrent(ws, socketGeneration)) {
-          return;
-        }
-        this.socketErrorGeneration = null;
-        this.failureReporter.reset();
-        this.deps.dispatchEvent({ type: "connected" });
-        this.getRuntimeContext().handlers.onOpen();
-        this.heartbeatMonitor.start();
+        this.withCurrentSocket(ws, socketGeneration, () => {
+          this.reliability.onConnected();
+          this.deps.dispatchEvent({ type: "connected" });
+          this.runtime.handlers.onOpen();
+        });
       },
       onMessage: (event) => {
-        if (!this.socketSession.isCurrent(ws, socketGeneration)) {
-          return;
-        }
-        this.getRuntimeContext().handlers.onMessage(event);
+        this.withCurrentSocket(ws, socketGeneration, () => {
+          this.runtime.handlers.onMessage(event);
+        });
       },
       onClose: (event) => {
         this.onSocketClose(ws, socketGeneration, event);
@@ -226,18 +181,9 @@ export class TransportLifecycleService {
     socketGeneration: number,
     event: TerminalTransportErrorEvent,
   ): void {
-    if (!this.socketSession.isCurrent(socket, socketGeneration)) {
-      return;
-    }
-    this.socketErrorGeneration = socketGeneration;
-    this.failureReporter.report({
-      source: "error",
-      code: event.code,
-      reasonCode: "socket_failure",
-      technicalDetail: event.message,
-      cause: event.cause,
+    this.withCurrentSocket(socket, socketGeneration, () => {
+      this.reliability.handleSocketError(socketGeneration, event);
     });
-    this.deps.dispatchEvent({ type: "socket-error" });
   }
 
   private onSocketClose(
@@ -253,41 +199,22 @@ export class TransportLifecycleService {
       return;
     }
 
-    this.clearLifecycleTimers();
-    const shouldReportCloseFailure =
-      this.socketErrorGeneration !== socketGeneration;
-    const reconnectAttempt = this.deps.getState().reconnectAttempt;
-    this.socketErrorGeneration = null;
-
-    this.closeCoordinator.handleSocketClose({
+    this.reliability.handleSocketClose({
       closeIntent: closedSocket.closeIntent,
       closeCode: event.code,
       closeReason: event.reason,
-      reconnectAttempt,
-      shouldReportCloseFailure,
+      socketGeneration,
     });
   }
 
-  private failConnectionBootstrap(
-    reasonCode: TransportBootstrapFailureReasonCode,
-    debugDetail: string,
-    cause?: unknown,
+  private withCurrentSocket(
+    socket: TerminalTransport,
+    generation: number,
+    task: () => void,
   ): void {
-    this.failureReporter.report({
-      source: "error",
-      reasonCode,
-      technicalDetail: debugDetail,
-      cause,
-    });
-    this.deps.dispatchEvent({ type: "socket-error" });
-  }
-
-  private clearLifecycleTimers(): void {
-    this.heartbeatMonitor.stop();
-    this.closeCoordinator.clearReconnectTimer();
-  }
-
-  private getRuntimeContext(): TransportRuntimeContext {
-    return this.deps.getRuntimeContext();
+    if (!this.socketSession.isCurrent(socket, generation)) {
+      return;
+    }
+    task();
   }
 }

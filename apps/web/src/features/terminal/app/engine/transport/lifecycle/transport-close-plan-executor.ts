@@ -22,7 +22,7 @@ type TransportClosePlanExecutorDeps = {
   reportCloseFailure: () => void;
 };
 
-type ExecuteTransportClosePlanArgs = {
+export type ExecuteTransportClosePlanArgs = {
   closeIntent: SocketCloseIntent;
   closeCode: number;
   reconnectAttempt: number;

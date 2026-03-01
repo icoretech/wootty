@@ -86,7 +86,7 @@ function deriveTerminalPathFromHttpUrl(pathname: string): string {
       -TERMINAL_BACKEND_ROUTE.SESSIONS_HTTP.length,
     )}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`;
   }
-  if (normalizedPath === "" || normalizedPath === "/") {
+  if (normalizedPath === "/") {
     return TERMINAL_BACKEND_ROUTE.TERMINAL_WS;
   }
   return `${normalizedPath}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`;
