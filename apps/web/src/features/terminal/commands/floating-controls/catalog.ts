@@ -1,5 +1,5 @@
 import { COMMAND_CATALOG } from "../catalog";
-import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
+import type { ShortcutAction } from "../shortcut-actions";
 import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
 import type { FloatingControlCommand } from "./actions";
 import type {
@@ -10,110 +10,78 @@ import type {
 } from "./contracts";
 import type { FloatingControlMetadata } from "./floating-control-metadata";
 
-export const FLOATING_CONTROL_CATALOG = [
-  {
-    action: TERMINAL_RUNTIME_COMMAND.RECONNECT,
-    testId: "reconnect-button",
-    metadataKey: "reconnect",
-    metadata: {
-      tooltip: "Reconnect",
-      ariaLabel: "Reconnect terminal session",
-      ariaKeyShortcuts: "Control+Shift+R Meta+Shift+R",
-    },
-    policy: {
-      isDisabled: (model) => !model.terminalReady,
-      resolveIcon: () => "reconnect",
-    },
+const FLOATING_CONTROL_METADATA: Record<
+  FloatingControlMetadataKey,
+  FloatingControlMetadata
+> = {
+  reconnect: {
+    tooltip: "Reconnect",
+    ariaLabel: "Reconnect terminal session",
+    ariaKeyShortcuts: "Control+Shift+R Meta+Shift+R",
   },
-  {
-    action: TERMINAL_RUNTIME_COMMAND.CLEAR,
-    testId: "clear-button",
-    metadataKey: "clear",
-    metadata: {
-      tooltip: "Clear",
-      ariaLabel: "Clear terminal viewport",
-      ariaKeyShortcuts: "Control+Shift+K Meta+Shift+K",
-    },
-    policy: {
-      isDisabled: (model) => !model.terminalReady,
-      resolveIcon: () => "clear",
-    },
+  clear: {
+    tooltip: "Clear",
+    ariaLabel: "Clear terminal viewport",
+    ariaKeyShortcuts: "Control+Shift+K Meta+Shift+K",
   },
-  {
-    action: VIEWPORT_UI_COMMAND.DECREASE_FONT,
-    testId: "font-decrease-button",
-    metadataKey: "decreaseFont",
-    metadata: {
-      tooltip: "Font down",
-      ariaLabel: "Decrease terminal font size",
-      ariaKeyShortcuts: "Control+Shift+- Meta+Shift+-",
-    },
-    policy: {
-      isDisabled: (model) =>
-        !model.terminalReady || model.fontSize <= model.fontSizeMin,
-      resolveIcon: () => "fontDecrease",
-    },
+  decreaseFont: {
+    tooltip: "Font down",
+    ariaLabel: "Decrease terminal font size",
+    ariaKeyShortcuts: "Control+Shift+- Meta+Shift+-",
   },
-  {
-    action: VIEWPORT_UI_COMMAND.INCREASE_FONT,
-    testId: "font-increase-button",
-    metadataKey: "increaseFont",
-    metadata: {
-      tooltip: "Font up",
-      ariaLabel: "Increase terminal font size",
-      ariaKeyShortcuts: "Control+Shift+= Meta+Shift+=",
-    },
-    policy: {
-      isDisabled: (model) =>
-        !model.terminalReady || model.fontSize >= model.fontSizeMax,
-      resolveIcon: () => "fontIncrease",
-    },
+  increaseFont: {
+    tooltip: "Font up",
+    ariaLabel: "Increase terminal font size",
+    ariaKeyShortcuts: "Control+Shift+= Meta+Shift+=",
   },
-  {
-    action: VIEWPORT_UI_COMMAND.RESET_FONT,
-    testId: "font-reset-button",
-    metadataKey: "resetFont",
-    metadata: {
-      tooltip: "Reset font",
-      ariaLabel: "Reset terminal font size",
-      ariaKeyShortcuts: "Control+Shift+0 Meta+Shift+0",
-    },
-    policy: {
-      isDisabled: (model) =>
-        !model.terminalReady || model.fontSize === model.defaultFontSize,
-      resolveIcon: () => "fontReset",
-    },
+  resetFont: {
+    tooltip: "Reset font",
+    ariaLabel: "Reset terminal font size",
+    ariaKeyShortcuts: "Control+Shift+0 Meta+Shift+0",
   },
-  {
-    action: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
-    testId: "fullscreen-button",
-    metadataKey: "fullscreen",
-    metadata: {
-      tooltip: "Fullscreen",
-      ariaLabel: "Toggle fullscreen terminal",
-    },
-    policy: {
-      isDisabled: (model) => !model.terminalReady,
-      resolveIcon: (model) =>
-        model.isFullscreen ? "fullscreenExit" : "fullscreenEnter",
-      resolveLabel: (model, defaultLabel) =>
-        model.isFullscreen ? "Exit fullscreen terminal" : defaultLabel,
-      resolveTooltip: (model, defaultTooltip) =>
-        model.isFullscreen ? "Exit fullscreen" : defaultTooltip,
-    },
+  fullscreen: {
+    tooltip: "Fullscreen",
+    ariaLabel: "Toggle fullscreen terminal",
   },
-] as const satisfies readonly FloatingControlCatalogEntry[];
+};
 
-export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
-  Object.freeze(
-    FLOATING_CONTROL_CATALOG.map((entry) => {
-      return {
-        testId: entry.testId,
-        metadataKey: entry.metadataKey,
-        action: entry.action,
-      };
-    }) satisfies readonly FloatingControlRegistryEntry[],
-  );
+const FLOATING_CONTROL_POLICY: Record<
+  FloatingControlMetadataKey,
+  FloatingControlPolicy
+> = {
+  reconnect: {
+    isDisabled: (model) => !model.terminalReady,
+    resolveIcon: () => "reconnect",
+  },
+  clear: {
+    isDisabled: (model) => !model.terminalReady,
+    resolveIcon: () => "clear",
+  },
+  decreaseFont: {
+    isDisabled: (model) =>
+      !model.terminalReady || model.fontSize <= model.fontSizeMin,
+    resolveIcon: () => "fontDecrease",
+  },
+  increaseFont: {
+    isDisabled: (model) =>
+      !model.terminalReady || model.fontSize >= model.fontSizeMax,
+    resolveIcon: () => "fontIncrease",
+  },
+  resetFont: {
+    isDisabled: (model) =>
+      !model.terminalReady || model.fontSize === model.defaultFontSize,
+    resolveIcon: () => "fontReset",
+  },
+  fullscreen: {
+    isDisabled: (model) => !model.terminalReady,
+    resolveIcon: (model) =>
+      model.isFullscreen ? "fullscreenExit" : "fullscreenEnter",
+    resolveLabel: (model, defaultLabel) =>
+      model.isFullscreen ? "Exit fullscreen terminal" : defaultLabel,
+    resolveTooltip: (model, defaultTooltip) =>
+      model.isFullscreen ? "Exit fullscreen" : defaultTooltip,
+  },
+};
 
 type FloatingControlLookup = {
   metadataByAction: ReadonlyMap<
@@ -126,6 +94,46 @@ type FloatingControlLookup = {
     FloatingControlMetadata
   >;
 };
+
+type CommandCatalogEntry = (typeof COMMAND_CATALOG)[number];
+type CommandWithFloatingControl = CommandCatalogEntry & {
+  floatingControl: {
+    testId: string;
+    metadataKey: FloatingControlMetadataKey;
+  };
+};
+
+function hasFloatingControl(
+  entry: CommandCatalogEntry,
+): entry is CommandWithFloatingControl {
+  return "floatingControl" in entry && entry.floatingControl !== undefined;
+}
+
+function isFloatingControlCommand(
+  action: ShortcutAction,
+): action is FloatingControlCommand {
+  return action !== VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS;
+}
+
+function buildFloatingControlCatalog(): readonly FloatingControlCatalogEntry[] {
+  return Object.freeze(
+    COMMAND_CATALOG.flatMap((entry): FloatingControlCatalogEntry[] => {
+      if (!hasFloatingControl(entry) || !isFloatingControlCommand(entry.id)) {
+        return [];
+      }
+      const { metadataKey, testId } = entry.floatingControl;
+      return [
+        {
+          action: entry.id,
+          testId,
+          metadataKey,
+          metadata: FLOATING_CONTROL_METADATA[metadataKey],
+          policy: FLOATING_CONTROL_POLICY[metadataKey],
+        },
+      ];
+    }),
+  );
+}
 
 function buildFloatingControlLookup(
   entries: readonly FloatingControlCatalogEntry[],
@@ -192,23 +200,22 @@ function requireLookupValue<K, V>(
   throw new Error(`Unknown ${label} '${String(key)}'.`);
 }
 
-function assertFloatingControlActionsInCommandCatalog(): void {
-  const commandActions = new Set(COMMAND_CATALOG.map((entry) => entry.id));
-  for (const entry of FLOATING_CONTROL_CATALOG) {
-    if (!commandActions.has(entry.action)) {
-      throw new Error(
-        `Floating control action '${entry.action}' is not defined in the command catalog.`,
-      );
-    }
-  }
-}
+export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog();
 
-function createFloatingControlLookup(): FloatingControlLookup {
-  assertFloatingControlActionsInCommandCatalog();
-  return buildFloatingControlLookup(FLOATING_CONTROL_CATALOG);
-}
+export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
+  Object.freeze(
+    FLOATING_CONTROL_CATALOG.map((entry) => {
+      return {
+        testId: entry.testId,
+        metadataKey: entry.metadataKey,
+        action: entry.action,
+      };
+    }) satisfies readonly FloatingControlRegistryEntry[],
+  );
 
-const FLOATING_CONTROL_LOOKUP = createFloatingControlLookup();
+const FLOATING_CONTROL_LOOKUP = buildFloatingControlLookup(
+  FLOATING_CONTROL_CATALOG,
+);
 
 export function floatingControlMetadata(
   command: FloatingControlCommand,
