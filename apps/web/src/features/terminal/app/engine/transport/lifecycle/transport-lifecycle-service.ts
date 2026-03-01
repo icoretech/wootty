@@ -13,7 +13,6 @@ import { TransportFailureReporter } from "../reliability/transport-failure-repor
 import { TransportHeartbeatMonitor } from "../reliability/transport-heartbeat-monitor";
 import { TransportReconnectController } from "../reliability/transport-reconnect-controller";
 import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
-import { resolveTransportClosePlan } from "../state/transport-recovery-plan";
 import type {
   SocketCloseIntent,
   TransportEvent,
@@ -23,6 +22,7 @@ import {
   type TransportBootstrapFailureReasonCode,
   TransportConnectionBootstrap,
 } from "../transport-connection-bootstrap";
+import { executeTransportClosePlan } from "./transport-close-plan-executor";
 import { TransportCommandExecutor } from "./transport-command-executor";
 import { TransportSocketSession } from "./transport-socket-session";
 
@@ -253,53 +253,31 @@ export class TransportLifecycleService {
     this.socketErrorSinceConnect = false;
     this.setCloseIntent("normal");
 
-    const closePlan = resolveTransportClosePlan({
-      closeIntent,
-      closeCode: event.code,
-      reconnectAttempt,
-    });
-
-    if (closePlan.kind === "disposed") {
-      this.deps.dispatchEvent({ type: "socket-closed" });
-      return;
-    }
-
-    if (closePlan.kind === "reconnect-immediate") {
-      this.deps.dispatchEvent({ type: "set-connecting", reconnecting: false });
-      this.connect();
-      return;
-    }
-
-    if (shouldReportCloseFailure) {
-      this.failureReporter.report({
-        source: "close",
-        code: event.code,
-        reasonCode: "socket_failure",
-        technicalDetail: event.reason,
-      });
-    }
-
-    if (closePlan.kind === "nonrecoverable") {
-      this.deps.dispatchEvent({ type: "socket-error" });
-      return;
-    }
-
-    if (closePlan.kind === "reconnect-exhausted") {
-      this.deps.dispatchEvent({
-        type: "socket-failure",
-        context: `close reason=reconnect exhausted attempts=${closePlan.attempt}`,
-      });
-      this.deps.dispatchEvent({ type: "socket-error" });
-      return;
-    }
-
-    this.deps.dispatchEvent({
-      type: "schedule-reconnect",
-      attempt: closePlan.nextAttempt,
-    });
-    this.reconnectController.scheduleReconnect(closePlan.delayMs, () => {
-      this.connect();
-    });
+    executeTransportClosePlan(
+      {
+        closeIntent,
+        closeCode: event.code,
+        reconnectAttempt,
+        shouldReportCloseFailure,
+      },
+      {
+        dispatchEvent: this.deps.dispatchEvent,
+        connect: () => {
+          this.connect();
+        },
+        scheduleReconnect: (delayMs, task) => {
+          this.reconnectController.scheduleReconnect(delayMs, task);
+        },
+        reportCloseFailure: () => {
+          this.failureReporter.report({
+            source: "close",
+            code: event.code,
+            reasonCode: "socket_failure",
+            technicalDetail: event.reason,
+          });
+        },
+      },
+    );
   }
 
   private setCloseIntent(intent: SocketCloseIntent): void {

@@ -1,5 +1,10 @@
-import { type Dispatch, type SetStateAction, useCallback } from "react";
-import { handlerForCommand } from "../commands/command-registry";
+import {
+  type Dispatch,
+  type SetStateAction,
+  useCallback,
+  useMemo,
+} from "react";
+import { dispatchCommand } from "../commands/command-registry";
 import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import {
   TERMINAL_RUNTIME_COMMAND,
@@ -108,20 +113,18 @@ export function useTerminalCommandActions({
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
   dispatchStatusBar: (action: StatusBarAction) => void;
 } {
-  const runRuntimeCommand = useCallback(
-    (command: TerminalRuntimeCommand) => {
-      const runtimeCommandHandlers = {
+  const runtimeCommandHandlers = useMemo(
+    () =>
+      ({
         [TERMINAL_RUNTIME_COMMAND.RECONNECT]: reconnectNow,
         [TERMINAL_RUNTIME_COMMAND.CLEAR]: clearTerminal,
-      } satisfies Record<TerminalRuntimeCommand, () => void>;
-      runtimeCommandHandlers[command]();
-    },
+      }) satisfies Record<TerminalRuntimeCommand, () => void>,
     [clearTerminal, reconnectNow],
   );
 
-  const runViewportCommand = useCallback(
-    (command: ViewportUiCommand) => {
-      const viewportCommandHandlers = {
+  const viewportCommandHandlers = useMemo(
+    () =>
+      ({
         [VIEWPORT_UI_COMMAND.DECREASE_FONT]: () => {
           applyFontSize(readFontSize() - 1);
         },
@@ -137,40 +140,35 @@ export function useTerminalCommandActions({
         [VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS]: () => {
           setControlsOpen((previous) => !previous);
         },
-      } satisfies Record<ViewportUiCommand, () => void>;
-      viewportCommandHandlers[command]();
-    },
+      }) satisfies Record<ViewportUiCommand, () => void>,
     [applyFontSize, readFontSize, setControlsOpen, toggleFullscreen],
   );
 
   const dispatchFloatingControls = useCallback(
     (action: FloatingControlsAction) => {
-      const command = action.type;
-      if (handlerForCommand(command) === "runtime") {
-        runRuntimeCommand(command as TerminalRuntimeCommand);
-      } else {
-        runViewportCommand(command as ViewportUiCommand);
-      }
+      dispatchCommand(action.type, {
+        runtime: runtimeCommandHandlers,
+        viewport: viewportCommandHandlers,
+      });
     },
-    [runRuntimeCommand, runViewportCommand],
+    [runtimeCommandHandlers, viewportCommandHandlers],
   );
 
   const dispatchShortcutAction = useCallback(
     (action: ShortcutAction) => {
-      if (handlerForCommand(action) === "runtime") {
-        runRuntimeCommand(action as TerminalRuntimeCommand);
-      } else {
-        runViewportCommand(action as ViewportUiCommand);
-      }
+      dispatchCommand(action, {
+        runtime: runtimeCommandHandlers,
+        viewport: viewportCommandHandlers,
+      });
     },
-    [runRuntimeCommand, runViewportCommand],
+    [runtimeCommandHandlers, viewportCommandHandlers],
   );
 
   const dispatchStatusBar = useCallback(
     (action: StatusBarAction) => {
       switch (action.type) {
         case VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS:
-          runViewportCommand(VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS);
+          viewportCommandHandlers[VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS]();
           return;
         case "toggleSessionMenu":
           setSessionMenuOpen((previous) => !previous);
@@ -179,7 +177,7 @@ export function useTerminalCommandActions({
           assertNever(action);
       }
     },
-    [runViewportCommand, setSessionMenuOpen],
+    [setSessionMenuOpen, viewportCommandHandlers],
   );
 
   return {
