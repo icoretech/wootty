@@ -215,8 +215,6 @@ function requireLookupValue<K, V>(
   throw new Error(`Unknown ${label} '${String(key)}'.`);
 }
 
-let floatingControlLookupCache: FloatingControlLookup | null = null;
-
 function assertFloatingControlActionsInCommandCatalog(): void {
   const commandActions = new Set(COMMAND_CATALOG.map((entry) => entry.id));
   for (const entry of FLOATING_CONTROL_CATALOG) {
@@ -228,21 +226,18 @@ function assertFloatingControlActionsInCommandCatalog(): void {
   }
 }
 
-function getFloatingControlLookup(): FloatingControlLookup {
-  if (floatingControlLookupCache) {
-    return floatingControlLookupCache;
-  }
+function createFloatingControlLookup(): FloatingControlLookup {
   assertFloatingControlActionsInCommandCatalog();
-  const lookup = buildFloatingControlLookup(FLOATING_CONTROL_CATALOG);
-  floatingControlLookupCache = lookup;
-  return lookup;
+  return buildFloatingControlLookup(FLOATING_CONTROL_CATALOG);
 }
+
+const FLOATING_CONTROL_LOOKUP = createFloatingControlLookup();
 
 export function floatingControlMetadata(
   command: FloatingControlCommand,
 ): FloatingControlMetadata {
   return requireLookupValue(
-    getFloatingControlLookup().metadataByAction,
+    FLOATING_CONTROL_LOOKUP.metadataByAction,
     command,
     "floating control action metadata",
   );
@@ -252,7 +247,7 @@ export function floatingControlPolicy(
   command: FloatingControlCommand,
 ): FloatingControlPolicy {
   return requireLookupValue(
-    getFloatingControlLookup().policyByAction,
+    FLOATING_CONTROL_LOOKUP.policyByAction,
     command,
     "floating control action policy",
   );
@@ -262,7 +257,7 @@ export function floatingControlDescriptor(
   metadataKey: FloatingControlMetadataKey,
 ): FloatingControlMetadata {
   return requireLookupValue(
-    getFloatingControlLookup().metadataByKey,
+    FLOATING_CONTROL_LOOKUP.metadataByKey,
     metadataKey,
     "floating control metadata",
   );
