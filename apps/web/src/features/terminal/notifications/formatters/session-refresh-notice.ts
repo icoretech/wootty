@@ -6,6 +6,8 @@ export function toSessionRefreshNotice(details: SessionsRefreshNotice): string {
   switch (details.reason) {
     case "generic":
       return "Unable to refresh live sessions.";
+    case "request_timeout":
+      return `Unable to refresh live sessions (request timed out after ${Math.round(details.timeoutMs / 1000)}s).`;
     case "http":
       return `Unable to refresh live sessions (HTTP ${details.status}).`;
     case "cause": {

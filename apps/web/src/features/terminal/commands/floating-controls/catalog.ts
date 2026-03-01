@@ -1,3 +1,4 @@
+import { TerminalBootstrapInvariantError } from "../../shared/errors/terminal-bootstrap-invariant";
 import { FLOATING_CONTROL_REGISTRY as COMMAND_FLOATING_CONTROL_REGISTRY } from "../definitions/command-manifest";
 import type { FloatingControlCommand } from "./actions";
 import type {
@@ -142,7 +143,9 @@ function insertUnique<K, V>(
   label: string,
 ): void {
   if (map.has(key)) {
-    throw new Error(`Duplicate ${label} '${String(key)}'.`);
+    throw new TerminalBootstrapInvariantError(
+      `Duplicate ${label} '${String(key)}'.`,
+    );
   }
   map.set(key, value);
 }
@@ -157,7 +160,9 @@ function requireLookupValue<K, V>(
     return value;
   }
 
-  throw new Error(`Unknown ${label} '${String(key)}'.`);
+  throw new TerminalBootstrapInvariantError(
+    `Unknown ${label} '${String(key)}'.`,
+  );
 }
 
 export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog(

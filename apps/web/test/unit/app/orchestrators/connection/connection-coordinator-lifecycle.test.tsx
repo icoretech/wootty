@@ -98,8 +98,6 @@ describe("connection coordinator lifecycle", () => {
             applyReadySession: vi.fn(),
             clearMissingSession: vi.fn(),
             requestTransportRefresh: async () => ({ ok: true }),
-          },
-          notifications: {
             publishNotice: vi.fn(),
           },
         });
@@ -166,8 +164,6 @@ describe("connection coordinator lifecycle", () => {
           applyReadySession: vi.fn(),
           clearMissingSession: vi.fn(),
           requestTransportRefresh: async () => ({ ok: true }),
-        },
-        notifications: {
           publishNotice: vi.fn(),
         },
       });
@@ -217,8 +213,6 @@ describe("connection coordinator lifecycle", () => {
           applyReadySession: vi.fn(),
           clearMissingSession: vi.fn(),
           requestTransportRefresh: async () => ({ ok: true }),
-        },
-        notifications: {
           publishNotice: vi.fn(),
         },
       });

@@ -65,6 +65,7 @@ describe("session refresh binding delay policy", () => {
           failure: {
             source: "lifecycle",
             reason: "request_timeout",
+            timeoutMs: 15_000,
           },
         } as const;
       });

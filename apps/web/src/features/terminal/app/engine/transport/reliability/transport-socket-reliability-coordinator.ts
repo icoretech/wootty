@@ -2,15 +2,8 @@ import type { TransportFailureReasonCode } from "../../../../contracts/transport
 import type { TerminalTransportErrorEvent } from "../../../../contracts/transport/transport";
 import type { Scheduler } from "../../../../platform/scheduler";
 import type { TransportFailureSink } from "../contracts/transport-failure-contract";
-import {
-  type ExecuteTransportClosePlanArgs,
-  executeTransportClosePlan,
-} from "../lifecycle/transport-close-plan-executor";
 import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
-import type {
-  SocketCloseIntent,
-  TransportEvent,
-} from "../state/transport-state-machine";
+import type { TransportEvent } from "../state/transport-state-machine";
 import type { TransportBootstrapFailureReasonCode } from "../transport-connection-bootstrap";
 import { TransportFailureReporter } from "./transport-failure-reporter";
 import { TransportHeartbeatMonitor } from "./transport-heartbeat-monitor";
@@ -24,20 +17,13 @@ type ReportFailureArgs = {
 };
 
 type HandleCloseArgs = {
-  closeIntent: SocketCloseIntent;
-  closeCode: number;
-  closeReason: string;
   socketGeneration: number;
 };
-
-type TimerHandle = ReturnType<Scheduler["setTimeout"]> | null;
 
 type TransportSocketReliabilityCoordinatorDeps = {
   scheduler: Scheduler;
   dispatchEvent: (event: TransportEvent) => void;
   onSocketFailure: TransportFailureSink;
-  connect: () => void;
-  getReconnectAttempt: () => number;
   sendPing: () => void;
   closeActive: (code: number, reason: string) => boolean;
 };
@@ -52,7 +38,6 @@ function normalizeFailureReason(reason?: string): string {
 export class TransportSocketReliabilityCoordinator {
   private readonly heartbeatMonitor: TransportHeartbeatMonitor;
   private readonly failureReporter: TransportFailureReporter;
-  private reconnectTimer: TimerHandle = null;
   private socketErrorGeneration: number | null = null;
 
   constructor(
@@ -97,7 +82,6 @@ export class TransportSocketReliabilityCoordinator {
 
   clearLifecycleTimers(): void {
     this.heartbeatMonitor.stop();
-    this.clearReconnectTimer();
   }
 
   reportSendFailure(error: unknown): void {
@@ -129,38 +113,22 @@ export class TransportSocketReliabilityCoordinator {
     this.deps.dispatchEvent({ type: "socket-error" });
   }
 
-  handleSocketClose({
-    closeIntent,
-    closeCode,
-    closeReason,
-    socketGeneration,
-  }: HandleCloseArgs): void {
-    this.clearLifecycleTimers();
+  handleSocketClose({ socketGeneration }: HandleCloseArgs): {
+    shouldReportCloseFailure: boolean;
+  } {
+    this.heartbeatMonitor.stop();
     const shouldReportCloseFailure =
       this.socketErrorGeneration !== socketGeneration;
-    const reconnectAttempt = this.deps.getReconnectAttempt();
     this.socketErrorGeneration = null;
+    return { shouldReportCloseFailure };
+  }
 
-    const closePlanArgs: ExecuteTransportClosePlanArgs = {
-      closeIntent,
-      closeCode,
-      reconnectAttempt,
-      shouldReportCloseFailure,
-    };
-    executeTransportClosePlan(closePlanArgs, {
-      dispatchEvent: this.deps.dispatchEvent,
-      connect: this.deps.connect,
-      scheduleReconnect: (delayMs, task) => {
-        this.scheduleReconnect(delayMs, task);
-      },
-      reportCloseFailure: () => {
-        this.reportFailure({
-          source: "close",
-          code: closeCode,
-          reasonCode: "socket_failure",
-          technicalDetail: closeReason,
-        });
-      },
+  reportCloseFailure(closeCode: number, closeReason: string): void {
+    this.reportFailure({
+      source: "close",
+      code: closeCode,
+      reasonCode: "socket_failure",
+      technicalDetail: closeReason,
     });
   }
 
@@ -180,21 +148,5 @@ export class TransportSocketReliabilityCoordinator {
 
   private reportFailure(failure: ReportFailureArgs): void {
     this.failureReporter.report(failure);
-  }
-
-  private clearReconnectTimer(): void {
-    if (this.reconnectTimer === null) {
-      return;
-    }
-    this.deps.scheduler.clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = null;
-  }
-
-  private scheduleReconnect(delayMs: number, task: () => void): void {
-    this.clearReconnectTimer();
-    this.reconnectTimer = this.deps.scheduler.setTimeout(() => {
-      this.reconnectTimer = null;
-      task();
-    }, delayMs);
   }
 }

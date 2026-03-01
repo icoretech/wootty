@@ -57,6 +57,13 @@ describe("notice formatters direct coverage", () => {
         count: 3,
       }),
     ).toBe("Skipped 3 malformed session entries.");
+    expect(
+      toSessionRefreshNotice({
+        context: "sessions_refresh",
+        reason: "request_timeout",
+        timeoutMs: 15_000,
+      }),
+    ).toBe("Unable to refresh live sessions (request timed out after 15s).");
   });
 
   it("formats server and transport notices including metadata suffixes", () => {

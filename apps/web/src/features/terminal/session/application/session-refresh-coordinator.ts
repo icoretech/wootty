@@ -20,6 +20,14 @@ const REQUEST_ABORTED_FAILURE: SessionRefreshFailure = {
   reason: "request_aborted",
 };
 
+function createRequestTimeoutFailure(): SessionRefreshFailure {
+  return {
+    source: "lifecycle",
+    reason: "request_timeout",
+    timeoutMs: SESSION_REFRESH_CALL_TIMEOUT_MS,
+  };
+}
+
 function toRefreshPipelineFailure(cause: unknown): SessionRefreshFailure {
   return {
     source: "lifecycle",
@@ -156,10 +164,7 @@ export function useSessionRefreshCoordinator({
             return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
           }
           if (timedOut) {
-            const timeoutFailure: SessionRefreshFailure = {
-              source: "lifecycle",
-              reason: "request_timeout",
-            };
+            const timeoutFailure = createRequestTimeoutFailure();
             onRefreshFailure(timeoutFailure);
             return { ok: false, failure: timeoutFailure };
           }
@@ -179,10 +184,7 @@ export function useSessionRefreshCoordinator({
         }
 
         if (responseOrTimeout === refreshTimeoutToken) {
-          const timeoutFailure: SessionRefreshFailure = {
-            source: "lifecycle",
-            reason: "request_timeout",
-          };
+          const timeoutFailure = createRequestTimeoutFailure();
           onRefreshFailure(timeoutFailure);
           return { ok: false, failure: timeoutFailure };
         }

@@ -37,6 +37,7 @@ export type SessionRefreshFailure =
   | {
       source: "lifecycle";
       reason: "request_timeout";
+      timeoutMs: number;
     }
   | {
       source: "lifecycle";

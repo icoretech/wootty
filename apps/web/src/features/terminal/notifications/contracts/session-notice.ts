@@ -1,5 +1,10 @@
 export type SessionsRefreshNotice =
   | { context: "sessions_refresh"; reason: "generic" }
+  | {
+      context: "sessions_refresh";
+      reason: "request_timeout";
+      timeoutMs: number;
+    }
   | { context: "sessions_refresh"; reason: "http"; status: number }
   | { context: "sessions_refresh"; reason: "cause"; cause: unknown }
   | { context: "sessions_refresh"; reason: "invalid_payload" }

@@ -3,15 +3,18 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
+import type { AttachMode } from "../../contracts/session/session";
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
+import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
 import {
   clampFontSize,
   readInitialFontSizeResult,
@@ -143,6 +146,16 @@ type TerminalSessionDomain = {
   uiState: ControllerUiState;
   sessionState: ReturnType<typeof useSessionOrchestrator>["state"];
   sessionActions: ReturnType<typeof useSessionOrchestrator>["actions"];
+  connectionSession: {
+    sessionId: string | null;
+    attachMode: AttachMode;
+    hasActiveSession: boolean;
+    setSessionMode: (mode: AttachMode) => void;
+    applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
+    clearMissingSession: () => void;
+    requestTransportRefresh: () => Promise<SessionRefreshResult>;
+    publishNotice: NoticePublisher;
+  };
   wsUrl: string | null;
 };
 
@@ -172,10 +185,33 @@ export function useTerminalSessionDomain({
     sessionActions.publishNoticeDetails,
   );
 
+  const connectionSession = useMemo(() => {
+    return {
+      sessionId: sessionState.sessionId,
+      attachMode: sessionState.attachMode,
+      hasActiveSession: sessionState.hasActiveSession,
+      setSessionMode: sessionActions.setSessionMode,
+      applyReadySession: sessionActions.applyReadySession,
+      clearMissingSession: sessionActions.clearMissingSession,
+      requestTransportRefresh: sessionActions.requestTransportRefresh,
+      publishNotice: sessionActions.publishNoticeDetails,
+    };
+  }, [
+    sessionActions.applyReadySession,
+    sessionActions.clearMissingSession,
+    sessionActions.publishNoticeDetails,
+    sessionActions.requestTransportRefresh,
+    sessionActions.setSessionMode,
+    sessionState.attachMode,
+    sessionState.hasActiveSession,
+    sessionState.sessionId,
+  ]);
+
   return {
     uiState,
     sessionState,
     sessionActions,
+    connectionSession,
     wsUrl: platform.backendResolution.ok
       ? platform.backendResolution.endpoints.terminalWsUrl
       : null,

@@ -16,6 +16,7 @@ import type {
   TransportState,
 } from "../state/transport-state-machine";
 import { TransportConnectionBootstrap } from "../transport-connection-bootstrap";
+import { executeTransportClosePlan } from "./transport-close-plan-executor";
 import { TransportSocketSession } from "./transport-socket-session";
 
 export type TransportHandlers = {
@@ -38,11 +39,14 @@ type TransportLifecycleServiceDeps = {
   dispatchEvent: (event: TransportEvent) => void;
 };
 
+type TimerHandle = ReturnType<Scheduler["setTimeout"]> | null;
+
 export class TransportLifecycleService {
   private readonly deps: TransportLifecycleServiceDeps;
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly reliability: TransportSocketReliabilityCoordinator;
   private readonly socketSession: TransportSocketSession;
+  private reconnectTimer: TimerHandle = null;
   private runtime: TransportLifecycleRuntimeRef;
 
   constructor(deps: TransportLifecycleServiceDeps) {
@@ -57,12 +61,6 @@ export class TransportLifecycleService {
       dispatchEvent: this.deps.dispatchEvent,
       onSocketFailure: (failure) => {
         this.runtime.onSocketFailure(failure);
-      },
-      connect: () => {
-        this.connect();
-      },
-      getReconnectAttempt: () => {
-        return this.deps.getState().reconnectAttempt;
       },
       sendPing: () => {
         this.sendPayload(createPingMessage());
@@ -236,13 +234,29 @@ export class TransportLifecycleService {
     if (!closedSocket.released) {
       return;
     }
-
-    this.reliability.handleSocketClose({
-      closeIntent: closedSocket.closeIntent,
-      closeCode: event.code,
-      closeReason: event.reason,
+    const closeReconciliation = this.reliability.handleSocketClose({
       socketGeneration,
     });
+    executeTransportClosePlan(
+      {
+        closeIntent: closedSocket.closeIntent,
+        closeCode: event.code,
+        reconnectAttempt: this.deps.getState().reconnectAttempt,
+        shouldReportCloseFailure: closeReconciliation.shouldReportCloseFailure,
+      },
+      {
+        dispatchEvent: this.deps.dispatchEvent,
+        connect: () => {
+          this.connect();
+        },
+        scheduleReconnect: (delayMs, task) => {
+          this.scheduleReconnect(delayMs, task);
+        },
+        reportCloseFailure: () => {
+          this.reliability.reportCloseFailure(event.code, event.reason);
+        },
+      },
+    );
   }
 
   private withCurrentSocket(
@@ -261,6 +275,7 @@ export class TransportLifecycleService {
     tryClose: () => boolean;
     fallback: () => void;
   }): void {
+    this.clearReconnectTimer();
     if (options.clearReconnectAttempts) {
       this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     }
@@ -269,5 +284,21 @@ export class TransportLifecycleService {
       return;
     }
     options.fallback();
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer === null) {
+      return;
+    }
+    this.deps.scheduler.clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  private scheduleReconnect(delayMs: number, task: () => void): void {
+    this.clearReconnectTimer();
+    this.reconnectTimer = this.deps.scheduler.setTimeout(() => {
+      this.reconnectTimer = null;
+      task();
+    }, delayMs);
   }
 }
