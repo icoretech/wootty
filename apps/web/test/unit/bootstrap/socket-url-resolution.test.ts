@@ -58,4 +58,20 @@ describe("socket url resolution", () => {
       },
     });
   });
+
+  it("returns invalid format issue for malformed websocket env URL", () => {
+    const malformedSocketUrl = "ws://[::1";
+    const resolution = resolveSocketUrl(
+      createWindow("https:", "app.example.test"),
+      malformedSocketUrl,
+    );
+
+    expect(resolution).toEqual({
+      ok: false,
+      issue: {
+        code: "env_socket_url_invalid_format",
+        details: `VITE_WOOTTY_WS_URL is not a valid URL: ${malformedSocketUrl}`,
+      },
+    });
+  });
 });

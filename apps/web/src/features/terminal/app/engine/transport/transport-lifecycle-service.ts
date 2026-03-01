@@ -6,6 +6,7 @@ import type {
   TerminalTransportMessageEvent,
 } from "../../../contracts/transport";
 import { TRANSPORT_READY_STATE } from "../../../contracts/transport";
+import { validateWebsocketEndpoint } from "../../../contracts/websocket-endpoint-validation";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
@@ -74,24 +75,26 @@ function socketFailureContext(
 }
 
 function resolveWsEndpoint(endpoint: string | null): WsEndpointResolution {
-  if (typeof endpoint !== "string" || endpoint.trim().length === 0) {
+  const validation = validateWebsocketEndpoint(endpoint);
+  if (validation.ok) {
+    return {
+      ok: true,
+      wsUrl: validation.endpoint,
+    };
+  }
+  if (validation.reason === "unavailable") {
     return { ok: false, reason: "websocket endpoint unavailable" };
   }
-  try {
-    const parsed = new URL(endpoint);
-    if (parsed.protocol === "ws:" || parsed.protocol === "wss:") {
-      return { ok: true, wsUrl: endpoint };
-    }
+  if (validation.reason === "unsupported_protocol") {
     return {
       ok: false,
-      reason: `invalid websocket endpoint protocol '${parsed.protocol}'`,
-    };
-  } catch {
-    return {
-      ok: false,
-      reason: `invalid websocket endpoint '${endpoint}'`,
+      reason: `invalid websocket endpoint protocol '${validation.protocol}'`,
     };
   }
+  return {
+    ok: false,
+    reason: `invalid websocket endpoint '${endpoint}'`,
+  };
 }
 
 export class TransportLifecycleService {
