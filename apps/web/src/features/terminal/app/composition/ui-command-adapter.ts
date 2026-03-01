@@ -12,7 +12,7 @@ import type { ConnectionCoordinatorState } from "../engine/connection-coordinato
 import type { TerminalPlatformContext } from "./terminal-platform-composition";
 import type { TerminalSessionDomain } from "./terminal-session-domain";
 
-export type CommandDispatchers = {
+type CommandDispatchers = {
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
   dispatchSessionMenu: (action: SessionMenuAction) => void;
   dispatchStatusBar: (action: StatusBarAction) => void;

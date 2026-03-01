@@ -3,7 +3,7 @@ import {
   isRuntimeCommand,
   resolveCommandFromShortcutCode,
 } from "../../../../src/features/terminal/commands/command-registry";
-import { floatingControlMetadata } from "../../../../src/features/terminal/commands/floating-controls/catalog";
+import { floatingControlDescriptor } from "../../../../src/features/terminal/commands/floating-controls/catalog";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../../src/features/terminal/commands/viewport-commands";
 
@@ -24,9 +24,7 @@ describe("terminal command registry", () => {
   });
 
   it("keeps floating-control metadata in presentation layer", () => {
-    expect(
-      floatingControlMetadata(TERMINAL_RUNTIME_COMMAND.CLEAR),
-    ).toMatchObject({
+    expect(floatingControlDescriptor("clear")).toMatchObject({
       tooltip: "Clear",
       ariaLabel: "Clear terminal viewport",
     });
