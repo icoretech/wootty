@@ -132,15 +132,17 @@ export function useConnectionCoordinator({
       source: "error" | "close",
       code?: TerminalTransportFailureCode,
       reasonCode?: TransportFailureReasonCode,
-      debugDetail?: string,
+      technicalDetail?: string,
       cause?: unknown,
+      noticeMessage?: string,
     ) => {
       publishNotice({
         context: "transport",
         source,
         reasonCode: reasonCode ?? "socket_failure",
         code,
-        debugDetail,
+        debugDetail: technicalDetail,
+        noticeMessage,
         cause,
       });
     },

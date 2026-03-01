@@ -17,21 +17,20 @@ const TRANSPORT_NOTICE_MESSAGES: Record<TransportNotice["reasonCode"], string> =
 export function toTransportNotice(details: TransportNotice): string {
   const message = TRANSPORT_NOTICE_MESSAGES[details.reasonCode];
   const parts: string[] = [];
+  const detailMessage = details.noticeMessage ?? details.debugDetail;
   if (details.source) {
     parts.push(details.source);
   }
   if (typeof details.code === "number" || typeof details.code === "string") {
     parts.push(`code=${details.code}`);
   }
-  if (details.debugDetail && details.debugDetail.length > 0) {
-    parts.push(`detail=${details.debugDetail}`);
+  if (detailMessage && detailMessage.length > 0) {
+    parts.push(`detail=${detailMessage}`);
   }
   const cause = normalizeCauseToMessage(details.cause);
   if (
     cause &&
-    (!details.debugDetail ||
-      details.debugDetail.length === 0 ||
-      details.debugDetail !== cause)
+    (!detailMessage || detailMessage.length === 0 || detailMessage !== cause)
   ) {
     parts.push(`cause=${cause}`);
   }
