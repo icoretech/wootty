@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
+import type { StorageAccessResult } from "../../contracts/storage-access";
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import {
   clearStoredSessionIdResult,
@@ -15,8 +15,8 @@ import {
 } from "../persistence/storage-keys";
 
 type UseSessionPersistenceArgs = {
-  getLocalStorage: () => TerminalStorageAccessResult;
-  getSessionStorage: () => TerminalStorageAccessResult;
+  getLocalStorage: () => StorageAccessResult;
+  getSessionStorage: () => StorageAccessResult;
   onStorageFailure?: (failure: StorageAccessFailure) => void;
 };
 
@@ -49,7 +49,7 @@ function reportFailure(
 }
 
 function resolveStorageAccess(
-  access: TerminalStorageAccessResult,
+  access: StorageAccessResult,
   onStorageFailure?: (failure: StorageAccessFailure) => void,
 ): Storage | null {
   reportFailure(access.error, onStorageFailure);

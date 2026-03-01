@@ -63,4 +63,24 @@ describe("transport connection bootstrap", () => {
       cause: boom,
     });
   });
+
+  it("redacts token fragments from bootstrap failure details", () => {
+    const bootstrap = new TransportConnectionBootstrap({
+      createTransport: () => {
+        throw new Error("dial failed: wss://host/api/terminal?token=secret123");
+      },
+    });
+    const result = bootstrap.createSocket(VALID_TERMINAL_WS_URL);
+
+    expect(result).toMatchObject({
+      ok: false,
+      reasonCode: "bootstrap_failed",
+      debugDetail: expect.stringContaining("token=[redacted]"),
+    });
+    expect(result).toMatchObject({
+      ok: false,
+      reasonCode: "bootstrap_failed",
+      debugDetail: expect.not.stringContaining("secret123"),
+    });
+  });
 });

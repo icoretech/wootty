@@ -194,7 +194,8 @@ Frontend module ownership:
 - `apps/web/src/features/terminal/view/*`: UI-facing formatting and presenter mapping for menu/session copy.
 - `apps/web/src/features/terminal/commands/floating-controls/*`: floating-controls registry, metadata, and descriptor assembly.
 - `apps/web/src/features/terminal/notifications/*`: user-facing terminal notice mapping.
-- `apps/web/src/features/terminal/session/domain/*`: session payload parsing and candidate derivation.
+- `apps/web/src/features/terminal/session/domain/*`: session candidate derivation and domain-level selection helpers.
+- `apps/web/src/features/terminal/session/protocol/*`: session payload parsing and refresh failure protocol ownership.
 - `apps/web/src/features/terminal/session/persistence/*`: storage adapters and storage key ownership.
 - `apps/web/src/features/terminal/lib/*`: terminal-only utility helpers (formatting, outbox buffering).
 - `apps/web/src/features/terminal/protocol/*`: protocol parsing owned by the terminal feature.

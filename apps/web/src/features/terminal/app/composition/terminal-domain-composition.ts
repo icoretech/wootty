@@ -43,22 +43,30 @@ export function useTerminalDomainController({
   });
 
   const connection = useConnectionCoordinator({
-    createTransport: environment.createTransport,
-    loadRuntime: environment.loadRuntime,
-    wsUrl: session.wsUrl,
-    documentRef: platform.documentRef,
-    initialFontSize: session.uiState.initialFontSize,
-    sessionId: session.sessionState.sessionId,
-    attachMode: session.sessionState.attachMode,
-    hasActiveSession: session.sessionState.hasActiveSession,
-    transportEnabled: platform.backendResolution.ok,
-    bootstrapFailure: !platform.backendResolution.ok,
-    publishNotice: session.sessionActions.publishNoticeDetails,
-    setSessionMode: session.sessionActions.setSessionMode,
-    applyReadySession: session.sessionActions.applyReadySession,
-    clearMissingSession: session.sessionActions.clearMissingSession,
-    requestTransportRefresh: session.sessionActions.requestTransportRefresh,
-    scheduler: platform.scheduler,
+    transport: {
+      createTransport: environment.createTransport,
+      wsUrl: session.wsUrl,
+      transportEnabled: platform.backendResolution.ok,
+      bootstrapFailure: !platform.backendResolution.ok,
+      scheduler: platform.scheduler,
+    },
+    runtime: {
+      loadRuntime: environment.loadRuntime,
+      documentRef: platform.documentRef,
+      initialFontSize: session.uiState.initialFontSize,
+    },
+    session: {
+      sessionId: session.sessionState.sessionId,
+      attachMode: session.sessionState.attachMode,
+      hasActiveSession: session.sessionState.hasActiveSession,
+      setSessionMode: session.sessionActions.setSessionMode,
+      applyReadySession: session.sessionActions.applyReadySession,
+      clearMissingSession: session.sessionActions.clearMissingSession,
+      requestTransportRefresh: session.sessionActions.requestTransportRefresh,
+    },
+    notifications: {
+      publishNotice: session.sessionActions.publishNoticeDetails,
+    },
   });
 
   const toggleFullscreen = useCallback(async () => {
@@ -118,23 +126,29 @@ export function useTerminalDomainController({
   }, [session.sessionActions]);
 
   useControllerBindings({
-    documentRef: platform.documentRef,
-    windowRef: platform.windowRef,
-    fitAndSyncSize: connection.runtime.fitAndSyncSize,
-    setIsFullscreen: session.uiState.setIsFullscreen,
-    sessionMenuOpen: session.sessionState.sessionMenuOpen,
-    sessionMenuRef,
-    sessionButtonRef,
-    closeSessionMenu,
-    requestSessionRefresh: session.sessionActions.requestSessionRefresh,
-    scheduler: platform.scheduler,
-    attachMode: session.sessionState.attachMode,
-    sessionId: session.sessionState.sessionId,
-    status: connection.transport.status,
-    terminalReady: connection.runtime.terminalReady,
-    terminalElementRef: connection.runtime.terminalElementRef,
-    runShortcutAction: dispatchShortcutAction,
-    publishNotice: session.sessionActions.publishNoticeDetails,
+    platform: {
+      documentRef: platform.documentRef,
+      windowRef: platform.windowRef,
+      scheduler: platform.scheduler,
+    },
+    session: {
+      sessionMenuOpen: session.sessionState.sessionMenuOpen,
+      sessionMenuRef,
+      sessionButtonRef,
+      closeSessionMenu,
+      requestSessionRefresh: session.sessionActions.requestSessionRefresh,
+      attachMode: session.sessionState.attachMode,
+      sessionId: session.sessionState.sessionId,
+      publishNotice: session.sessionActions.publishNoticeDetails,
+    },
+    terminal: {
+      fitAndSyncSize: connection.runtime.fitAndSyncSize,
+      setIsFullscreen: session.uiState.setIsFullscreen,
+      status: connection.transport.status,
+      terminalReady: connection.runtime.terminalReady,
+      terminalElementRef: connection.runtime.terminalElementRef,
+      runShortcutAction: dispatchShortcutAction,
+    },
   });
 
   return {

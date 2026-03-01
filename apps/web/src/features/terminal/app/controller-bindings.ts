@@ -20,46 +20,58 @@ import {
 } from "./bindings/window-bindings";
 
 type UseControllerBindingsArgs = {
-  documentRef: Document | null;
-  windowRef: Window | null;
-  fitAndSyncSize: () => void;
-  setIsFullscreen: (value: boolean) => void;
-  sessionMenuOpen: boolean;
-  sessionMenuRef: RefObject<HTMLDivElement | null>;
-  sessionButtonRef: RefObject<HTMLDivElement | null>;
-  closeSessionMenu: () => void;
-  requestSessionRefresh: (
-    request: SessionRefreshRequest,
-  ) => Promise<SessionRefreshResult>;
-  scheduler: Scheduler;
-  attachMode: AttachMode;
-  sessionId: string | null;
-  status: ConnectionStatus;
-  terminalReady: boolean;
-  terminalElementRef: RefObject<HTMLDivElement | null>;
-  runShortcutAction: (action: ShortcutAction) => void;
-  publishNotice: SessionNoticePublisher;
+  platform: {
+    documentRef: Document | null;
+    windowRef: Window | null;
+    scheduler: Scheduler;
+  };
+  session: {
+    sessionMenuOpen: boolean;
+    sessionMenuRef: RefObject<HTMLDivElement | null>;
+    sessionButtonRef: RefObject<HTMLDivElement | null>;
+    closeSessionMenu: () => void;
+    requestSessionRefresh: (
+      request: SessionRefreshRequest,
+    ) => Promise<SessionRefreshResult>;
+    attachMode: AttachMode;
+    sessionId: string | null;
+    publishNotice: SessionNoticePublisher;
+  };
+  terminal: {
+    fitAndSyncSize: () => void;
+    setIsFullscreen: (value: boolean) => void;
+    status: ConnectionStatus;
+    terminalReady: boolean;
+    terminalElementRef: RefObject<HTMLDivElement | null>;
+    runShortcutAction: (action: ShortcutAction) => void;
+  };
 };
 
 export function useControllerBindings({
-  documentRef,
-  windowRef,
-  fitAndSyncSize,
-  setIsFullscreen,
-  sessionMenuOpen,
-  sessionMenuRef,
-  sessionButtonRef,
-  closeSessionMenu,
-  requestSessionRefresh,
-  scheduler,
-  attachMode,
-  sessionId,
-  status,
-  terminalReady,
-  terminalElementRef,
-  runShortcutAction,
-  publishNotice,
+  platform,
+  session,
+  terminal,
 }: UseControllerBindingsArgs): void {
+  const { documentRef, windowRef, scheduler } = platform;
+  const {
+    sessionMenuOpen,
+    sessionMenuRef,
+    sessionButtonRef,
+    closeSessionMenu,
+    requestSessionRefresh,
+    attachMode,
+    sessionId,
+    publishNotice,
+  } = session;
+  const {
+    fitAndSyncSize,
+    setIsFullscreen,
+    status,
+    terminalReady,
+    terminalElementRef,
+    runShortcutAction,
+  } = terminal;
+
   const handleRefreshCircuitOpen = useCallback(
     (consecutiveFailures: number) => {
       publishNotice({

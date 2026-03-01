@@ -1,5 +1,3 @@
-import type { BootstrapNotice } from "./bootstrap-notice";
-
 export type SessionsRefreshNotice =
   | { context: "sessions_refresh"; reason: "generic" }
   | { context: "sessions_refresh"; reason: "http"; status: number }
@@ -31,7 +29,4 @@ export type StorageNotice = {
   reason?: string;
 };
 
-export type SessionNotice =
-  | SessionsRefreshNotice
-  | StorageNotice
-  | BootstrapNotice;
+export type SessionNotice = SessionsRefreshNotice | StorageNotice;

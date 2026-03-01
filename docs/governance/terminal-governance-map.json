@@ -54,7 +54,11 @@
     },
     {
       "path": "apps/web/src/features/terminal/session/domain/*",
-      "description": "session payload parsing and candidate derivation."
+      "description": "session candidate derivation and domain-level selection helpers."
+    },
+    {
+      "path": "apps/web/src/features/terminal/session/protocol/*",
+      "description": "session payload parsing and refresh failure protocol ownership."
     },
     {
       "path": "apps/web/src/features/terminal/session/persistence/*",
@@ -80,7 +84,7 @@
   "traceability": [
     {
       "requirement": "FR-1 Connection lifecycle",
-      "unitIntegration": "`apps/server/internal/protocol/protocol_test.go`, `apps/server/internal/protocol/wire_contract_test.go`, `apps/web/test/unit/protocol/terminal-wire-contract.test.ts`, and `apps/server/internal/config/config_test.go` (attach + wire-contract parity + runtime config parsing)",
+      "unitIntegration": "`apps/server/internal/protocol/protocol_test.go`, `apps/server/internal/protocol/wire_contract_test.go`, `apps/web/test/unit/protocol/terminal-wire-contract.test.ts`, `apps/web/test/unit/contracts/transport-events.test.ts`, `apps/web/test/unit/bootstrap/terminal-environment.test.ts`, and `apps/server/internal/config/config_test.go` (attach + wire-contract parity + transport/event contract normalization + runtime config parsing)",
       "e2e": "`apps/web/e2e/terminal.spec.ts` -> \"renders terminal UI and reaches connected state\""
     },
     {

@@ -9,9 +9,9 @@ import {
 import type {
   AttachMode,
   SessionSnapshot,
-} from "../../contracts/session/session";
-import type { SessionsFetchResult } from "../../contracts/session/sessions-fetch";
-import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
+  SessionsFetchResult,
+  StorageAccessResult,
+} from "../../contracts/terminal-contract-surface";
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type {
@@ -34,8 +34,8 @@ type UseSessionOrchestratorArgs = {
   fetchSessions: (options?: {
     signal?: AbortSignal;
   }) => Promise<SessionsFetchResult>;
-  getLocalStorage: () => TerminalStorageAccessResult;
-  getSessionStorage: () => TerminalStorageAccessResult;
+  getLocalStorage: () => StorageAccessResult;
+  getSessionStorage: () => StorageAccessResult;
   scheduler: Scheduler;
   formatNotice: (details: NoticeDetails) => string;
 };

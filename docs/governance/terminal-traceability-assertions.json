@@ -14,6 +14,16 @@
           "traceId": "@trace FR-1 wire-contract-kinds"
         },
         {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/contracts/transport-events.test.ts",
+          "traceId": "@trace FR-1 transport-contract-normalization"
+        },
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/bootstrap/terminal-environment.test.ts",
+          "traceId": "@trace FR-1 terminal-environment-endpoint-resolution"
+        },
+        {
           "lane": "e2e",
           "path": "apps/web/e2e/terminal.spec.ts",
           "traceId": "@trace FR-1 e2e-connected-state"

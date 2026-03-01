@@ -200,7 +200,7 @@ describe("session refresh coordinator", () => {
     });
   });
 
-  it("classifies refresh pipeline exceptions as lifecycle failures", async () => {
+  it("does not relabel callback exceptions as refresh lifecycle failures", async () => {
     const fetchSessions = vi.fn(async () => validSessionsResponse());
     const onRefreshFailure = vi.fn();
     const onRefreshSuccess = vi.fn(() => {
@@ -217,26 +217,12 @@ describe("session refresh coordinator", () => {
       });
     });
 
-    const refreshResult = await result.current.requestSessionRefresh({
-      trigger: "manual",
-    });
-
-    expect(refreshResult.ok).toBe(false);
-    if (refreshResult.ok) {
-      throw new Error("expected failure result");
-    }
-    expect(refreshResult.failure).toMatchObject({
-      source: "lifecycle",
-      reason: "refresh_pipeline_error",
-      cause: expect.any(Error),
-    });
-    expect(onRefreshFailure).toHaveBeenCalledWith(
-      expect.objectContaining({
-        source: "lifecycle",
-        reason: "refresh_pipeline_error",
-        cause: expect.any(Error),
+    await expect(
+      result.current.requestSessionRefresh({
+        trigger: "manual",
       }),
-    );
+    ).rejects.toThrow("handler exploded");
+    expect(onRefreshFailure).not.toHaveBeenCalled();
   });
 
   it("suppresses abort failure notices from fetch lifecycle outcomes", async () => {

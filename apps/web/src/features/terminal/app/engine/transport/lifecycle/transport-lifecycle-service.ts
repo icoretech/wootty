@@ -24,9 +24,9 @@ export type TransportHandlers = {
 };
 
 export type TransportLifecycleRuntimeRef = {
-  wsUrl: () => string | null;
-  handlers: () => TransportHandlers;
-  hasSessionContext: () => boolean;
+  wsUrl: string | null;
+  handlers: TransportHandlers;
+  hasSessionContext: boolean;
   onSocketFailure: TransportFailureSink;
 };
 
@@ -43,9 +43,11 @@ export class TransportLifecycleService {
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly reliability: TransportSocketReliabilityCoordinator;
   private readonly socketSession: TransportSocketSession;
+  private runtime: TransportLifecycleRuntimeRef;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
+    this.runtime = deps.runtime;
     this.connectionBootstrap = new TransportConnectionBootstrap({
       createTransport: this.deps.createTransport,
     });
@@ -54,7 +56,7 @@ export class TransportLifecycleService {
       scheduler: this.deps.scheduler,
       dispatchEvent: this.deps.dispatchEvent,
       onSocketFailure: (failure) => {
-        this.deps.runtime.onSocketFailure(failure);
+        this.runtime.onSocketFailure(failure);
       },
       connect: () => {
         this.connect();
@@ -69,6 +71,10 @@ export class TransportLifecycleService {
         return this.socketSession.closeActive(code, reason);
       },
     });
+  }
+
+  updateRuntime(nextRuntime: TransportLifecycleRuntimeRef): void {
+    this.runtime = nextRuntime;
   }
 
   sendPayload = (payload: TerminalClientMessage): boolean => {
@@ -97,11 +103,11 @@ export class TransportLifecycleService {
 
     this.deps.dispatchEvent({
       type: "set-connecting",
-      reconnecting: this.deps.runtime.hasSessionContext(),
+      reconnecting: this.runtime.hasSessionContext,
     });
 
     const bootstrapResult = this.connectionBootstrap.createSocket(
-      this.deps.runtime.wsUrl(),
+      this.runtime.wsUrl,
     );
     if (!bootstrapResult.ok) {
       this.reliability.reportBootstrapFailure(
@@ -118,12 +124,12 @@ export class TransportLifecycleService {
         this.withCurrentSocket(ws, socketGeneration, () => {
           this.reliability.onConnected();
           this.deps.dispatchEvent({ type: "connected" });
-          this.deps.runtime.handlers().onOpen();
+          this.runtime.handlers.onOpen();
         });
       },
       onMessage: (event) => {
         this.withCurrentSocket(ws, socketGeneration, () => {
-          this.deps.runtime.handlers().onMessage(event);
+          this.runtime.handlers.onMessage(event);
         });
       },
       onClose: (event) => {

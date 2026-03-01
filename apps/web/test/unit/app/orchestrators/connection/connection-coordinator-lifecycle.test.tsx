@@ -76,24 +76,32 @@ describe("connection coordinator lifecycle", () => {
     const { rerender } = renderHook(
       ({ wsUrl }: { wsUrl: string }) => {
         return useConnectionCoordinator({
-          createTransport,
-          loadRuntime: vi.fn(async () => {
-            throw new Error("loadRuntime should not run in lifecycle mock");
-          }),
-          wsUrl,
-          documentRef: null,
-          initialFontSize: 12,
-          sessionId: null,
-          attachMode: "control",
-          hasActiveSession: false,
-          transportEnabled: true,
-          bootstrapFailure: false,
-          publishNotice: vi.fn(),
-          setSessionMode: vi.fn(),
-          applyReadySession: vi.fn(),
-          clearMissingSession: vi.fn(),
-          requestTransportRefresh: async () => ({ ok: true }),
-          scheduler: browserScheduler,
+          transport: {
+            createTransport,
+            wsUrl,
+            transportEnabled: true,
+            bootstrapFailure: false,
+            scheduler: browserScheduler,
+          },
+          runtime: {
+            loadRuntime: vi.fn(async () => {
+              throw new Error("loadRuntime should not run in lifecycle mock");
+            }),
+            documentRef: null,
+            initialFontSize: 12,
+          },
+          session: {
+            sessionId: null,
+            attachMode: "control",
+            hasActiveSession: false,
+            setSessionMode: vi.fn(),
+            applyReadySession: vi.fn(),
+            clearMissingSession: vi.fn(),
+            requestTransportRefresh: async () => ({ ok: true }),
+          },
+          notifications: {
+            publishNotice: vi.fn(),
+          },
         });
       },
       {
@@ -136,24 +144,32 @@ describe("connection coordinator lifecycle", () => {
 
     const { unmount } = renderHook(() => {
       return useConnectionCoordinator({
-        createTransport,
-        loadRuntime: vi.fn(async () => {
-          throw new Error("loadRuntime should not run in lifecycle mock");
-        }),
-        wsUrl: "ws://localhost/api/terminal",
-        documentRef: null,
-        initialFontSize: 12,
-        sessionId: null,
-        attachMode: "control",
-        hasActiveSession: false,
-        transportEnabled: true,
-        bootstrapFailure: false,
-        publishNotice: vi.fn(),
-        setSessionMode: vi.fn(),
-        applyReadySession: vi.fn(),
-        clearMissingSession: vi.fn(),
-        requestTransportRefresh: async () => ({ ok: true }),
-        scheduler: browserScheduler,
+        transport: {
+          createTransport,
+          wsUrl: "ws://localhost/api/terminal",
+          transportEnabled: true,
+          bootstrapFailure: false,
+          scheduler: browserScheduler,
+        },
+        runtime: {
+          loadRuntime: vi.fn(async () => {
+            throw new Error("loadRuntime should not run in lifecycle mock");
+          }),
+          documentRef: null,
+          initialFontSize: 12,
+        },
+        session: {
+          sessionId: null,
+          attachMode: "control",
+          hasActiveSession: false,
+          setSessionMode: vi.fn(),
+          applyReadySession: vi.fn(),
+          clearMissingSession: vi.fn(),
+          requestTransportRefresh: async () => ({ ok: true }),
+        },
+        notifications: {
+          publishNotice: vi.fn(),
+        },
       });
     });
 
@@ -179,24 +195,32 @@ describe("connection coordinator lifecycle", () => {
 
     const { unmount } = renderHook(() => {
       return useConnectionCoordinator({
-        createTransport,
-        loadRuntime: vi.fn(async () => {
-          throw new Error("loadRuntime should not run in lifecycle mock");
-        }),
-        wsUrl: "ws://localhost/api/terminal",
-        documentRef: null,
-        initialFontSize: 12,
-        sessionId: null,
-        attachMode: "control",
-        hasActiveSession: false,
-        transportEnabled: true,
-        bootstrapFailure: false,
-        publishNotice: vi.fn(),
-        setSessionMode: vi.fn(),
-        applyReadySession: vi.fn(),
-        clearMissingSession: vi.fn(),
-        requestTransportRefresh: async () => ({ ok: true }),
-        scheduler,
+        transport: {
+          createTransport,
+          wsUrl: "ws://localhost/api/terminal",
+          transportEnabled: true,
+          bootstrapFailure: false,
+          scheduler,
+        },
+        runtime: {
+          loadRuntime: vi.fn(async () => {
+            throw new Error("loadRuntime should not run in lifecycle mock");
+          }),
+          documentRef: null,
+          initialFontSize: 12,
+        },
+        session: {
+          sessionId: null,
+          attachMode: "control",
+          hasActiveSession: false,
+          setSessionMode: vi.fn(),
+          applyReadySession: vi.fn(),
+          clearMissingSession: vi.fn(),
+          requestTransportRefresh: async () => ({ ok: true }),
+        },
+        notifications: {
+          publishNotice: vi.fn(),
+        },
       });
     });
 

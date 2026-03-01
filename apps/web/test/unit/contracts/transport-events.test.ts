@@ -7,6 +7,7 @@ import {
 } from "../../../src/features/terminal/adapters/transport-event-normalizer";
 
 describe("transport event normalization", () => {
+  // @trace FR-1 transport-contract-normalization
   it("normalizes open and message events", () => {
     expect(normalizeTransportOpenEvent()).toEqual({});
     expect(
