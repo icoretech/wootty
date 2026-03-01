@@ -1,7 +1,7 @@
 import type { ConnectionStatus } from "../../../contracts/connection";
 import { assertNever } from "../../../lib/assert-never";
 
-export type SocketCloseIntent = "normal" | "fresh" | "manual";
+export type SocketCloseIntent = "normal" | "fresh" | "manual" | "dispose";
 
 export type TransportState = {
   status: ConnectionStatus;

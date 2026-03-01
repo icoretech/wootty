@@ -12,58 +12,9 @@ type TransportReconnectControllerDeps = {
 export class TransportReconnectController {
   private readonly deps: TransportReconnectControllerDeps;
   private reconnectTimer: TimerHandle = null;
-  private closedByUser = false;
-  private pendingFreshConnect = false;
-  private socketErrorSinceConnect = false;
 
   constructor(deps: TransportReconnectControllerDeps) {
     this.deps = deps;
-  }
-
-  markSocketOpened(): void {
-    this.socketErrorSinceConnect = false;
-  }
-
-  markSocketError(): void {
-    this.socketErrorSinceConnect = true;
-  }
-
-  consumeShouldReportCloseFailure(): boolean {
-    const shouldReport = !this.socketErrorSinceConnect;
-    this.socketErrorSinceConnect = false;
-    return shouldReport;
-  }
-
-  beginReconnect(): void {
-    this.closedByUser = false;
-    this.pendingFreshConnect = false;
-  }
-
-  beginFreshConnect(): void {
-    this.closedByUser = false;
-    this.pendingFreshConnect = true;
-  }
-
-  consumePendingFreshConnect(): boolean {
-    if (!this.pendingFreshConnect) {
-      return false;
-    }
-    this.pendingFreshConnect = false;
-    return true;
-  }
-
-  beginDispose(): void {
-    this.closedByUser = true;
-    this.pendingFreshConnect = false;
-    this.socketErrorSinceConnect = false;
-  }
-
-  isClosedByUser(): boolean {
-    return this.closedByUser;
-  }
-
-  clearUserCloseMarker(): void {
-    this.closedByUser = false;
   }
 
   clearReconnectTimer(): void {

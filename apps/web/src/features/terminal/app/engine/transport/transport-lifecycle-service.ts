@@ -65,6 +65,7 @@ export class TransportLifecycleService {
   private readonly socketEventBridge: TransportSocketEventBridge;
   private ws: TerminalTransport | null = null;
   private detachSocketListeners: (() => void) | null = null;
+  private socketErrorSinceConnect = false;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
@@ -160,7 +161,7 @@ export class TransportLifecycleService {
         if (this.ws !== ws) {
           return;
         }
-        this.reconnectController.markSocketOpened();
+        this.socketErrorSinceConnect = false;
         this.failureReporter.reset();
         this.deps.dispatchEvent({ type: "connected" });
         this.deps.getHandlers().onOpen();
@@ -182,7 +183,6 @@ export class TransportLifecycleService {
   };
 
   reconnectNow = (): void => {
-    this.reconnectController.beginReconnect();
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.setCloseIntent("manual");
     this.clearLifecycleTimers();
@@ -194,7 +194,6 @@ export class TransportLifecycleService {
   };
 
   reconnectWithEndpointChange = (): void => {
-    this.reconnectController.beginReconnect();
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.clearLifecycleTimers();
 
@@ -219,7 +218,6 @@ export class TransportLifecycleService {
 
   scheduleFreshConnection = (): void => {
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.reconnectController.beginFreshConnect();
     this.setCloseIntent("fresh");
     this.clearLifecycleTimers();
 
@@ -231,18 +229,17 @@ export class TransportLifecycleService {
       return;
     }
 
-    if (this.reconnectController.consumePendingFreshConnect()) {
-      this.connect();
-    }
+    this.connect();
   };
 
   dispose = (): void => {
-    this.reconnectController.beginDispose();
-    this.setCloseIntent("normal");
+    this.setCloseIntent("dispose");
     this.clearLifecycleTimers();
     if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
       this.ws.close(1000, "component unmount");
+      return;
     }
+    this.deps.dispatchEvent({ type: "socket-closed" });
   };
 
   private onSocketError(
@@ -252,7 +249,7 @@ export class TransportLifecycleService {
     if (this.ws !== socket) {
       return;
     }
-    this.reconnectController.markSocketError();
+    this.socketErrorSinceConnect = true;
     this.failureReporter.report(
       "error",
       event.code,
@@ -276,23 +273,19 @@ export class TransportLifecycleService {
     }
 
     this.clearLifecycleTimers();
-    if (this.reconnectController.isClosedByUser()) {
-      this.reconnectController.clearUserCloseMarker();
-      this.setCloseIntent("normal");
+    const closeIntent = this.deps.getState().closeIntent;
+    const shouldReportCloseFailure = !this.socketErrorSinceConnect;
+    this.socketErrorSinceConnect = false;
+    this.setCloseIntent("normal");
+
+    if (closeIntent === "dispose") {
       this.deps.dispatchEvent({ type: "socket-closed" });
       return;
     }
 
-    const shouldReportCloseFailure =
-      this.reconnectController.consumeShouldReportCloseFailure();
-    const closeIntent = this.deps.getState().closeIntent;
-    this.setCloseIntent("normal");
-
     if (closeIntent === "fresh") {
       this.deps.dispatchEvent({ type: "set-connecting", reconnecting: false });
-      if (this.reconnectController.consumePendingFreshConnect()) {
-        this.connect();
-      }
+      this.connect();
       return;
     }
 
