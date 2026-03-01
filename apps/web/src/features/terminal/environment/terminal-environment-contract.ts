@@ -1,4 +1,4 @@
-import type { TerminalBackendResolution } from "../bootstrap/backend-resolution-contract";
+import type { TerminalBackendResolution } from "../contracts/backend-resolution";
 import type { TerminalTransport } from "../contracts/transport";
 import type { Scheduler } from "../platform/scheduler";
 import type { TerminalRuntime } from "../runtime/xterm-runtime-contract";
