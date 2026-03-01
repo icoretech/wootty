@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
-import type { NoticeDetails } from "../../../src/features/terminal/notifications/notice-contract";
+import type { BackendResolutionIssueCode } from "../../../src/features/terminal/contracts/backend-resolution";
+import type {
+  NoticeBootstrapIssueCode,
+  NoticeDetails,
+  NoticeProtocolFailureDetail,
+  NoticeServerErrorReason,
+} from "../../../src/features/terminal/contracts/notice";
 import { NOTICE_CONTEXTS } from "../../../src/features/terminal/notifications/user-notice";
+import type { TerminalServerErrorCode } from "../../../src/features/terminal/protocol/server-error-codes";
+import type { TerminalProtocolFailureDetail } from "../../../src/features/terminal/protocol/terminal-protocol";
+
+type IsEqual<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
+    ? true
+    : false;
+type AssertTrue<T extends true> = T;
+
+type _ProtocolFailureDetailParity = AssertTrue<
+  IsEqual<NoticeProtocolFailureDetail, TerminalProtocolFailureDetail>
+>;
+type _ServerErrorReasonParity = AssertTrue<
+  IsEqual<NoticeServerErrorReason, TerminalServerErrorCode>
+>;
+type _BootstrapIssueCodeParity = AssertTrue<
+  IsEqual<NoticeBootstrapIssueCode, BackendResolutionIssueCode>
+>;
 
 describe("notice contract", () => {
   it("exposes a stable list of supported notice contexts", () => {

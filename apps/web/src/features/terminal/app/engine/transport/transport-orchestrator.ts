@@ -3,7 +3,7 @@ import type {
   TerminalTransport,
   TerminalTransportFailureCode,
 } from "../../../contracts/transport";
-import type { TransportNoticeReasonCode } from "../../../notifications/notice-contract";
+import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
 import type { Scheduler } from "../../../platform/scheduler";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 import {
@@ -27,10 +27,7 @@ type UseTransportOrchestratorArgs = {
   onSocketFailure: (
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
-    reasonCode?: Exclude<
-      TransportNoticeReasonCode,
-      "attach_handshake_send_failed"
-    >,
+    reasonCode?: TransportFailureReasonCode,
     debugDetail?: string,
     cause?: unknown,
   ) => void;

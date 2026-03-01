@@ -120,7 +120,12 @@ describe("session orchestrator", () => {
   it("persists last session and history on ready", async () => {
     const localStorageRef = new StorageDouble();
     const sessionStorageRef = new StorageDouble();
-    const fetchSessions = vi.fn(async () => ({ ok: true, payload: [] }));
+    const fetchSessions = vi.fn(async () => ({
+      ok: true,
+      payload: {
+        sessions: [],
+      },
+    }));
 
     render(
       <SessionProbe
@@ -179,7 +184,10 @@ describe("session orchestrator", () => {
   it("publishes a notice when session refresh payload envelope is malformed", async () => {
     const localStorageRef = new StorageDouble();
     const sessionStorageRef = new StorageDouble();
-    const fetchSessions = vi.fn(async () => ({ ok: true, payload: [] }));
+    const fetchSessions = vi.fn(async () => ({
+      ok: true,
+      payload: {},
+    }));
 
     render(
       <SessionProbe
@@ -207,8 +215,10 @@ describe("session orchestrator", () => {
         failure: {
           source: "fetch",
           reason: "bootstrap_error",
-          issue: "invalid backend endpoint",
-          issueCode: "socket_url_invalid_format",
+          issue: {
+            code: "socket_url_invalid_format",
+            details: "invalid backend endpoint",
+          },
         },
       } as const;
     });

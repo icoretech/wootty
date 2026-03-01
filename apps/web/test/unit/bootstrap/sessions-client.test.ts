@@ -124,8 +124,10 @@ describe("sessions client", () => {
       failure: {
         source: "fetch",
         reason: "bootstrap_error",
-        issue: "unable to parse websocket URL",
-        issueCode: "socket_url_invalid_format",
+        issue: {
+          code: "socket_url_invalid_format",
+          details: "unable to parse websocket URL",
+        },
       },
     });
     expect(fetchMock).not.toHaveBeenCalled();

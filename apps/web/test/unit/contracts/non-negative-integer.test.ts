@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseNonNegativeInteger } from "../../../src/features/terminal/contracts/non-negative-integer";
+import { parseNonNegativeInteger } from "../../../src/features/terminal/validation/non-negative-integer";
 
 describe("parseNonNegativeInteger", () => {
   it("returns numeric values for finite non-negative integers", () => {

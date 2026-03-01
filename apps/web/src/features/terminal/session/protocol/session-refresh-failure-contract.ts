@@ -1,4 +1,4 @@
-import type { BackendResolutionIssueCode } from "../../contracts/backend-resolution";
+import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
 
 export const SESSION_REFRESH_PARSE_FAILURE_REASONS = [
   "invalid_payload",
@@ -30,8 +30,7 @@ export type SessionRefreshFailure =
   | {
       source: "fetch";
       reason: "bootstrap_error";
-      issue: string;
-      issueCode?: BackendResolutionIssueCode;
+      issue: TerminalBackendResolutionIssue;
     }
   | {
       source: "fetch";

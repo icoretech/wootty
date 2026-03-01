@@ -14,15 +14,23 @@ function useFetchSessions(
   const bootstrapIssue = backendResolution.ok ? null : backendResolution.issue;
   return useCallback(
     (options?: { signal?: AbortSignal }) => {
-      if (!sessionsHttpUrl || bootstrapIssue) {
+      if (bootstrapIssue) {
         return Promise.resolve({
           ok: false,
           failure: {
             source: "fetch",
             reason: "bootstrap_error",
-            issue:
-              bootstrapIssue?.details ?? "backend endpoint resolution failed",
-            issueCode: bootstrapIssue?.code,
+            issue: bootstrapIssue,
+          },
+        });
+      }
+      if (!sessionsHttpUrl) {
+        return Promise.resolve({
+          ok: false,
+          failure: {
+            source: "fetch",
+            reason: "network_error",
+            cause: new Error("sessions endpoint unavailable"),
           },
         });
       }

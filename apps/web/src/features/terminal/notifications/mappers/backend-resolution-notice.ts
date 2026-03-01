@@ -1,5 +1,5 @@
 import type { BackendResolutionIssueCode } from "../../contracts/backend-resolution";
-import type { BootstrapNotice } from "../notice-contract";
+import type { BootstrapNotice } from "../../contracts/notice";
 
 export function toBackendResolutionNotice(issue: {
   details: string;

@@ -41,9 +41,20 @@ function fetchSessionsFromEndpoint(
       }
 
       try {
+        const parsed = JSON.parse(body) as unknown;
+        if (!parsed || typeof parsed !== "object") {
+          return {
+            ok: false as const,
+            failure: {
+              source: "fetch" as const,
+              reason: "json_parse_error" as const,
+              cause: new Error("sessions payload must be a JSON object"),
+            },
+          };
+        }
         return {
           ok: true as const,
-          payload: JSON.parse(body) as unknown,
+          payload: parsed as Record<string, unknown>,
         };
       } catch (error: unknown) {
         return {
@@ -102,8 +113,7 @@ export function createBrowserSessionsClient(
         failure: {
           source: "fetch",
           reason: "bootstrap_error",
-          issue: tokenResolution.issue.details,
-          issueCode: tokenResolution.issue.code,
+          issue: tokenResolution.issue,
         },
       });
     }

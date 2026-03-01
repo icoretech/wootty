@@ -1,16 +1,14 @@
 import type { RefObject } from "react";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
+import type { NoticePublisher } from "../../contracts/notice";
 import type { AttachMode } from "../../contracts/session";
 import type {
   TerminalTransport,
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
 } from "../../contracts/transport";
-import type {
-  NoticePublisher,
-  TransportNoticeReasonCode,
-} from "../../notifications/notice-contract";
+import type { TransportFailureReasonCode } from "../../contracts/transport-failure-reason";
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
@@ -133,10 +131,7 @@ export function useConnectionCoordinator({
     (
       source: "error" | "close",
       code?: TerminalTransportFailureCode,
-      reasonCode?: Exclude<
-        TransportNoticeReasonCode,
-        "attach_handshake_send_failed"
-      >,
+      reasonCode?: TransportFailureReasonCode,
       debugDetail?: string,
       cause?: unknown,
     ) => {

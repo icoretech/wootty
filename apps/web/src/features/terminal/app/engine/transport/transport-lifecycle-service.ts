@@ -1,3 +1,7 @@
+import {
+  type FailureNoticeState,
+  notifyWithFailureThrottle,
+} from "../../../app/reliability/failure-notice-throttle";
 import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
 import type {
   TerminalTransport,
@@ -7,18 +11,14 @@ import type {
   TerminalTransportMessageEvent,
 } from "../../../contracts/transport";
 import { TRANSPORT_READY_STATE } from "../../../contracts/transport";
-import { validateWebsocketEndpoint } from "../../../contracts/websocket-endpoint-validation";
-import {
-  type FailureNoticeState,
-  notifyWithFailureThrottle,
-} from "../../../notifications/failure-notice-throttle";
-import type { TransportNoticeReasonCode } from "../../../notifications/notice-contract";
+import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
 import type {
   Scheduler,
   SchedulerTimerHandle,
 } from "../../../platform/scheduler";
 import { createPingMessage } from "../../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
+import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
 import {
   isRecoverableTransportClose,
   reconnectDelayMs,
@@ -50,10 +50,7 @@ type TransportLifecycleServiceDeps = {
   onSocketFailure: (
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
-    reasonCode?: Exclude<
-      TransportNoticeReasonCode,
-      "attach_handshake_send_failed"
-    >,
+    reasonCode?: TransportFailureReasonCode,
     debugDetail?: string,
     cause?: unknown,
   ) => void;
@@ -75,10 +72,7 @@ type WsEndpointResolution =
 
 function socketFailureContext(
   source: SocketFailureSource,
-  reasonCode?: Exclude<
-    TransportNoticeReasonCode,
-    "attach_handshake_send_failed"
-  >,
+  reasonCode?: TransportFailureReasonCode,
   code?: TerminalTransportFailureCode,
   debugDetail?: string,
 ): string {
@@ -427,10 +421,7 @@ export class TransportLifecycleService {
   private reportSocketFailure(
     source: SocketFailureSource,
     code?: TerminalTransportFailureCode,
-    reasonCode?: Exclude<
-      TransportNoticeReasonCode,
-      "attach_handshake_send_failed"
-    >,
+    reasonCode?: TransportFailureReasonCode,
     debugDetail?: string,
     cause?: unknown,
   ): void {

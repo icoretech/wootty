@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { registerFailureNotice } from "../../../src/features/terminal/notifications/failure-notice-throttle";
+import { registerFailureNotice } from "../../../src/features/terminal/app/reliability/failure-notice-throttle";
 
 describe("failure notice throttle", () => {
   it("notifies on first failure and throttles repeats within cooldown", () => {

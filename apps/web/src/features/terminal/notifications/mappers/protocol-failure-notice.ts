@@ -1,5 +1,5 @@
+import type { ProtocolNotice } from "../../contracts/notice";
 import type { TerminalProtocolFailure } from "../../protocol/terminal-protocol";
-import type { ProtocolNotice } from "../notice-contract";
 
 export function toProtocolFailureNotice(
   failure: TerminalProtocolFailure,

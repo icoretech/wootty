@@ -1,4 +1,4 @@
-import { parseNonNegativeInteger } from "../contracts/non-negative-integer";
+import { parseNonNegativeInteger } from "../validation/non-negative-integer";
 import {
   TERMINAL_SERVER_ERROR_CODES,
   type TerminalServerErrorCode,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateWebsocketEndpoint } from "../../../src/features/terminal/contracts/websocket-endpoint-validation";
+import { validateWebsocketEndpoint } from "../../../src/features/terminal/validation/websocket-endpoint";
 
 function buildEndpoint(
   protocol: "ws:" | "wss:" | "https:",

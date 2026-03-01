@@ -32,7 +32,9 @@ const fetchSessionsStub = vi.fn(
   async (_sessionsHttpUrl: string): Promise<SessionsFetchResult> => {
     return {
       ok: true,
-      payload: [],
+      payload: {
+        sessions: [],
+      },
     };
   },
 );

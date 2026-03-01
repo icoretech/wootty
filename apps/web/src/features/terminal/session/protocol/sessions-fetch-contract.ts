@@ -10,7 +10,7 @@ export type SessionsFetchFailure =
 export type SessionsFetchResult =
   | {
       ok: true;
-      payload: unknown;
+      payload: Record<string, unknown>;
     }
   | {
       ok: false;

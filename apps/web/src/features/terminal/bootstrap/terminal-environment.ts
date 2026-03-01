@@ -65,32 +65,15 @@ export function createTerminalAppEnvironment(
 ): TerminalAppEnvironment {
   const envSocketUrl = resolveConfiguredSocketUrl(options);
   const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
-  const platform = createPlatformEnvironment(authTokenProvider, envSocketUrl);
+  const platform = envSocketUrl
+    ? createPlatformEnvironment(authTokenProvider, envSocketUrl)
+    : createPlatformEnvironment(authTokenProvider);
   const loadRuntime = createRuntimeLoader();
-  const reportedStorageFailures = new Set<string>();
-  const readStorageWithSingleFailureReport = (
-    kind: "localStorage" | "sessionStorage",
-  ) => {
-    const result = readStorageResult(kind);
-    if (!result.error) {
-      return result;
-    }
-    const marker = `${result.error.operation}:${result.error.key}`;
-    if (reportedStorageFailures.has(marker)) {
-      return {
-        storage: result.storage,
-        error: null,
-      };
-    }
-    reportedStorageFailures.add(marker);
-    return result;
-  };
   const domain: TerminalDomainEnvironment = {
     createTransport: createBrowserTransport,
     loadRuntime,
-    getLocalStorage: () => readStorageWithSingleFailureReport("localStorage"),
-    getSessionStorage: () =>
-      readStorageWithSingleFailureReport("sessionStorage"),
+    getLocalStorage: () => readStorageResult("localStorage"),
+    getSessionStorage: () => readStorageResult("sessionStorage"),
   };
   const environment: TerminalAppEnvironment = {
     platform,
