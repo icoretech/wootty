@@ -22,6 +22,17 @@ type TerminalEnvironmentOptions = {
   socketUrl?: string;
 };
 
+function resolveConfiguredSocketUrl(
+  options: TerminalEnvironmentOptions,
+): string | undefined {
+  const candidate = options.socketUrl ?? import.meta.env.VITE_WOOTTY_WS_URL;
+  if (typeof candidate !== "string") {
+    return undefined;
+  }
+  const normalized = candidate.trim();
+  return normalized.length > 0 ? normalized : undefined;
+}
+
 function createPlatformEnvironment(
   authTokenProvider: AuthTokenProvider,
   envSocketUrl?: string,
@@ -49,27 +60,22 @@ function createPlatformEnvironment(
   };
 }
 
-function createDomainEnvironment(): TerminalDomainEnvironment {
+export function createTerminalAppEnvironment(
+  options: TerminalEnvironmentOptions = {},
+): TerminalAppEnvironment {
+  const envSocketUrl = resolveConfiguredSocketUrl(options);
+  const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
+  const platform = createPlatformEnvironment(authTokenProvider, envSocketUrl);
   const loadRuntime = createRuntimeLoader();
-  return {
+  const domain: TerminalDomainEnvironment = {
     createTransport: createBrowserTransport,
     loadRuntime,
     getLocalStorage: () => readStorage("localStorage"),
     getSessionStorage: () => readStorage("sessionStorage"),
   };
-}
-
-export function createTerminalAppEnvironment(
-  options: TerminalEnvironmentOptions = {},
-): TerminalAppEnvironment {
-  const envSocketUrl =
-    options.socketUrl ??
-    (import.meta.env.VITE_WOOTTY_WS_URL as string | undefined);
-  const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
-  const platform = createPlatformEnvironment(authTokenProvider, envSocketUrl);
-  const domain = createDomainEnvironment();
-  return {
+  const environment: TerminalAppEnvironment = {
     platform,
     domain,
   };
+  return environment;
 }
