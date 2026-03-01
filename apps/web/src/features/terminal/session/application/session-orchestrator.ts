@@ -46,6 +46,11 @@ const REQUEST_ABORTED_FAILURE: SessionRefreshFailure = {
   reason: "request_aborted",
 };
 
+type PendingRefreshRequest = {
+  trigger: SessionRefreshRequest["trigger"];
+  queuedForRequestId: number;
+};
+
 function coalesceRefreshTrigger(
   current: SessionRefreshRequest["trigger"] | null,
   next: SessionRefreshRequest["trigger"],
@@ -102,9 +107,7 @@ export function useSessionOrchestrator({
   const storageFailureNoticeRef = useRef<FailureNoticeState>(null);
   const latestRefreshRequestIdRef = useRef(0);
   const activeRefreshControllerRef = useRef<AbortController | null>(null);
-  const pendingRefreshTriggerRef = useRef<
-    SessionRefreshRequest["trigger"] | null
-  >(null);
+  const pendingRefreshRef = useRef<PendingRefreshRequest | null>(null);
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
   const [attachMode, setAttachMode] = useState<AttachMode>("control");
   const [sessionMenuOpen, setSessionMenuOpenState] = useState<boolean>(false);
@@ -158,14 +161,11 @@ export function useSessionOrchestrator({
   const publishRefreshFailure = useCallback(
     (failure: SessionRefreshFailure) => {
       const noticeData = toSessionRefreshFailureNotice(failure);
-      if (!noticeData.notice) {
+      if (noticeData.kind === "ignore") {
         return;
       }
+
       const message = formatNotice(noticeData.notice);
-      if (!noticeData.failureKey) {
-        publishNotice(noticeData.notice);
-        return;
-      }
       publishThrottledSessionNotice({
         stateRef: refreshFailureNoticeRef,
         failureKey: noticeData.failureKey,
@@ -173,17 +173,25 @@ export function useSessionOrchestrator({
         cooldownMs: REFRESH_FAILURE_NOTICE_COOLDOWN_MS,
       });
     },
-    [formatNotice, publishNotice, publishThrottledSessionNotice],
+    [formatNotice, publishThrottledSessionNotice],
   );
 
   const refreshLiveSessions = useCallback(
     async (request: SessionRefreshRequest): Promise<SessionRefreshResult> => {
       const previousController = activeRefreshControllerRef.current;
       if (previousController && request.trigger !== "manual") {
-        pendingRefreshTriggerRef.current = coalesceRefreshTrigger(
-          pendingRefreshTriggerRef.current,
-          request.trigger,
-        );
+        const activeRequestId = latestRefreshRequestIdRef.current;
+        const pendingForActiveRequest =
+          pendingRefreshRef.current?.queuedForRequestId === activeRequestId
+            ? pendingRefreshRef.current.trigger
+            : null;
+        pendingRefreshRef.current = {
+          trigger: coalesceRefreshTrigger(
+            pendingForActiveRequest,
+            request.trigger,
+          ),
+          queuedForRequestId: activeRequestId,
+        };
         return {
           ok: false,
           failure: REQUEST_SUPERSEDED_FAILURE,
@@ -192,6 +200,12 @@ export function useSessionOrchestrator({
 
       latestRefreshRequestIdRef.current += 1;
       const requestId = latestRefreshRequestIdRef.current;
+      if (
+        pendingRefreshRef.current &&
+        pendingRefreshRef.current.queuedForRequestId !== requestId
+      ) {
+        pendingRefreshRef.current = null;
+      }
       previousController?.abort();
       const refreshController = new AbortController();
       activeRefreshControllerRef.current = refreshController;
@@ -304,11 +318,11 @@ export function useSessionOrchestrator({
           activeRefreshControllerRef.current = null;
         }
         if (latestRefreshRequestIdRef.current === requestId) {
-          const pendingTrigger = pendingRefreshTriggerRef.current;
-          if (pendingTrigger) {
-            pendingRefreshTriggerRef.current = null;
+          const pending = pendingRefreshRef.current;
+          if (pending && pending.queuedForRequestId === requestId) {
+            pendingRefreshRef.current = null;
             void refreshLiveSessions({
-              trigger: pendingTrigger,
+              trigger: pending.trigger,
             });
           }
         }

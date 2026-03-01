@@ -391,6 +391,57 @@ describe("session orchestrator", () => {
     });
   });
 
+  it("does not replay a stale queued trigger after a manual refresh takes ownership", async () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    let callCount = 0;
+    const fetchSessions = vi.fn(async (): Promise<SessionsFetchResult> => {
+      callCount += 1;
+      if (callCount === 1) {
+        return new Promise<SessionsFetchResult>(() => {
+          // Keep poll in-flight; manual refresh will supersede this request.
+        });
+      }
+      return {
+        ok: true,
+        payload: {
+          sessions: [],
+        },
+      };
+    });
+
+    render(
+      <SessionProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        fetchSessions={fetchSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("poll-refresh"));
+    await waitFor(() => {
+      expect(fetchSessions).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByTestId("transport-refresh"));
+    await waitFor(() => {
+      expect(screen.getByTestId("refresh-result").textContent).toBe(
+        "request_superseded",
+      );
+    });
+
+    fireEvent.click(screen.getByTestId("refresh"));
+    await waitFor(() => {
+      expect(screen.getByTestId("refresh-result").textContent).toBe("ok");
+    });
+    expect(fetchSessions).toHaveBeenCalledTimes(2);
+
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 20);
+    });
+    expect(fetchSessions).toHaveBeenCalledTimes(2);
+  });
+
   it("applies timeout failures uniformly for transport-triggered refresh requests", async () => {
     vi.useFakeTimers();
     try {
