@@ -9,12 +9,12 @@ import {
   type AuthTokenProvider,
   createBrowserAuthTokenProvider,
 } from "./auth-token-provider";
-import { resolveTerminalBackendEndpoints } from "./backend-endpoint-resolver";
 import {
   readDocument,
   readStorageResult,
   readWindow,
 } from "./browser-environment-access";
+import { resolveBrowserBackendEndpoints } from "./resolution/bootstrap-context";
 import { createRuntimeLoader } from "./runtime-loader";
 import { createBrowserSessionsClient } from "./sessions-client";
 
@@ -43,18 +43,7 @@ function createPlatformEnvironment(
     windowRef,
     scheduler: browserScheduler,
     resolveBackendEndpoints: (targetWindowRef) => {
-      const tokenResolution = authTokenProvider();
-      if (tokenResolution.issue) {
-        return {
-          ok: false as const,
-          issue: tokenResolution.issue,
-        };
-      }
-      return resolveTerminalBackendEndpoints(
-        targetWindowRef,
-        envSocketUrl,
-        tokenResolution.token,
-      );
+      return resolveBrowserBackendEndpoints(targetWindowRef, envSocketUrl);
     },
     fetchSessionsPayload: createBrowserSessionsClient(authTokenProvider),
   };
