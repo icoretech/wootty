@@ -21,6 +21,7 @@ import {
   TransportConnectionBootstrap,
 } from "../transport-connection-bootstrap";
 import { TransportCloseCoordinator } from "./transport-close-coordinator";
+import { TransportLifecycleCommandPolicy } from "./transport-lifecycle-command-policy";
 import { TransportSocketSession } from "./transport-socket-session";
 
 export type TransportHandlers = {
@@ -49,6 +50,7 @@ export class TransportLifecycleService {
   private readonly failureReporter: TransportFailureReporter;
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly closeCoordinator: TransportCloseCoordinator;
+  private readonly commandPolicy: TransportLifecycleCommandPolicy;
   private readonly socketSession: TransportSocketSession;
   private socketErrorGeneration: number | null = null;
 
@@ -100,6 +102,28 @@ export class TransportLifecycleService {
       },
     });
     this.socketSession = new TransportSocketSession();
+    this.commandPolicy = new TransportLifecycleCommandPolicy({
+      dispatchEvent: this.deps.dispatchEvent,
+      clearLifecycleTimers: () => {
+        this.clearLifecycleTimers();
+      },
+      closeActiveWithIntent: (code, reason, closeIntent) => {
+        return this.socketSession.closeActiveWithIntent(
+          code,
+          reason,
+          closeIntent,
+        );
+      },
+      detachForSocketSwap: () => {
+        return this.socketSession.detachForSocketSwap();
+      },
+      clearSocketSession: () => {
+        this.socketSession.clear();
+      },
+      connect: () => {
+        this.connect();
+      },
+    });
   }
 
   sendPayload = (payload: TerminalClientMessage): boolean => {
@@ -182,92 +206,20 @@ export class TransportLifecycleService {
   };
 
   reconnectNow = (): void => {
-    this.executeLifecycleCommand({
-      clearReconnectAttempts: true,
-      tryClose: () => {
-        return this.socketSession.closeActiveWithIntent(
-          TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
-          "manual reconnect",
-          "manual",
-        );
-      },
-      fallback: () => {
-        this.connect();
-      },
-    });
+    this.commandPolicy.reconnectNow();
   };
 
   reconnectWithEndpointChange = (): void => {
-    this.executeLifecycleCommand({
-      clearReconnectAttempts: true,
-      tryClose: () => {
-        const previousSocket = this.socketSession.detachForSocketSwap();
-        if (
-          previousSocket &&
-          previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
-        ) {
-          // Detach before reconnect so connect() is not blocked by old socket state.
-          this.connect();
-          previousSocket.close(
-            TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
-            "endpoint changed",
-          );
-          return true;
-        }
-        return false;
-      },
-      fallback: () => {
-        this.connect();
-      },
-    });
+    this.commandPolicy.reconnectWithEndpointChange();
   };
 
   scheduleFreshConnection = (): void => {
-    this.executeLifecycleCommand({
-      clearReconnectAttempts: true,
-      tryClose: () => {
-        return this.socketSession.closeActiveWithIntent(
-          TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
-          "start fresh session",
-          "fresh",
-        );
-      },
-      fallback: () => {
-        this.connect();
-      },
-    });
+    this.commandPolicy.scheduleFreshConnection();
   };
 
   dispose = (): void => {
-    this.executeLifecycleCommand({
-      tryClose: () => {
-        return this.socketSession.closeActiveWithIntent(
-          1000,
-          "component unmount",
-          "dispose",
-        );
-      },
-      fallback: () => {
-        this.socketSession.clear();
-        this.deps.dispatchEvent({ type: "socket-closed" });
-      },
-    });
+    this.commandPolicy.dispose();
   };
-
-  private executeLifecycleCommand(options: {
-    clearReconnectAttempts?: boolean;
-    tryClose: () => boolean;
-    fallback: () => void;
-  }): void {
-    if (options.clearReconnectAttempts) {
-      this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    }
-    this.clearLifecycleTimers();
-    if (options.tryClose()) {
-      return;
-    }
-    options.fallback();
-  }
 
   private onSocketError(
     socket: TerminalTransport,
