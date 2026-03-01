@@ -11,10 +11,7 @@ type ListenerMap = Record<TerminalTransportEventType, EventListener | null>;
 
 class SocketDouble implements TerminalTransport {
   readyState = TRANSPORT_READY_STATE.CONNECTING;
-  readonly close = vi.fn((code?: number, reason?: string) => {
-    void code;
-    void reason;
-  });
+  readonly close = vi.fn((_code?: number, _reason?: string) => {});
   private readonly listeners: ListenerMap = {
     open: null,
     message: null,

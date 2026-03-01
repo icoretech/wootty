@@ -8,6 +8,7 @@ import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import { createPingMessage } from "../../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
+import { TransportCommandExecutor } from "./transport-command-executor";
 import {
   type TransportBootstrapFailureReasonCode,
   TransportConnectionBootstrap,
@@ -52,6 +53,7 @@ export class TransportLifecycleService {
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly reconnectController: TransportReconnectController;
   private readonly socketSession: TransportSocketSession;
+  private readonly commandExecutor: TransportCommandExecutor;
   private runtimeContext: TransportRuntimeContext;
   private socketErrorSinceConnect = false;
 
@@ -90,6 +92,27 @@ export class TransportLifecycleService {
       scheduler: this.deps.scheduler,
     });
     this.socketSession = new TransportSocketSession();
+    this.commandExecutor = new TransportCommandExecutor({
+      dispatchEvent: this.deps.dispatchEvent,
+      setCloseIntent: (intent) => {
+        this.setCloseIntent(intent);
+      },
+      clearLifecycleTimers: () => {
+        this.clearLifecycleTimers();
+      },
+      closeActiveSocket: (code, reason) => {
+        return this.socketSession.closeActive(code, reason);
+      },
+      detachSocketForSwap: () => {
+        return this.socketSession.detachForSocketSwap();
+      },
+      clearSocket: () => {
+        this.socketSession.clear();
+      },
+      connect: () => {
+        this.connect();
+      },
+    });
   }
 
   updateRuntimeContext(next: TransportRuntimeContext): void {
@@ -176,66 +199,19 @@ export class TransportLifecycleService {
   };
 
   reconnectNow = (): void => {
-    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.setCloseIntent("manual");
-    this.clearLifecycleTimers();
-    if (
-      this.socketSession.closeActive(
-        TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
-        "manual reconnect",
-      )
-    ) {
-      return;
-    }
-    this.connect();
+    this.commandExecutor.reconnectNow();
   };
 
   reconnectWithEndpointChange = (): void => {
-    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.clearLifecycleTimers();
-
-    const previousSocket = this.socketSession.detachForSocketSwap();
-    if (
-      previousSocket &&
-      previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
-    ) {
-      // Detach before reconnect so connect() is not blocked by the old socket state.
-      this.connect();
-      previousSocket.close(
-        TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
-        "endpoint changed",
-      );
-      return;
-    }
-
-    this.connect();
+    this.commandExecutor.reconnectWithEndpointChange();
   };
 
   scheduleFreshConnection = (): void => {
-    this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
-    this.setCloseIntent("fresh");
-    this.clearLifecycleTimers();
-
-    if (
-      this.socketSession.closeActive(
-        TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
-        "start fresh session",
-      )
-    ) {
-      return;
-    }
-
-    this.connect();
+    this.commandExecutor.scheduleFreshConnection();
   };
 
   dispose = (): void => {
-    this.setCloseIntent("dispose");
-    this.clearLifecycleTimers();
-    if (this.socketSession.closeActive(1000, "component unmount")) {
-      return;
-    }
-    this.socketSession.clear();
-    this.deps.dispatchEvent({ type: "socket-closed" });
+    this.commandExecutor.dispose();
   };
 
   private onSocketError(
@@ -252,6 +228,7 @@ export class TransportLifecycleService {
       code: event.code,
       reasonCode: "socket_failure",
       technicalDetail: event.message,
+      cause: event.cause,
     });
     this.deps.dispatchEvent({ type: "socket-error" });
   }
