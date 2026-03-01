@@ -107,6 +107,7 @@ export class TransportLifecycleService {
   private closedByUser = false;
   private pendingFreshConnect = false;
   private socketFailureNotice: FailureNoticeState = null;
+  private socketErrorSinceConnect = false;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
@@ -174,6 +175,7 @@ export class TransportLifecycleService {
       if (this.ws !== ws) {
         return;
       }
+      this.socketErrorSinceConnect = false;
       this.socketFailureNotice = null;
       this.deps.dispatchEvent({ type: "connected" });
       this.deps.getHandlers().onOpen();
@@ -278,6 +280,7 @@ export class TransportLifecycleService {
     if (this.ws !== socket) {
       return;
     }
+    this.socketErrorSinceConnect = true;
     this.reportSocketFailure("error", event.code, event.message);
     this.deps.dispatchEvent({ type: "socket-error" });
   }
@@ -295,6 +298,8 @@ export class TransportLifecycleService {
     }
 
     this.clearLifecycleTimers();
+    const shouldReportCloseFailure = !this.socketErrorSinceConnect;
+    this.socketErrorSinceConnect = false;
     if (this.closedByUser) {
       this.setCloseIntent("normal");
       this.deps.dispatchEvent({ type: "socket-closed" });
@@ -319,7 +324,9 @@ export class TransportLifecycleService {
       return;
     }
 
-    this.reportSocketFailure("close", event.code, event.reason);
+    if (shouldReportCloseFailure) {
+      this.reportSocketFailure("close", event.code, event.reason);
+    }
     if (!isRecoverableTransportClose(event.code)) {
       this.deps.dispatchEvent({ type: "socket-error" });
       return;
