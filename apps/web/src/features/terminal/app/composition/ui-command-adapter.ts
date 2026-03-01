@@ -1,16 +1,25 @@
-import { type RefObject, useCallback } from "react";
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useCallback,
+} from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
+import type { ConnectionStatus } from "../../contracts/connection";
+import type { AttachMode } from "../../contracts/session/session";
 import type { NoticePublisher } from "../../notifications/notice-contract";
+import type {
+  SessionRefreshRequest,
+  SessionRefreshResult,
+} from "../../session/application/session-refresh-result";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,
 } from "../controller-actions";
 import { useControllerBindings } from "../controller-bindings";
-import type { ConnectionCoordinatorState } from "../engine/connection-coordinator";
 import type { TerminalPlatformContext } from "./terminal-platform-composition";
-import type { TerminalSessionDomain } from "./terminal-session-domain";
 
 type CommandDispatchers = {
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
@@ -49,7 +58,11 @@ function useApplyFontSizeAction({
   updateFontSize,
   fitAndSyncSize,
 }: {
-  applyFontSize: TerminalSessionDomain["uiState"]["applyFontSize"];
+  applyFontSize: (
+    next: number,
+    updateRuntimeFontSize: (fontSize: number, onResized: () => void) => void,
+    onResized: () => void,
+  ) => void;
   updateFontSize: (fontSize: number, onResized: () => void) => void;
   fitAndSyncSize: () => void;
 }): (next: number) => void {
@@ -67,39 +80,75 @@ function useCloseSessionMenu(setSessionMenuOpen: (open: boolean) => void) {
   }, [setSessionMenuOpen]);
 }
 
+type UiSessionContext = {
+  lastSessionId: string | null;
+  attachMode: AttachMode;
+  sessionId: string | null;
+  sessionMenuOpen: boolean;
+  readFontSize: () => number;
+  applyFontSize: (
+    next: number,
+    updateRuntimeFontSize: (fontSize: number, onResized: () => void) => void,
+    onResized: () => void,
+  ) => void;
+  setControlsOpen: Dispatch<SetStateAction<boolean>>;
+  setIsFullscreen: Dispatch<SetStateAction<boolean>>;
+  setSessionMenuOpen: Dispatch<SetStateAction<boolean>>;
+  transitionSessionContext: (
+    nextSessionId: string | null,
+    nextMode: AttachMode,
+  ) => void;
+  requestSessionRefresh: (
+    request: SessionRefreshRequest,
+  ) => Promise<SessionRefreshResult>;
+  publishNotice: NoticePublisher;
+};
+
+type UiTransportContext = {
+  status: ConnectionStatus;
+  terminalReady: boolean;
+  terminalElementRef: RefObject<HTMLDivElement | null>;
+  clearTerminal: () => void;
+  updateFontSize: (fontSize: number, onResized: () => void) => void;
+  fitAndSyncSize: () => void;
+  resetRuntimeBuffers: () => void;
+  reconnectNow: () => void;
+  scheduleFreshConnection: () => void;
+};
+
 export function useUiBindingsController({
   appViewportRef,
   sessionMenuRef,
   sessionButtonRef,
   platform,
-  session,
-  connection,
+  sessionContext,
+  transportContext,
 }: {
   appViewportRef: RefObject<HTMLElement | null>;
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
   platform: TerminalPlatformContext;
-  session: TerminalSessionDomain;
-  connection: ConnectionCoordinatorState;
+  sessionContext: UiSessionContext;
+  transportContext: UiTransportContext;
 }): CommandDispatchers {
   const toggleFullscreen = useFullscreenCommand({
     appViewportRef,
     documentRef: platform.documentRef,
-    publishNotice: session.sessionActions.publishNoticeDetails,
+    publishNotice: sessionContext.publishNotice,
   });
 
   const { dispatchSessionMenu } = useSessionMenuActions({
-    lastSessionId: session.sessionState.lastSessionId,
-    resetRuntimeBuffers: connection.runtime.resetRuntimeBuffers,
-    transitionSessionContext: session.sessionActions.transitionSessionContext,
-    scheduleFreshConnection: connection.transport.scheduleFreshConnection,
-    reconnectNow: connection.transport.reconnectNow,
+    lastSessionId: sessionContext.lastSessionId,
+    resetRuntimeBuffers: transportContext.resetRuntimeBuffers,
+    transitionSessionContext: sessionContext.transitionSessionContext,
+    scheduleFreshConnection: transportContext.scheduleFreshConnection,
+    reconnectNow: transportContext.reconnectNow,
   });
 
   const applyFontSize = useApplyFontSizeAction({
-    applyFontSize: session.uiState.applyFontSize,
-    updateFontSize: connection.runtime.updateFontSize,
-    fitAndSyncSize: connection.runtime.fitAndSyncSize,
+    applyFontSize: sessionContext.applyFontSize,
+    updateFontSize: transportContext.updateFontSize,
+    fitAndSyncSize: transportContext.fitAndSyncSize,
   });
 
   const {
@@ -108,36 +157,36 @@ export function useUiBindingsController({
     dispatchStatusBar,
   } = useTerminalCommandActions({
     applyFontSize,
-    clearTerminal: connection.runtime.clearTerminal,
-    reconnectNow: connection.transport.reconnectNow,
+    clearTerminal: transportContext.clearTerminal,
+    reconnectNow: transportContext.reconnectNow,
     toggleFullscreen,
-    readFontSize: session.uiState.readFontSize,
-    setControlsOpen: session.uiState.setControlsOpen,
-    setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
+    readFontSize: sessionContext.readFontSize,
+    setControlsOpen: sessionContext.setControlsOpen,
+    setSessionMenuOpen: sessionContext.setSessionMenuOpen,
   });
 
   const closeSessionMenu = useCloseSessionMenu(
-    session.sessionActions.setSessionMenuOpen,
+    sessionContext.setSessionMenuOpen,
   );
 
   useControllerBindings({
     documentRef: platform.documentRef,
     windowRef: platform.windowRef,
-    fitAndSyncSize: connection.runtime.fitAndSyncSize,
-    setIsFullscreen: session.uiState.setIsFullscreen,
-    sessionMenuOpen: session.sessionState.sessionMenuOpen,
+    fitAndSyncSize: transportContext.fitAndSyncSize,
+    setIsFullscreen: sessionContext.setIsFullscreen,
+    sessionMenuOpen: sessionContext.sessionMenuOpen,
     sessionMenuRef,
     sessionButtonRef,
     closeSessionMenu,
-    requestSessionRefresh: session.sessionActions.requestSessionRefresh,
+    requestSessionRefresh: sessionContext.requestSessionRefresh,
     scheduler: platform.scheduler,
-    attachMode: session.sessionState.attachMode,
-    sessionId: session.sessionState.sessionId,
-    status: connection.transport.status,
-    terminalReady: connection.runtime.terminalReady,
-    terminalElementRef: connection.runtime.terminalElementRef,
+    attachMode: sessionContext.attachMode,
+    sessionId: sessionContext.sessionId,
+    status: transportContext.status,
+    terminalReady: transportContext.terminalReady,
+    terminalElementRef: transportContext.terminalElementRef,
     runShortcutAction: dispatchShortcutAction,
-    publishNotice: session.sessionActions.publishNoticeDetails,
+    publishNotice: sessionContext.publishNotice,
   });
 
   return {

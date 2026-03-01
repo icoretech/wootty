@@ -39,19 +39,13 @@ function stableFailureCode(code: TransportFailure["code"]): string {
 export class TransportFailureReporter {
   private readonly deps: TransportFailureReporterDeps;
   private socketFailureNotice: FailureNoticeState = null;
-  private onSocketFailure: TransportFailureSink;
 
   constructor(deps: TransportFailureReporterDeps) {
     this.deps = deps;
-    this.onSocketFailure = deps.onSocketFailure;
   }
 
   reset(): void {
     this.socketFailureNotice = null;
-  }
-
-  setOnSocketFailure(next: TransportFailureSink): void {
-    this.onSocketFailure = next;
   }
 
   report(failure: Omit<TransportFailure, "noticeMessage">): void {
@@ -73,7 +67,7 @@ export class TransportFailureReporter {
       cooldownMs: SOCKET_FAILURE_NOTICE_COOLDOWN_MS,
       baseMessage: baseReason,
       notify: (message) => {
-        this.onSocketFailure({
+        this.deps.onSocketFailure({
           ...failure,
           noticeMessage: message,
         });
