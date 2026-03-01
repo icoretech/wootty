@@ -137,4 +137,31 @@ describe("session persistence", () => {
       }),
     );
   });
+
+  it("reports partially invalid stored history entries as schema mismatches", () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    const onStorageFailure = vi.fn();
+    localStorageRef.setItem(
+      SESSION_HISTORY_STORAGE_KEY,
+      JSON.stringify(["session-a", "", 42, null]),
+    );
+
+    render(
+      <PersistenceProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        onStorageFailure={onStorageFailure}
+      />,
+    );
+
+    expect(screen.getByTestId("history").textContent).toBe("session-a");
+    expect(onStorageFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: "parse",
+        key: SESSION_HISTORY_STORAGE_KEY,
+        reason: "schema_mismatch",
+      }),
+    );
+  });
 });

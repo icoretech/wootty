@@ -125,10 +125,27 @@ export function readSessionHistoryResult(
         },
       };
     }
+
+    const sessions = parsed
+      .filter((value): value is string => typeof value === "string")
+      .filter((value) => value.length > 0);
+    if (sessions.length !== parsed.length) {
+      return {
+        sessions,
+        error: {
+          operation: "parse",
+          key: SESSION_HISTORY_STORAGE_KEY,
+          reason: "schema_mismatch",
+          cause: {
+            invalidEntries: parsed.length - sessions.length,
+            totalEntries: parsed.length,
+          },
+        },
+      };
+    }
+
     return {
-      sessions: parsed
-        .filter((value): value is string => typeof value === "string")
-        .filter((value) => value.length > 0),
+      sessions,
       error: null,
     };
   } catch (cause) {
