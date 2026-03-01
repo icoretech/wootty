@@ -5,7 +5,7 @@ import type {
   TerminalTransportMessageEvent,
 } from "../../../contracts/transport/transport";
 
-type TransportSocketEventHandlers = {
+export type TransportSocketEventHandlers = {
   onOpen: () => void;
   onMessage: (event: TerminalTransportMessageEvent) => void;
   onClose: (event: TerminalTransportCloseEvent) => void;

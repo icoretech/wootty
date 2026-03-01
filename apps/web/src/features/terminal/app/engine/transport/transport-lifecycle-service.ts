@@ -26,7 +26,7 @@ import {
   TERMINAL_RECONNECT_POLICY,
 } from "./transport-policy";
 import { TransportReconnectController } from "./transport-reconnect-controller";
-import { TransportSocketEventBridge } from "./transport-socket-event-bridge";
+import { TransportSocketSession } from "./transport-socket-session";
 import type {
   SocketCloseIntent,
   TransportEvent,
@@ -68,10 +68,8 @@ export class TransportLifecycleService {
   private readonly failureReporter: TransportFailureReporter;
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly reconnectController: TransportReconnectController;
-  private readonly socketEventBridge: TransportSocketEventBridge;
+  private readonly socketSession: TransportSocketSession;
   private runtimeContext: TransportRuntimeContext;
-  private ws: TerminalTransport | null = null;
-  private detachSocketListeners: (() => void) | null = null;
   private socketErrorSinceConnect = false;
 
   constructor(deps: TransportLifecycleServiceDeps) {
@@ -83,9 +81,10 @@ export class TransportLifecycleService {
         this.sendPayload(createPingMessage());
       },
       onPongTimeout: () => {
-        if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
-          this.ws.close(TERMINAL_CLOSE_CODE.PONG_TIMEOUT, "pong timeout");
-        }
+        this.socketSession.closeActive(
+          TERMINAL_CLOSE_CODE.PONG_TIMEOUT,
+          "pong timeout",
+        );
       },
       onLatency: (latencyMs) => {
         this.deps.dispatchEvent({
@@ -107,7 +106,7 @@ export class TransportLifecycleService {
     this.reconnectController = new TransportReconnectController({
       scheduler: this.deps.scheduler,
     });
-    this.socketEventBridge = new TransportSocketEventBridge();
+    this.socketSession = new TransportSocketSession();
   }
 
   updateRuntimeContext(next: TransportRuntimeContext): void {
@@ -116,12 +115,13 @@ export class TransportLifecycleService {
   }
 
   sendPayload = (payload: TerminalClientMessage): boolean => {
-    if (!this.ws || this.ws.readyState !== TRANSPORT_READY_STATE.OPEN) {
+    const socket = this.socketSession.current();
+    if (!socket || socket.readyState !== TRANSPORT_READY_STATE.OPEN) {
       return false;
     }
 
     try {
-      this.ws.send(JSON.stringify(payload));
+      socket.send(JSON.stringify(payload));
       return true;
     } catch (error) {
       const reason =
@@ -145,7 +145,7 @@ export class TransportLifecycleService {
   };
 
   connect = (): void => {
-    if (this.ws && this.ws.readyState <= TRANSPORT_READY_STATE.OPEN) {
+    if (this.socketSession.hasActiveConnection()) {
       return;
     }
 
@@ -167,12 +167,9 @@ export class TransportLifecycleService {
     }
 
     const ws = bootstrapResult.socket;
-    this.ws = ws;
-
-    this.detachSocketEventListeners();
-    this.detachSocketListeners = this.socketEventBridge.bind(ws, {
+    this.socketSession.attach(ws, {
       onOpen: () => {
-        if (this.ws !== ws) {
+        if (this.socketSession.current() !== ws) {
           return;
         }
         this.socketErrorSinceConnect = false;
@@ -182,7 +179,7 @@ export class TransportLifecycleService {
         this.heartbeatMonitor.start();
       },
       onMessage: (event) => {
-        if (this.ws !== ws) {
+        if (this.socketSession.current() !== ws) {
           return;
         }
         this.runtimeContext.handlers.onMessage(event);
@@ -200,8 +197,12 @@ export class TransportLifecycleService {
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.setCloseIntent("manual");
     this.clearLifecycleTimers();
-    if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
-      this.ws.close(TERMINAL_CLOSE_CODE.MANUAL_RECONNECT, "manual reconnect");
+    if (
+      this.socketSession.closeActive(
+        TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+        "manual reconnect",
+      )
+    ) {
       return;
     }
     this.connect();
@@ -211,14 +212,12 @@ export class TransportLifecycleService {
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.clearLifecycleTimers();
 
-    const previousSocket = this.ws;
+    const previousSocket = this.socketSession.detachForSocketSwap();
     if (
       previousSocket &&
       previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
     ) {
       // Detach before reconnect so connect() is not blocked by the old socket state.
-      this.detachSocketEventListeners();
-      this.ws = null;
       this.connect();
       previousSocket.close(
         TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
@@ -235,11 +234,12 @@ export class TransportLifecycleService {
     this.setCloseIntent("fresh");
     this.clearLifecycleTimers();
 
-    if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
-      this.ws.close(
+    if (
+      this.socketSession.closeActive(
         TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
         "start fresh session",
-      );
+      )
+    ) {
       return;
     }
 
@@ -249,10 +249,10 @@ export class TransportLifecycleService {
   dispose = (): void => {
     this.setCloseIntent("dispose");
     this.clearLifecycleTimers();
-    if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
-      this.ws.close(1000, "component unmount");
+    if (this.socketSession.closeActive(1000, "component unmount")) {
       return;
     }
+    this.socketSession.clear();
     this.deps.dispatchEvent({ type: "socket-closed" });
   };
 
@@ -260,7 +260,7 @@ export class TransportLifecycleService {
     socket: TerminalTransport,
     event: TerminalTransportErrorEvent,
   ): void {
-    if (this.ws !== socket) {
+    if (this.socketSession.current() !== socket) {
       return;
     }
     this.socketErrorSinceConnect = true;
@@ -277,12 +277,8 @@ export class TransportLifecycleService {
     socket: TerminalTransport,
     event: TerminalTransportCloseEvent,
   ): void {
-    const isCurrentSocket = this.ws === socket;
-    if (isCurrentSocket) {
-      this.ws = null;
-      this.detachSocketEventListeners();
-    }
-    if (!isCurrentSocket && this.ws !== null) {
+    const isCurrentSocket = this.socketSession.releaseIfCurrent(socket);
+    if (!isCurrentSocket && this.socketSession.current() !== null) {
       return;
     }
 
@@ -367,14 +363,6 @@ export class TransportLifecycleService {
   private clearLifecycleTimers(): void {
     this.heartbeatMonitor.stop();
     this.reconnectController.clearReconnectTimer();
-  }
-
-  private detachSocketEventListeners(): void {
-    if (this.detachSocketListeners === null) {
-      return;
-    }
-    this.detachSocketListeners();
-    this.detachSocketListeners = null;
   }
 }
 
