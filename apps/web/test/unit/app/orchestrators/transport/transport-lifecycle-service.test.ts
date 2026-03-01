@@ -36,7 +36,7 @@ function createHarness({
     onOpen: vi.fn(),
     onMessage: vi.fn(),
   };
-  const runtime = {
+  let runtime = {
     wsUrl: currentWsUrl,
     handlers,
     hasSessionContext: true,
@@ -66,6 +66,15 @@ function createHarness({
     setWsUrl: (nextWsUrl: string | null) => {
       currentWsUrl = nextWsUrl;
       runtime.wsUrl = nextWsUrl;
+    },
+    swapRuntime: (next: {
+      wsUrl: string | null;
+      handlers: TransportHandlers;
+      hasSessionContext: boolean;
+      onSocketFailure: (failure: TransportFailure) => void;
+    }) => {
+      runtime = next;
+      service.updateRuntime(next);
     },
     state: () => state,
     events,
@@ -163,6 +172,35 @@ describe("transport lifecycle service", () => {
       reason: "endpoint changed",
     });
     expect(harness.sockets).toHaveLength(2);
+  });
+
+  it("uses the latest swapped runtime context for reconnect flows", () => {
+    const harness = createHarness({
+      wsUrl: "ws://localhost/api/terminal?token=one",
+    });
+
+    harness.service.connect();
+    harness.sockets[0].emitOpen();
+
+    const swappedHandlers: TransportHandlers = {
+      onOpen: vi.fn(),
+      onMessage: vi.fn(),
+    };
+    harness.swapRuntime({
+      wsUrl: "ws://localhost/api/terminal?token=two",
+      handlers: swappedHandlers,
+      hasSessionContext: false,
+      onSocketFailure: harness.onSocketFailure,
+    });
+
+    harness.service.reconnectWithEndpointChange();
+    harness.sockets[1].emitOpen();
+
+    expect(harness.transportUrls).toEqual([
+      "ws://localhost/api/terminal?token=one",
+      "ws://localhost/api/terminal?token=two",
+    ]);
+    expect(swappedHandlers.onOpen).toHaveBeenCalledTimes(1);
   });
 
   it("opens a fresh socket immediately when starting a fresh session", () => {
