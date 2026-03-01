@@ -81,11 +81,17 @@ This spec defines the required behavior for the browser-side terminal UI only. K
   - runtime config parsing defaults and flags.
 - `apps/server/internal/protocol/protocol_test.go`
   - websocket client message validation (`attach/input/resize/ping`).
+- `apps/server/internal/protocol/wire_contract_test.go` + `apps/web/test/unit/protocol/terminal-wire-contract.test.ts`
+  - Go/TypeScript parity checks against `contracts/terminal-wire-contract.json` for message kinds, error-code registry, and dimension limits.
 - `apps/server/internal/session/history_test.go`
   - history retention semantics for replay window.
-- `apps/web/test/terminal-session.test.ts`
+- `apps/web/test/unit/lib/terminal-session.test.ts`
   - protocol parsing, reconnect backoff, input outbox accounting, latency formatting, storage helpers.
-- `apps/web/test/app.integration.test.tsx`
-  - React app state-machine integration: connect/ready flow, reconnect input flush, fresh-session attach behavior, accessibility/status announcements, font controls.
+- `apps/web/test/integration/app/app-connection-integration.test.tsx`
+  - React app connection integration: connect/ready flow, reconnect input flush, and transport heartbeat behavior.
+- `apps/web/test/integration/app/app-ui-integration.test.tsx`
+  - React app UI integration: accessibility/status announcements, operator controls, and font interactions.
+- `apps/web/test/integration/app/app-sessions-integration.test.tsx`
+  - Session attach-mode behavior, live-session refresh handling, and session list error flows.
 - `apps/web/e2e/terminal.spec.ts`
   - UI state transitions, reconnect control, new-session rotation, viewport-resize stability, font-control behavior.

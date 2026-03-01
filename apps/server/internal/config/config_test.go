@@ -10,7 +10,7 @@ func TestParseRunConfigDefaults(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if cfg.Host != "0.0.0.0" {
+	if cfg.Host != DefaultHost {
 		t.Fatalf("expected default host, got %q", cfg.Host)
 	}
 	if cfg.Port != DefaultPort {
@@ -26,8 +26,9 @@ func TestParseRunConfigDefaults(t *testing.T) {
 
 func TestParseRunConfigWithFlagsAndCommand(t *testing.T) {
 	env := map[string]string{
-		"WOOTTY_PORT": "9999",
-		"SHELL":       "/bin/zsh",
+		"WOOTTY_PORT":       "9999",
+		"SHELL":             "/bin/zsh",
+		"WOOTTY_AUTH_TOKEN": "test-token",
 	}
 	cfg, err := ParseRunConfig(
 		[]string{"run", "-p", "4444", "--host", "127.0.0.1", "--detached-ttl-ms", "0", "sh", "-lc", "echo ok"},
@@ -52,6 +53,37 @@ func TestParseRunConfigWithFlagsAndCommand(t *testing.T) {
 	}
 	if len(cfg.Args) != 2 {
 		t.Fatalf("expected 2 args, got %d", len(cfg.Args))
+	}
+}
+
+func TestParseRunConfigRequiresAuthTokenOnNonLoopbackHost(t *testing.T) {
+	_, err := ParseRunConfig(
+		[]string{"run", "--host", "0.0.0.0"},
+		map[string]string{},
+		"/tmp/wootty/apps/server",
+	)
+	if err == nil {
+		t.Fatal("expected auth token requirement for non-loopback host")
+	}
+}
+
+func TestParseRunConfigParsesAllowedOrigins(t *testing.T) {
+	cfg, err := ParseRunConfig(
+		[]string{"run", "--host", "0.0.0.0"},
+		map[string]string{
+			"WOOTTY_AUTH_TOKEN":      "token",
+			"WOOTTY_ALLOWED_ORIGINS": "https://one.example, https://two.example ,",
+		},
+		"/tmp/wootty/apps/server",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(cfg.AllowedOrigins) != 2 {
+		t.Fatalf("expected two allowed origins, got %#v", cfg.AllowedOrigins)
+	}
+	if cfg.AllowedOrigins[0] != "https://one.example" || cfg.AllowedOrigins[1] != "https://two.example" {
+		t.Fatalf("unexpected allowed origins: %#v", cfg.AllowedOrigins)
 	}
 }
 

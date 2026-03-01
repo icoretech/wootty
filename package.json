@@ -18,6 +18,7 @@
     "lint": "biome check --write --assist-enabled=true . && pnpm typecheck",
     "check": "biome check .",
     "biome:ci": "biome ci .",
+    "generate:terminal-contracts": "node scripts/generate-terminal-contract-bindings.mjs",
     "test": "pnpm --filter @icoretech/wootty-web test && cd apps/server && go test ./...",
     "test:e2e": "pnpm --filter @icoretech/wootty-web test:e2e",
     "test:e2e:cross": "pnpm --filter @icoretech/wootty-web test:e2e:cross",

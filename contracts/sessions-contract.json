@@ -1,0 +1,14 @@
+{
+  "envelope_field": "sessions",
+  "snapshot": {
+    "required": [
+      "id",
+      "hasController",
+      "canControl",
+      "watchers",
+      "createdAtMs",
+      "lastActivityMs"
+    ],
+    "optional": ["command"]
+  }
+}

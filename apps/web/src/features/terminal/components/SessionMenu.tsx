@@ -1,25 +1,6 @@
 import { Eye, History, Play, Plus } from "lucide-react";
-import type { AttachMode } from "../contracts/session";
-
-export type SessionMenuAction =
-  | { type: "startFresh" }
-  | { type: "resumeLast" }
-  | { type: "attach"; sessionId: string; mode: AttachMode };
-
-export type SessionMenuModel = {
-  sessionMenuOpen: boolean;
-  terminalReady: boolean;
-  canResumeLast: boolean;
-  sessionNotice: string;
-  liveRows: Array<{
-    id: string;
-    mode: AttachMode;
-    primaryText: string;
-    secondaryText: string;
-    actionLabel: string;
-  }>;
-  historyRows: Array<{ id: string; primaryText: string }>;
-};
+import type { SessionMenuAction } from "../commands/session-menu-actions";
+import type { SessionMenuModel } from "./models/session-menu-model";
 
 type SessionMenuProps = {
   model: SessionMenuModel;

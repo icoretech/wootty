@@ -1,4 +1,4 @@
-import type { SessionCandidate } from "../../contracts/session";
+import type { SessionCandidate } from "../contracts/session";
 
 type SessionMenuRow = {
   readonly id: string;
@@ -13,7 +13,7 @@ export function presentSessionCandidate(
 ): SessionMenuRow {
   const actionLabel = candidate.mode === "watch" ? "Watch" : "Resume";
   const secondaryParts = [
-    candidate.command || "interactive shell",
+    candidate.command ?? "interactive shell",
     formatAgeLabel(candidate.lastActivityMs),
   ];
   if (candidate.watchers > 0) {

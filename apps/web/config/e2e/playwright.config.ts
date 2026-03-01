@@ -1,13 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
-import {
-  buildE2eConfig,
-  buildE2eServerCommand,
-  resolveE2ePort,
-} from "./e2e-env";
+import { resolveE2eRuntime } from "./e2e-env";
 
-const port = resolveE2ePort(process.env.WOOTTY_E2E_PORT);
-const e2eConfig = buildE2eConfig(port);
-const crossBrowser = process.env.WOOTTY_E2E_CROSS === "1";
+const e2eConfig = resolveE2eRuntime(process.env);
 
 export default defineConfig({
   testDir: "../../e2e",
@@ -27,7 +21,7 @@ export default defineConfig({
       name: "mobile-chromium",
       use: { ...devices["Pixel 7"] },
     },
-    ...(crossBrowser
+    ...(e2eConfig.crossBrowser
       ? [
           {
             name: "firefox",
@@ -41,7 +35,12 @@ export default defineConfig({
       : []),
   ],
   webServer: {
-    command: buildE2eServerCommand(e2eConfig.port),
+    command: e2eConfig.webServer.command,
+    cwd: e2eConfig.webServer.cwd,
+    env: {
+      ...process.env,
+      ...e2eConfig.webServer.env,
+    },
     url: e2eConfig.healthUrl,
     timeout: 120_000,
     reuseExistingServer: !process.env.CI,

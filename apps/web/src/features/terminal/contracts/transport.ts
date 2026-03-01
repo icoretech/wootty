@@ -11,7 +11,9 @@ export type TerminalTransportReadyState =
 export type TerminalTransportOpenEvent = Record<string, never>;
 export type TerminalTransportMessageEvent = {
   readonly data: string;
+  readonly malformed?: string;
 };
+export type TerminalTransportFailureCode = string | number;
 export type TerminalTransportCloseEvent = {
   readonly code: number;
   readonly reason: string;
@@ -19,7 +21,7 @@ export type TerminalTransportCloseEvent = {
 export type TerminalTransportErrorEvent = {
   readonly source: "transport";
   readonly message: string;
-  readonly code?: string;
+  readonly code?: TerminalTransportFailureCode;
   readonly cause?: unknown;
 };
 

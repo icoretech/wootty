@@ -19,8 +19,8 @@ runTransportContractSuite("socket mock transport contract", () => {
     emitMessage: (payload) => {
       ws.triggerMessage(payload);
     },
-    emitError: (message) => {
-      ws.triggerError(message);
+    emitError: (message, code) => {
+      ws.triggerError(message, code);
     },
     sent: () => ws.sent,
   };

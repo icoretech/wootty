@@ -7,10 +7,8 @@ import {
 } from "@testing-library/react";
 import { vi } from "vitest";
 import App from "../../../../src/App";
-import {
-  TerminalApp,
-  type TerminalAppEnvironment,
-} from "../../../../src/features/terminal/app/TerminalApp";
+import { TerminalApp } from "../../../../src/features/terminal/app/TerminalApp";
+import { TERMINAL_WIRE_CONTRACT_VERSION } from "../../../../src/features/terminal/protocol/terminal-wire-schema";
 import {
   LAST_SESSION_STORAGE_KEY,
   SESSION_HISTORY_STORAGE_KEY,
@@ -53,102 +51,129 @@ type AppHarness = {
   setFetchError: (error: Error) => void;
 };
 
-export function setupAppTestEnvironment(): AppHarness {
-  vi.clearAllMocks();
-
-  const runtime = createRuntimeMock();
-  const socket = createWebSocketMockHarness();
-
-  const localStorageRef = new StorageDouble();
-  const sessionStorageRef = new StorageDouble();
-  vi.stubGlobal("localStorage", localStorageRef);
-  vi.stubGlobal("sessionStorage", sessionStorageRef);
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: localStorageRef,
+async function waitForSocketReady(
+  socketHarness: WebSocketMockHarness,
+  index = 0,
+): Promise<WebSocketMock> {
+  await waitFor(() => {
+    if (!socketHarness.instances[index]) {
+      throw new Error(`socket ${index} not ready`);
+    }
   });
-  Object.defineProperty(window, "sessionStorage", {
-    configurable: true,
-    value: sessionStorageRef,
-  });
+  return socketHarness.instances[index] as WebSocketMock;
+}
 
-  const fetchHarness = createFetchHarness();
-  const renderEntry = (
-    entry: AppEntry,
-    environment: TerminalAppEnvironment,
-  ) => {
+class AppHarnessContext implements AppHarness {
+  readonly runtime = createRuntimeMock();
+  readonly socket = createWebSocketMockHarness();
+  readonly localStorageRef = new StorageDouble();
+  readonly sessionStorageRef = new StorageDouble();
+  private readonly fetchHarness = createFetchHarness();
+  readonly fetchMock = this.fetchHarness.fetchMock;
+
+  constructor() {
+    vi.stubGlobal("localStorage", this.localStorageRef);
+    vi.stubGlobal("sessionStorage", this.sessionStorageRef);
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: this.localStorageRef,
+    });
+    Object.defineProperty(window, "sessionStorage", {
+      configurable: true,
+      value: this.sessionStorageRef,
+    });
+  }
+
+  private renderEntry(entry: AppEntry): void {
+    const environment = createTerminalEnvironment(this.socket, this.runtime);
     if (entry === "terminal") {
       render(<TerminalApp environment={environment} />);
       return;
     }
-
     render(<App environment={environment} />);
-  };
+  }
 
-  return {
-    fetchMock: fetchHarness.fetchMock,
-    localStorageRef,
-    sessionStorageRef,
-    runtime,
-    socket,
-    cleanup: () => {
-      runtime.reset();
-      socket.reset();
-      vi.unstubAllGlobals();
-      vi.clearAllMocks();
-    },
-    renderTerminalApp: (entry = "app") => {
-      renderEntry(entry, createTerminalEnvironment(socket, runtime));
-    },
-    waitForSocket: async (index = 0) => {
-      await waitFor(() => {
-        if (!socket.instances[index]) {
-          throw new Error(`socket ${index} not ready`);
-        }
+  cleanup(): void {
+    this.runtime.reset();
+    this.socket.reset();
+    vi.unstubAllGlobals();
+    vi.clearAllMocks();
+  }
+
+  renderTerminalApp(entry: AppEntry = "app"): void {
+    this.renderEntry(entry);
+  }
+
+  async waitForSocket(index = 0): Promise<WebSocketMock> {
+    return waitForSocketReady(this.socket, index);
+  }
+
+  async openSocket(ws: WebSocketMock): Promise<void> {
+    await act(async () => {
+      ws.triggerOpen();
+    });
+  }
+
+  async markReady(
+    ws: WebSocketMock,
+    sessionId: string,
+    readOnly = false,
+  ): Promise<void> {
+    await act(async () => {
+      ws.triggerMessage({
+        type: "ready",
+        version: TERMINAL_WIRE_CONTRACT_VERSION,
+        sessionId,
+        readOnly,
       });
-      return socket.instances[index] as WebSocketMock;
-    },
-    openSocket: async (ws) => {
-      await act(async () => {
-        ws.triggerOpen();
+    });
+  }
+
+  async bootConnected(
+    sessionId = "session-a",
+    entry: AppEntry = "app",
+  ): Promise<WebSocketMock> {
+    this.renderEntry(entry);
+    const ws = await waitForSocketReady(this.socket, 0);
+    await act(async () => {
+      ws.triggerOpen();
+      ws.triggerMessage({
+        type: "ready",
+        version: TERMINAL_WIRE_CONTRACT_VERSION,
+        sessionId,
+        readOnly: false,
       });
-    },
-    markReady: async (ws, sessionId, readOnly = false) => {
-      await act(async () => {
-        ws.triggerMessage({ type: "ready", sessionId, readOnly });
-      });
-    },
-    bootConnected: async (sessionId = "session-a", entry = "app") => {
-      renderEntry(entry, createTerminalEnvironment(socket, runtime));
-      const ws = await (async () => {
-        await waitFor(() => {
-          if (!socket.instances[0]) {
-            throw new Error("socket 0 not ready");
-          }
-        });
-        return socket.instances[0] as WebSocketMock;
-      })();
-      await act(async () => {
-        ws.triggerOpen();
-        ws.triggerMessage({ type: "ready", sessionId });
-      });
-      return ws;
-    },
-    openSessionMenu: async () => {
-      await act(async () => {
-        fireEvent.click(screen.getByTestId("session-menu-button"));
-      });
-    },
-    seedLastSession: (sessionId) => {
-      localStorageRef.setItem(LAST_SESSION_STORAGE_KEY, sessionId);
-    },
-    seedSessionHistory: (sessionIds) => {
-      localStorageRef.setItem(
-        SESSION_HISTORY_STORAGE_KEY,
-        JSON.stringify(sessionIds),
-      );
-    },
-    setFetchResponse: fetchHarness.setFetchResponse,
-    setFetchError: fetchHarness.setFetchError,
-  };
+    });
+    return ws;
+  }
+
+  async openSessionMenu(): Promise<void> {
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("session-menu-button"));
+    });
+  }
+
+  seedLastSession(sessionId: string): void {
+    this.localStorageRef.setItem(LAST_SESSION_STORAGE_KEY, sessionId);
+  }
+
+  seedSessionHistory(sessionIds: string[]): void {
+    this.localStorageRef.setItem(
+      SESSION_HISTORY_STORAGE_KEY,
+      JSON.stringify(sessionIds),
+    );
+  }
+
+  setFetchResponse(init: SessionsResponseInit): void {
+    this.fetchHarness.setFetchResponse(init);
+  }
+
+  setFetchError(error: Error): void {
+    this.fetchHarness.setFetchError(error);
+  }
+}
+
+export function setupAppTestEnvironment(): AppHarness {
+  vi.clearAllMocks();
+  return new AppHarnessContext();
 }

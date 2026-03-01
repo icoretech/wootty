@@ -1,92 +1,165 @@
 import {
-  TERMINAL_SERVER_ERROR_CODE,
+  TERMINAL_SERVER_ERROR_CODES,
   type TerminalServerErrorCode,
-} from "../contracts/session";
+} from "./server-error-codes";
+import {
+  TERMINAL_SERVER_MESSAGE_TYPE,
+  TERMINAL_WIRE_CONTRACT_VERSION,
+} from "./terminal-wire-schema";
 
-type ServerMessage =
-  | { type: "ready"; sessionId: string; readOnly: boolean }
-  | { type: "output"; data: string }
-  | { type: "exit"; code: number; signal: number }
-  | { type: "error"; message: string; code?: TerminalServerErrorCode }
-  | { type: "pong" };
+export type ServerMessage =
+  | {
+      type: typeof TERMINAL_SERVER_MESSAGE_TYPE.READY;
+      sessionId: string;
+      readOnly: boolean;
+      version: typeof TERMINAL_WIRE_CONTRACT_VERSION;
+    }
+  | { type: typeof TERMINAL_SERVER_MESSAGE_TYPE.OUTPUT; data: string }
+  | {
+      type: typeof TERMINAL_SERVER_MESSAGE_TYPE.EXIT;
+      code: number;
+      signal: number;
+    }
+  | {
+      type: typeof TERMINAL_SERVER_MESSAGE_TYPE.ERROR;
+      message: string;
+      code?: TerminalServerErrorCode;
+      rawCode?: string;
+    }
+  | { type: typeof TERMINAL_SERVER_MESSAGE_TYPE.PONG };
+
+export type TerminalProtocolFailureReason =
+  | "malformed_payload"
+  | "unsupported_type"
+  | "incompatible_version";
 
 type ServerMessageParseResult =
   | { message: ServerMessage }
-  | { reason: "malformed_payload" | "unsupported_type" };
+  | { reason: TerminalProtocolFailureReason };
 
-function parseServerErrorCode(
-  value: unknown,
-): TerminalServerErrorCode | undefined {
-  switch (value) {
-    case TERMINAL_SERVER_ERROR_CODE.SESSION_NOT_FOUND:
-    case TERMINAL_SERVER_ERROR_CODE.ATTACH_FORBIDDEN:
-      return value;
-    default:
-      return undefined;
+const MALFORMED_PAYLOAD: ServerMessageParseResult = {
+  reason: "malformed_payload",
+};
+
+function parseReadyMessage(
+  message: Record<string, unknown>,
+): ServerMessageParseResult {
+  if (typeof message.sessionId !== "string" || message.sessionId.length === 0) {
+    return MALFORMED_PAYLOAD;
   }
+  if (typeof message.readOnly !== "boolean") {
+    return MALFORMED_PAYLOAD;
+  }
+  if (message.version !== TERMINAL_WIRE_CONTRACT_VERSION) {
+    return { reason: "incompatible_version" };
+  }
+  return {
+    message: {
+      type: TERMINAL_SERVER_MESSAGE_TYPE.READY,
+      sessionId: message.sessionId,
+      readOnly: message.readOnly,
+      version: TERMINAL_WIRE_CONTRACT_VERSION,
+    },
+  };
+}
+
+function parseOutputMessage(
+  message: Record<string, unknown>,
+): ServerMessage | null {
+  if (typeof message.data !== "string") {
+    return null;
+  }
+  return { type: TERMINAL_SERVER_MESSAGE_TYPE.OUTPUT, data: message.data };
+}
+
+function parseExitMessage(
+  message: Record<string, unknown>,
+): ServerMessage | null {
+  if (
+    typeof message.code !== "number" ||
+    !Number.isFinite(message.code) ||
+    typeof message.signal !== "number" ||
+    !Number.isFinite(message.signal)
+  ) {
+    return null;
+  }
+  return {
+    type: TERMINAL_SERVER_MESSAGE_TYPE.EXIT,
+    code: message.code,
+    signal: message.signal,
+  };
+}
+
+function parseErrorMessage(
+  message: Record<string, unknown>,
+): ServerMessage | null {
+  if (typeof message.message !== "string") {
+    return null;
+  }
+  const parsedCode = parseServerErrorCode(message.code);
+  return {
+    type: TERMINAL_SERVER_MESSAGE_TYPE.ERROR,
+    message: message.message,
+    code: parsedCode.code,
+    rawCode: parsedCode.rawCode,
+  };
+}
+
+function parseKnownMessage(
+  message: Record<string, unknown>,
+): ServerMessageParseResult {
+  const type = message.type;
+  if (type === TERMINAL_SERVER_MESSAGE_TYPE.READY) {
+    return parseReadyMessage(message);
+  }
+  if (type === TERMINAL_SERVER_MESSAGE_TYPE.OUTPUT) {
+    const parsed = parseOutputMessage(message);
+    return parsed ? { message: parsed } : MALFORMED_PAYLOAD;
+  }
+  if (type === TERMINAL_SERVER_MESSAGE_TYPE.EXIT) {
+    const parsed = parseExitMessage(message);
+    return parsed ? { message: parsed } : MALFORMED_PAYLOAD;
+  }
+  if (type === TERMINAL_SERVER_MESSAGE_TYPE.ERROR) {
+    const parsed = parseErrorMessage(message);
+    return parsed ? { message: parsed } : MALFORMED_PAYLOAD;
+  }
+  if (type === TERMINAL_SERVER_MESSAGE_TYPE.PONG) {
+    return { message: { type: TERMINAL_SERVER_MESSAGE_TYPE.PONG } };
+  }
+  if (typeof type === "string") {
+    return { reason: "unsupported_type" };
+  }
+  return MALFORMED_PAYLOAD;
+}
+
+function parseServerErrorCode(value: unknown): {
+  code?: TerminalServerErrorCode;
+  rawCode?: string;
+} {
+  if (typeof value !== "string") {
+    return {};
+  }
+  if (TERMINAL_SERVER_ERROR_CODES.includes(value as TerminalServerErrorCode)) {
+    return { code: value as TerminalServerErrorCode };
+  }
+  return value.length > 0 ? { rawCode: value } : {};
 }
 
 export function parseServerMessageWithReason(
   raw: unknown,
 ): ServerMessageParseResult {
   if (typeof raw !== "string") {
-    return { reason: "malformed_payload" };
+    return MALFORMED_PAYLOAD;
   }
 
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== "object") {
-      return { reason: "malformed_payload" };
+      return MALFORMED_PAYLOAD;
     }
-
-    const message = parsed as Record<string, unknown>;
-
-    switch (message.type) {
-      case "ready":
-        if (
-          typeof message.sessionId === "string" &&
-          message.sessionId.length > 0
-        ) {
-          const readOnly =
-            typeof message.readOnly === "boolean" ? message.readOnly : false;
-          return {
-            message: { type: "ready", sessionId: message.sessionId, readOnly },
-          };
-        }
-        return { reason: "malformed_payload" };
-      case "output":
-        if (typeof message.data === "string") {
-          return { message: { type: "output", data: message.data } };
-        }
-        return { reason: "malformed_payload" };
-      case "exit":
-        if (
-          typeof message.code === "number" &&
-          typeof message.signal === "number"
-        ) {
-          return {
-            message: {
-              type: "exit",
-              code: message.code,
-              signal: message.signal,
-            },
-          };
-        }
-        return { reason: "malformed_payload" };
-      case "error":
-        if (typeof message.message === "string") {
-          const code = parseServerErrorCode(message.code);
-          return { message: { type: "error", message: message.message, code } };
-        }
-        return { reason: "malformed_payload" };
-      case "pong":
-        return { message: { type: "pong" } };
-      default:
-        return typeof message.type === "string"
-          ? { reason: "unsupported_type" }
-          : { reason: "malformed_payload" };
-    }
+    return parseKnownMessage(parsed as Record<string, unknown>);
   } catch {
-    return { reason: "malformed_payload" };
+    return MALFORMED_PAYLOAD;
   }
 }

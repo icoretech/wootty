@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { presentSessionCandidate } from "../../src/features/terminal/components/presenters/session-menu-presenter";
+import { presentSessionCandidate } from "../../src/features/terminal/presentation/session-menu-presenter";
 
 describe("session menu presenter", () => {
   it("builds watch rows with watcher count metadata", () => {
@@ -24,7 +24,7 @@ describe("session menu presenter", () => {
       {
         id: "session-control",
         mode: "control",
-        command: "",
+        command: null,
         watchers: 0,
         lastActivityMs: 1_700_000_000_000,
       },

@@ -1,78 +1,24 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  type TerminalTransportEventType,
-  TRANSPORT_READY_STATE,
-} from "../../../src/features/terminal/contracts/transport";
+import { TRANSPORT_READY_STATE } from "../../../src/features/terminal/contracts/transport";
 import { createBrowserTransport } from "../../../src/features/terminal/orchestration/browser-transport";
+import {
+  BrowserSocketMock,
+  createBrowserSocketMockHarness,
+} from "../../support/harness/browser-socket-mock";
 import { runTransportContractSuite } from "../../support/harness/transport-contract-suite";
 
-type Listener = (event: Event) => void;
-
-class FakeWebSocket {
-  static CONNECTING = 0;
-  static OPEN = 1;
-  static CLOSING = 2;
-  static CLOSED = 3;
-  static instances: FakeWebSocket[] = [];
-
-  readyState = FakeWebSocket.CONNECTING;
-  readonly sent: string[] = [];
-
-  private readonly listeners: Record<
-    TerminalTransportEventType,
-    Set<Listener>
-  > = {
-    open: new Set(),
-    message: new Set(),
-    close: new Set(),
-    error: new Set(),
-  };
-
-  constructor(readonly url: string) {
-    FakeWebSocket.instances.push(this);
-  }
-
-  addEventListener(type: TerminalTransportEventType, listener: Listener): void {
-    this.listeners[type].add(listener);
-  }
-
-  removeEventListener(
-    type: TerminalTransportEventType,
-    listener: Listener,
-  ): void {
-    this.listeners[type].delete(listener);
-  }
-
-  send(data: string): void {
-    if (this.readyState !== FakeWebSocket.OPEN) {
-      throw new Error("InvalidStateError");
-    }
-    this.sent.push(data);
-  }
-
-  close(code?: number, reason?: string): void {
-    this.readyState = FakeWebSocket.CLOSING;
-    this.emit("close", new CloseEvent("close", { code, reason }));
-    this.readyState = FakeWebSocket.CLOSED;
-  }
-
-  emit(type: TerminalTransportEventType, event: Event): void {
-    this.listeners[type].forEach((listener) => {
-      listener(event);
-    });
-  }
-}
+const socketHarness = createBrowserSocketMockHarness();
 
 afterEach(() => {
-  FakeWebSocket.instances.length = 0;
+  socketHarness.reset();
 });
 
 runTransportContractSuite("browser transport contract", () => {
   const transport = createBrowserTransport(
     "ws://localhost",
-    (url) => new FakeWebSocket(url),
+    socketHarness.createSocket,
   );
-  const raw = FakeWebSocket.instances[0];
+  const raw = socketHarness.instances[0];
   if (!raw) {
     throw new Error("browser transport socket was not created");
   }
@@ -80,16 +26,15 @@ runTransportContractSuite("browser transport contract", () => {
   return {
     transport,
     open: () => {
-      raw.readyState = FakeWebSocket.OPEN;
-      raw.emit("open", new Event("open"));
+      raw.triggerOpen();
     },
     emitMessage: (payload) => {
       const data =
         typeof payload === "string" ? payload : JSON.stringify(payload);
       raw.emit("message", new MessageEvent("message", { data }));
     },
-    emitError: (message) => {
-      raw.emit("error", new ErrorEvent("error", { message }));
+    emitError: (message, code) => {
+      raw.triggerError(message, code);
     },
     sent: () => raw.sent,
   };
@@ -99,17 +44,17 @@ describe("browser transport adapter", () => {
   it("maps native ready states and close behavior", () => {
     const transport = createBrowserTransport(
       "ws://localhost",
-      (url) => new FakeWebSocket(url),
+      socketHarness.createSocket,
     );
-    const raw = FakeWebSocket.instances[0];
-    expect(raw?.readyState).toBe(FakeWebSocket.CONNECTING);
+    const raw = socketHarness.instances[0];
+    expect(raw?.readyState).toBe(BrowserSocketMock.CONNECTING);
     expect(transport.readyState).toBe(TRANSPORT_READY_STATE.CONNECTING);
 
     if (!raw) {
       throw new Error("browser transport socket was not created");
     }
 
-    raw.readyState = FakeWebSocket.OPEN;
+    raw.readyState = BrowserSocketMock.OPEN;
     expect(transport.readyState).toBe(TRANSPORT_READY_STATE.OPEN);
     expect(raw.sent).toEqual([]);
 
@@ -120,9 +65,9 @@ describe("browser transport adapter", () => {
   it("normalizes malformed message and close events", () => {
     const transport = createBrowserTransport(
       "ws://localhost",
-      (url) => new FakeWebSocket(url),
+      socketHarness.createSocket,
     );
-    const raw = FakeWebSocket.instances[0];
+    const raw = socketHarness.instances[0];
     if (!raw) {
       throw new Error("browser transport socket was not created");
     }
@@ -136,7 +81,10 @@ describe("browser transport adapter", () => {
     raw.emit("close", new Event("close"));
 
     expect(onMessage).toHaveBeenCalledTimes(1);
-    expect(onMessage).toHaveBeenCalledWith({ data: "" });
+    expect(onMessage).toHaveBeenCalledWith({
+      data: "",
+      malformed: "isTrusted",
+    });
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledWith({ code: 1006, reason: "" });
   });
@@ -144,9 +92,9 @@ describe("browser transport adapter", () => {
   it("removes listeners using the same callback reference", () => {
     const transport = createBrowserTransport(
       "ws://localhost",
-      (url) => new FakeWebSocket(url),
+      socketHarness.createSocket,
     );
-    const raw = FakeWebSocket.instances[0];
+    const raw = socketHarness.instances[0];
     if (!raw) {
       throw new Error("browser transport socket was not created");
     }
@@ -155,7 +103,7 @@ describe("browser transport adapter", () => {
     transport.addEventListener("error", onError);
     transport.removeEventListener("error", onError);
     raw.emit("error", new ErrorEvent("error", { message: "boom" }));
-    expect(raw.readyState).toBe(FakeWebSocket.CONNECTING);
+    expect(raw.readyState).toBe(BrowserSocketMock.CONNECTING);
 
     expect(onError).not.toHaveBeenCalled();
   });
@@ -163,9 +111,9 @@ describe("browser transport adapter", () => {
   it("deduplicates repeated callback registration per event type", () => {
     const transport = createBrowserTransport(
       "ws://localhost",
-      (url) => new FakeWebSocket(url),
+      socketHarness.createSocket,
     );
-    const raw = FakeWebSocket.instances[0];
+    const raw = socketHarness.instances[0];
     if (!raw) {
       throw new Error("browser transport socket was not created");
     }

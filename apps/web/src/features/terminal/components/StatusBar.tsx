@@ -1,35 +1,20 @@
 import { ChevronDown, SlidersHorizontal, Wifi, WifiOff } from "lucide-react";
 import type { RefObject } from "react";
-import type { ConnectionStatus } from "../contracts/connection";
-import type { AttachMode } from "../contracts/session";
-
-export type StatusBarAction =
-  | { type: "toggleControls" }
-  | { type: "toggleSessionMenu" };
-
-export type StatusBarModel = {
-  controlsOpen: boolean;
-  sessionMenuOpen: boolean;
-  status: ConnectionStatus;
-  latencyTone: "neutral" | "good" | "warn" | "bad";
-  statusText: string;
-  latencyText: string;
-  sessionDisplay: string;
-  attachMode: AttachMode;
-  reconnectAttempt: number;
-  queuedInputText: string;
-  droppedInputText: string;
-  outputText: string;
-  outputBytes: number;
-  sessionButtonRef: RefObject<HTMLDivElement | null>;
-};
+import type { StatusBarAction } from "../commands/status-bar-actions";
+import { VIEWPORT_UI_COMMAND } from "../commands/viewport-commands";
+import type { StatusBarModel } from "./models/status-bar-model";
 
 type StatusBarProps = {
   model: StatusBarModel;
+  sessionButtonRef: RefObject<HTMLDivElement | null>;
   dispatch: (action: StatusBarAction) => void;
 };
 
-export function StatusBar({ model, dispatch }: StatusBarProps) {
+export function StatusBar({
+  model,
+  sessionButtonRef,
+  dispatch,
+}: StatusBarProps) {
   const StatusIcon = model.status === "connected" ? Wifi : WifiOff;
 
   return (
@@ -46,7 +31,7 @@ export function StatusBar({ model, dispatch }: StatusBarProps) {
               : "Show terminal controls"
           }
           onClick={() => {
-            dispatch({ type: "toggleControls" });
+            dispatch({ type: VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS });
           }}
         >
           <SlidersHorizontal size={14} aria-hidden="true" />
@@ -64,7 +49,7 @@ export function StatusBar({ model, dispatch }: StatusBarProps) {
           </span>
         </span>
 
-        <div className="status-session" ref={model.sessionButtonRef}>
+        <div className="status-session" ref={sessionButtonRef}>
           <button
             type="button"
             className="status-item status-item--button status-session__button"

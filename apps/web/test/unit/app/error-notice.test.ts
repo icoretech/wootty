@@ -3,33 +3,53 @@ import { toUserNotice } from "../../../src/features/terminal/notifications/user-
 
 describe("error notice mapping", () => {
   it("formats session refresh notices", () => {
-    expect(toUserNotice({ context: "sessions_refresh" })).toBe(
-      "Unable to refresh live sessions.",
-    );
-    expect(toUserNotice({ context: "sessions_refresh", status: 503 })).toBe(
-      "Unable to refresh live sessions (HTTP 503).",
-    );
+    expect(
+      toUserNotice({ context: "sessions_refresh", reason: "generic" }),
+    ).toBe("Unable to refresh live sessions.");
+    expect(
+      toUserNotice({
+        context: "sessions_refresh",
+        reason: "http",
+        status: 503,
+      }),
+    ).toBe("Unable to refresh live sessions (HTTP 503).");
   });
 
   it("formats protocol notices", () => {
     expect(
       toUserNotice({
         context: "protocol",
-        parseReason: "unsupported_type",
+        reason: "unsupported_type",
       }),
     ).toBe("Received an unsupported server message type.");
     expect(
       toUserNotice({
         context: "protocol",
-        parseReason: "malformed_payload",
+        reason: "malformed_payload",
       }),
     ).toBe("Received a malformed server payload.");
+    expect(
+      toUserNotice({
+        context: "protocol",
+        reason: "empty_transport_message",
+      }),
+    ).toBe(
+      "Received an empty transport payload; expected a JSON server message.",
+    );
+    expect(
+      toUserNotice({
+        context: "protocol",
+        reason: "malformed_transport_event",
+        details: "code,data",
+      }),
+    ).toBe("Received malformed transport event (code,data).");
   });
 
   it("includes cause context when available", () => {
     expect(
       toUserNotice({
         context: "sessions_refresh",
+        reason: "cause",
         cause: new Error("network down"),
       }),
     ).toContain("network down");
@@ -39,5 +59,11 @@ describe("error notice mapping", () => {
         cause: new Error("permission denied"),
       }),
     ).toContain("permission denied");
+    expect(
+      toUserNotice({
+        context: "runtime",
+        reason: "xterm chunk failed",
+      }),
+    ).toContain("xterm chunk failed");
   });
 });

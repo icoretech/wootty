@@ -3,7 +3,7 @@ package protocol
 import "testing"
 
 func TestParseAttach(t *testing.T) {
-	msg, err := ParseClientMessage([]byte(`{"type":"attach","sessionId":"abc","cols":120,"rows":40}`))
+	msg, err := ParseClientMessage([]byte(`{"type":"attach","version":1,"sessionId":"abc","cols":120,"rows":40}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -18,7 +18,7 @@ func TestParseAttach(t *testing.T) {
 }
 
 func TestParseAttachWatch(t *testing.T) {
-	msg, err := ParseClientMessage([]byte(`{"type":"attach","sessionId":"abc","cols":120,"rows":40,"watch":true}`))
+	msg, err := ParseClientMessage([]byte(`{"type":"attach","version":1,"sessionId":"abc","cols":120,"rows":40,"watch":true}`))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -79,5 +79,15 @@ func TestParseInvalidPayloads(t *testing.T) {
 		if _, err := ParseClientMessage([]byte(payload)); err == nil {
 			t.Fatalf("expected parse error for payload %s", payload)
 		}
+	}
+}
+
+func TestParseRejectsUnsupportedWireVersion(t *testing.T) {
+	_, err := ParseClientMessage([]byte(`{"type":"attach","version":99,"sessionId":"abc","cols":120,"rows":40}`))
+	if err == nil {
+		t.Fatal("expected wire version rejection")
+	}
+	if err != ErrUnsupportedWireVersion {
+		t.Fatalf("expected ErrUnsupportedWireVersion, got %v", err)
 	}
 }

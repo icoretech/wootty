@@ -2,16 +2,18 @@ export const DEFAULT_E2E_PORT = 4310;
 const MIN_PORT = 1;
 const MAX_PORT = 65_535;
 
-type E2eNetworkConfig = {
-  readonly port: number;
-  readonly baseURL: string;
-  readonly healthUrl: string;
-};
-
 type E2eServerLaunch = {
   readonly cwd: string;
   readonly env: Readonly<Record<string, string>>;
-  readonly args: readonly string[];
+  readonly command: string;
+};
+
+type E2eRuntimeConfig = {
+  readonly port: number;
+  readonly baseURL: string;
+  readonly healthUrl: string;
+  readonly crossBrowser: boolean;
+  readonly webServer: E2eServerLaunch;
 };
 
 export function resolveE2ePort(envPort: string | undefined): number {
@@ -28,48 +30,38 @@ export function resolveE2ePort(envPort: string | undefined): number {
   return DEFAULT_E2E_PORT;
 }
 
-export function resolveE2eBaseUrl(port: number): string {
-  return `http://127.0.0.1:${port}`;
-}
-
-export function buildE2eConfig(port: number): E2eNetworkConfig {
-  const baseURL = resolveE2eBaseUrl(port);
-  return {
-    port,
-    baseURL,
-    healthUrl: `${baseURL}/api/health`,
-  };
-}
-
-export function buildE2eServerLaunch(port: number): E2eServerLaunch {
+function createServerLaunch(port: number): E2eServerLaunch {
+  const args = [
+    "go",
+    "run",
+    "./cmd/woottyd",
+    "run",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    String(port),
+    "sh",
+  ] as const;
   return {
     cwd: "../server",
     env: {
       WOOTTY_PORT: String(port),
       WOOTTY_FAKE_PTY: "1",
     },
-    args: [
-      "go",
-      "run",
-      "./cmd/woottyd",
-      "run",
-      "--host",
-      "127.0.0.1",
-      "--port",
-      String(port),
-      "sh",
-    ],
+    command: args.join(" "),
   };
 }
 
-function stringifyLaunchEnv(env: Readonly<Record<string, string>>): string {
-  return Object.entries(env)
-    .map(([key, value]) => `${key}=${value}`)
-    .join(" ");
-}
-
-export function buildE2eServerCommand(port: number): string {
-  const launch = buildE2eServerLaunch(port);
-  const env = stringifyLaunchEnv(launch.env);
-  return `cd ${launch.cwd} && ${env} ${launch.args.join(" ")}`;
+export function resolveE2eRuntime(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): E2eRuntimeConfig {
+  const port = resolveE2ePort(env.WOOTTY_E2E_PORT);
+  const baseURL = `http://127.0.0.1:${port}`;
+  return {
+    port,
+    baseURL,
+    healthUrl: `${baseURL}/api/health`,
+    crossBrowser: env.WOOTTY_E2E_CROSS === "1",
+    webServer: createServerLaunch(port),
+  };
 }

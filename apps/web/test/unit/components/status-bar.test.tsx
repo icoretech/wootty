@@ -24,8 +24,8 @@ describe("StatusBar", () => {
           droppedInputText: "0 B",
           outputText: "4.0 KiB",
           outputBytes: 4096,
-          sessionButtonRef: createRef<HTMLDivElement>(),
         }}
+        sessionButtonRef={createRef<HTMLDivElement>()}
         dispatch={dispatch}
       />,
     );
