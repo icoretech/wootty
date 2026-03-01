@@ -37,6 +37,10 @@ function toSessionRefreshNotice(details: SessionsRefreshNotice): string {
       return "Session list response was malformed. Keeping the existing list until the next refresh.";
     case "missing_sessions_array":
       return "Session list response did not include a sessions array.";
+    case "all_sessions_invalid":
+      return `Session list response contained only malformed entries (${details.count}).`;
+    case "too_many_invalid_sessions":
+      return `Session list response contained too many malformed entries (${details.count}/${details.total}).`;
     case "invalid_entries":
       return `Skipped ${details.count} malformed session entr${details.count === 1 ? "y" : "ies"}.`;
     case "refresh_paused_after_failures":
@@ -50,8 +54,13 @@ function toProtocolNotice(details: ProtocolNotice): string {
   switch (details.reason) {
     case "unsupported_type":
       return "Received an unsupported server message type.";
-    case "malformed_payload":
-      return "Received a malformed server payload.";
+    case "malformed_payload": {
+      const cause = describeCause(details.cause);
+      const detailSuffix = details.detail ? ` [detail=${details.detail}]` : "";
+      return cause
+        ? `Received a malformed server payload${detailSuffix} (${cause}).`
+        : `Received a malformed server payload${detailSuffix}.`;
+    }
     case "empty_transport_message":
       return "Received an empty transport payload; expected a JSON server message.";
     case "incompatible_version":
@@ -119,7 +128,8 @@ function toServerNotice(details: ServerNotice): string {
 }
 
 function toBootstrapNotice(details: BootstrapNotice): string {
-  return `Terminal bootstrap configuration error (${details.details}).`;
+  const codeSuffix = details.code ? ` [code=${details.code}]` : "";
+  return `Terminal bootstrap configuration error${codeSuffix} (${details.details}).`;
 }
 
 function toStorageNotice(details: StorageNotice): string {

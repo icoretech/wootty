@@ -43,7 +43,7 @@ type TransportHandlers = {
 
 type UseTransportOrchestratorArgs = {
   createTransport: (url: string) => TerminalTransport;
-  wsUrl: string;
+  wsUrl: string | null;
   handlers: TransportHandlers;
   hasSessionContext: () => boolean;
   scheduler: Scheduler;
@@ -102,7 +102,10 @@ function socketFailureContext(
   return contextParts.join(" ");
 }
 
-function invalidEndpointReason(endpoint: string): string | null {
+function invalidEndpointReason(endpoint: string | null): string | null {
+  if (typeof endpoint !== "string" || endpoint.trim().length === 0) {
+    return "websocket endpoint unavailable";
+  }
   try {
     const parsed = new URL(endpoint);
     if (parsed.protocol === "ws:" || parsed.protocol === "wss:") {
@@ -238,10 +241,16 @@ export function useTransportOrchestrator({
       dispatch({ type: "socket-error" });
       return;
     }
+    const socketUrl = wsUrl;
+    if (typeof socketUrl !== "string") {
+      reportSocketFailure("error", undefined, "websocket endpoint unavailable");
+      dispatch({ type: "socket-error" });
+      return;
+    }
 
     let ws: TerminalTransport;
     try {
-      ws = createTransport(wsUrl);
+      ws = createTransport(socketUrl);
     } catch (error) {
       const reason =
         error instanceof Error && error.message.length > 0

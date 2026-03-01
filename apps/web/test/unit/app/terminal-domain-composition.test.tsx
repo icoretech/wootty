@@ -68,7 +68,10 @@ function DomainProbe() {
     scheduler: browserScheduler,
     backendResolution: {
       ok: false,
-      issue: "invalid endpoint",
+      issue: {
+        code: "socket_url_invalid_format",
+        details: "invalid endpoint",
+      },
     },
     fetchSessions: vi.fn(async () => ({ ok: true, payload: {} })),
   };

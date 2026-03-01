@@ -1,0 +1,19 @@
+import type { FloatingControlMetadata } from "../contracts/floating-control-metadata";
+import { floatingControlMetadata } from "./metadata";
+import {
+  FLOATING_CONTROL_REGISTRY,
+  type FloatingControlMetadataKey,
+} from "./registry";
+
+export type FloatingControlDescriptors = Record<
+  FloatingControlMetadataKey,
+  FloatingControlMetadata
+>;
+
+export function buildFloatingControlDescriptors(): FloatingControlDescriptors {
+  const descriptors = {} as FloatingControlDescriptors;
+  for (const entry of FLOATING_CONTROL_REGISTRY) {
+    descriptors[entry.metadataKey] = floatingControlMetadata(entry.action);
+  }
+  return descriptors;
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveTerminalBackendEndpoints } from "../../../src/features/terminal/bootstrap/terminal-environment";
+import { resolveTerminalBackendEndpoints } from "../../../src/features/terminal/bootstrap/backend-endpoint-resolver";
 
 const HTTPS_PROTOCOL = "https:";
 const HTTP_PROTOCOL = "http:";
@@ -40,17 +40,23 @@ describe("terminal environment backend endpoint resolution", () => {
   it("returns a bootstrap issue when websocket config is invalid", () => {
     const resolved = resolveTerminalBackendEndpoints(
       null,
-      "invalid-url?token=token-123",
+      "ftp://invalid-url?token=token-123",
       "token-123",
     );
 
     expect(resolved.ok).toBe(false);
     expect(resolved).toMatchObject({
       ok: false,
-      issue: expect.stringContaining("invalid websocket URL"),
+      issue: {
+        code: "env_socket_url_unsupported_protocol",
+      },
     });
-    expect((resolved as { issue: string }).issue).not.toContain("token-123");
-    expect((resolved as { issue: string }).issue).toContain("[redacted]");
+    expect(
+      (resolved as { issue: { details: string } }).issue.details,
+    ).not.toContain("token-123");
+    expect(
+      (resolved as { issue: { details: string } }).issue.details,
+    ).toContain("redacted");
   });
 
   it("injects auth token into websocket endpoint query when configured", () => {
@@ -117,6 +123,13 @@ describe("terminal environment backend endpoint resolution", () => {
         envSocketUrl: undefined,
         expectedWsUrl: `${WS_PROTOCOL}//${LOOPBACK_HOST}/api/terminal`,
         expectedSessionsUrl: `${HTTP_PROTOCOL}//${LOOPBACK_HOST}/api/sessions`,
+      },
+      {
+        label: "pathful websocket override keeps prefix for sessions endpoint",
+        windowRef: httpsWindow,
+        envSocketUrl: `${WSS_PROTOCOL}//${WS_HOST}/tenant-a/api/terminal`,
+        expectedWsUrl: `${WSS_PROTOCOL}//${WS_HOST}/tenant-a/api/terminal`,
+        expectedSessionsUrl: `${HTTPS_PROTOCOL}//${WS_HOST}/tenant-a/api/sessions`,
       },
     ] as const;
 

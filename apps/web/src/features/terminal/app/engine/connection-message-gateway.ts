@@ -1,12 +1,13 @@
 import { useCallback } from "react";
 import type { AttachMode } from "../../contracts/session";
 import type { NoticePublisher } from "../../notifications/notice-contract";
+import { resolveServerErrorPolicy } from "../../protocol/policies/server-error-policy";
 import type { TerminalServerErrorCode } from "../../protocol/server-error-codes";
-import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
-import {
-  handleIncomingServerMessage,
-  handleServerErrorPolicy,
-} from "./connection-message-policy";
+import type {
+  SessionRefreshRequest,
+  SessionRefreshResult,
+} from "../../session/application/session-refresh-result";
+import { handleIncomingServerMessage } from "./connection-message-policy";
 import type { ConnectionStatusFlag } from "./connection-status-projector";
 
 type UseConnectionMessageGatewayArgs = {
@@ -14,7 +15,9 @@ type UseConnectionMessageGatewayArgs = {
   setStatusFlag: (next: ConnectionStatusFlag | null) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  refreshLiveSessions: (requestId?: number) => Promise<SessionRefreshResult>;
+  refreshLiveSessions: (
+    request: SessionRefreshRequest,
+  ) => Promise<SessionRefreshResult>;
   setSessionMode: (mode: AttachMode) => void;
   writeServerError: (message: string) => void;
   flushAfterReady: () => void;
@@ -26,6 +29,19 @@ type UseConnectionMessageGatewayArgs = {
 type ConnectionMessageGateway = {
   handleSocketMessage: (rawData: string) => void;
 };
+
+function toConnectionStatusFlag(
+  next:
+    | "session_not_found"
+    | "attach_forbidden"
+    | "protocol_incompatible"
+    | undefined,
+): ConnectionStatusFlag | null {
+  if (!next) {
+    return null;
+  }
+  return next;
+}
 
 export function useConnectionMessageGateway({
   publishNotice,
@@ -43,71 +59,30 @@ export function useConnectionMessageGateway({
   const handleServerError = useCallback(
     (message: string, code?: TerminalServerErrorCode, rawCode?: string) => {
       writeServerError(message);
-      handleServerErrorPolicy({
+      const policy = resolveServerErrorPolicy({
         code,
         rawCode,
-        onSessionNotFound: () => {
-          publishNotice({
-            context: "server",
-            reason: "session_not_found",
-          });
-          clearMissingSession();
-          setStatusFlag("session_not_found");
-          void refreshLiveSessions();
-        },
-        onAttachForbidden: () => {
-          publishNotice({
-            context: "server",
-            reason: "attach_forbidden",
-          });
-          setSessionMode("watch");
-          setStatusFlag("attach_forbidden");
-        },
-        onIncompatibleVersion: () => {
-          publishNotice({
-            context: "server",
-            reason: "incompatible_version",
-          });
-          setStatusFlag("protocol_incompatible");
-        },
-        onAttachRequired: () => {
-          publishNotice({
-            context: "server",
-            reason: "attach_required",
-          });
-        },
-        onReadOnlyForbidden: () => {
-          publishNotice({
-            context: "server",
-            reason: "read_only_forbidden",
-          });
-        },
-        onSessionNotWritable: () => {
-          publishNotice({
-            context: "server",
-            reason: "session_not_writable",
-          });
-        },
-        onSessionNotResizable: () => {
-          publishNotice({
-            context: "server",
-            reason: "session_not_resizable",
-          });
-        },
-        onUnknownCode: (unknownCode: string) => {
-          publishNotice({
-            context: "server",
-            reason: "raw_code",
-            code: unknownCode,
-          });
-        },
-        onMissingCode: () => {
-          publishNotice({
-            context: "server",
-            reason: "missing_code",
-          });
-        },
       });
+      publishNotice({
+        context: "server",
+        ...policy.notice,
+      });
+
+      if (policy.clearMissingSession) {
+        clearMissingSession();
+      }
+      if (policy.nextAttachMode) {
+        setSessionMode(policy.nextAttachMode);
+      }
+      const statusFlag = toConnectionStatusFlag(policy.statusFlag);
+      if (statusFlag) {
+        setStatusFlag(statusFlag);
+      }
+      if (policy.refreshSessions) {
+        void refreshLiveSessions({
+          trigger: "transport_event",
+        });
+      }
     },
     [
       clearMissingSession,
@@ -129,9 +104,18 @@ export function useConnectionMessageGateway({
             reason: "empty_transport_message",
           });
         },
-        onProtocolFailure: (reason) => {
-          publishNotice({ context: "protocol", reason });
-          if (reason === "incompatible_version") {
+        onProtocolFailure: (failure) => {
+          if (failure.reason === "malformed_payload") {
+            publishNotice({
+              context: "protocol",
+              reason: "malformed_payload",
+              detail: failure.detail,
+              cause: failure.cause,
+            });
+          } else {
+            publishNotice({ context: "protocol", reason: failure.reason });
+          }
+          if (failure.reason === "incompatible_version") {
             setStatusFlag("protocol_incompatible");
           }
         },
@@ -139,7 +123,9 @@ export function useConnectionMessageGateway({
           applyReadySession(readySessionId, readOnly);
           setStatusFlag(null);
           flushAfterReady();
-          void refreshLiveSessions();
+          void refreshLiveSessions({
+            trigger: "transport_event",
+          });
         },
         onOutput: ({ data }) => {
           writeOutputAndTrackBytes(data);

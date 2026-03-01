@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+
+	"github.com/icoretech/wootty/apps/server/internal/protocol"
 )
 
 var (
@@ -337,7 +339,7 @@ func (m *Manager) forwardOutput(sessionID string, dataCh <-chan string) {
 
 		for _, target := range targets {
 			_ = writeJSON(target.conn, &target.mu, map[string]any{
-				"type": "output",
+				"type": protocol.ServerMessageTypeOutput,
 				"data": data,
 			})
 		}
@@ -364,7 +366,7 @@ func (m *Manager) watchExit(sessionID string, exitCh <-chan ExitInfo) {
 
 	for _, target := range targets {
 		_ = writeJSON(target.conn, &target.mu, map[string]any{
-			"type":   "exit",
+			"type":   protocol.ServerMessageTypeExit,
 			"code":   exitInfo.Code,
 			"signal": exitInfo.Signal,
 		})

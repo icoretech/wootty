@@ -87,7 +87,7 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	if !s.isAuthorizedRequest(r) {
+	if !s.isAuthorizedSessionsRequest(r) {
 		writeUnauthorized(w)
 		return
 	}
@@ -100,7 +100,7 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 var baseUpgrader = websocket.Upgrader{}
 
 func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
-	if !s.isAuthorizedRequest(r) {
+	if !s.isAuthorizedTerminalRequest(r) {
 		writeUnauthorized(w)
 		return
 	}
@@ -210,7 +210,7 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 				send(map[string]string{
 					"type":    protocol.ServerMessageTypeError,
 					"message": "Session is read-only",
-					"code":    protocol.ServerErrorCodeReadOnlyForbidden,
+					"code":    protocol.ServerErrorCodeSessionNotWritable,
 				})
 				continue
 			}
@@ -235,7 +235,7 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 				send(map[string]string{
 					"type":    protocol.ServerMessageTypeError,
 					"message": "Session is read-only",
-					"code":    protocol.ServerErrorCodeReadOnlyForbidden,
+					"code":    protocol.ServerErrorCodeSessionNotResizable,
 				})
 				continue
 			}
@@ -281,7 +281,35 @@ func (s *Server) isAuthorizedRequest(r *http.Request) bool {
 	if strings.TrimSpace(s.cfg.AuthToken) == "" {
 		return true
 	}
-	token := readAuthorizationToken(r)
+	token := readStaticAuthorizationToken(r)
+	if token == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AuthToken)) == 1
+}
+
+func (s *Server) isAuthorizedSessionsRequest(r *http.Request) bool {
+	if strings.TrimSpace(s.cfg.AuthToken) == "" {
+		return true
+	}
+	token := readBearerAuthorizationToken(r)
+	if token == "" {
+		token = readCookieAuthorizationToken(r)
+	}
+	if token == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AuthToken)) == 1
+}
+
+func (s *Server) isAuthorizedTerminalRequest(r *http.Request) bool {
+	if strings.TrimSpace(s.cfg.AuthToken) == "" {
+		return true
+	}
+	token := readQueryAuthorizationToken(r)
+	if token == "" {
+		token = readCookieAuthorizationToken(r)
+	}
 	if token == "" {
 		return false
 	}
@@ -310,7 +338,7 @@ func (s *Server) isAllowedOrigin(r *http.Request) bool {
 	return origin == "http://"+expectedHost || origin == "https://"+expectedHost
 }
 
-func readAuthorizationToken(r *http.Request) string {
+func readBearerAuthorizationToken(r *http.Request) string {
 	authorizationHeader := strings.TrimSpace(r.Header.Get("Authorization"))
 	if strings.HasPrefix(strings.ToLower(authorizationHeader), "bearer ") {
 		token := strings.TrimSpace(authorizationHeader[len("Bearer "):])
@@ -318,15 +346,30 @@ func readAuthorizationToken(r *http.Request) string {
 			return token
 		}
 	}
-	if token := strings.TrimSpace(r.Header.Get("X-Wootty-Token")); token != "" {
-		return token
-	}
+	return ""
+}
+
+func readCookieAuthorizationToken(r *http.Request) string {
 	if cookie, err := r.Cookie("wootty_auth"); err == nil {
 		if token := strings.TrimSpace(cookie.Value); token != "" {
 			return token
 		}
 	}
+	return ""
+}
+
+func readQueryAuthorizationToken(r *http.Request) string {
 	return strings.TrimSpace(r.URL.Query().Get("token"))
+}
+
+func readStaticAuthorizationToken(r *http.Request) string {
+	if token := readBearerAuthorizationToken(r); token != "" {
+		return token
+	}
+	if token := readCookieAuthorizationToken(r); token != "" {
+		return token
+	}
+	return readQueryAuthorizationToken(r)
 }
 
 func (s *Server) registerFallbackRoute(mux *http.ServeMux) {
@@ -485,7 +528,7 @@ func (s *Server) authorizeStaticRequest(w http.ResponseWriter, r *http.Request) 
 }
 
 func setAuthCookieFromRequest(w http.ResponseWriter, r *http.Request) {
-	token := strings.TrimSpace(readAuthorizationToken(r))
+	token := strings.TrimSpace(readStaticAuthorizationToken(r))
 	if token == "" {
 		return
 	}

@@ -11,12 +11,17 @@ import {
 
 const SESSION_REFRESH_CALL_TIMEOUT_MS = 15_000;
 
-import type { SessionRefreshResult } from "../session-refresh-result";
+import type {
+  SessionRefreshRequest,
+  SessionRefreshResult,
+} from "../session-refresh-result";
 
 type SessionRefreshBindingArgs = {
   sessionMenuOpen: boolean;
   windowRef: Window | null;
-  refreshLiveSessions: (requestId?: number) => Promise<SessionRefreshResult>;
+  refreshLiveSessions: (
+    request: SessionRefreshRequest,
+  ) => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
   onRefreshCircuitOpen?: (consecutiveFailures: number) => void;
 };
@@ -42,9 +47,9 @@ export function useSessionRefreshBinding({
     let refreshInFlight = false;
     let disposed = false;
     let refreshTimer: SchedulerTimerHandle | null = null;
-    let refreshRequestId = 0;
     let consecutiveFailures = 0;
     let circuitOpen = false;
+    let activeRefreshController: AbortController | null = null;
 
     const scheduleNext = () => {
       if (disposed) {
@@ -72,23 +77,38 @@ export function useSessionRefreshBinding({
       }, SESSION_REFRESH_CIRCUIT_BREAKER_COOLDOWN_MS);
     };
 
+    const abortActiveRefresh = () => {
+      if (activeRefreshController === null) {
+        return;
+      }
+      activeRefreshController.abort();
+      activeRefreshController = null;
+    };
+
     const runRefreshLoop = async () => {
       if (disposed || refreshInFlight || circuitOpen) {
         return;
       }
       refreshInFlight = true;
+      const refreshController = new AbortController();
+      activeRefreshController = refreshController;
       try {
-        refreshRequestId += 1;
-        const requestId = refreshRequestId;
         let refreshTimeout: SchedulerTimerHandle | null = null;
         let timedOut = false;
         const refreshResult = await Promise.race([
-          refreshLiveSessions(requestId),
+          refreshLiveSessions({
+            trigger: "poll",
+            signal: refreshController.signal,
+          }),
           new Promise<SessionRefreshResult>((resolve) => {
             refreshTimeout = scheduler.setTimeout(() => {
+              refreshController.abort();
               resolve({
                 ok: false,
-                reason: "network_error",
+                failure: {
+                  source: "lifecycle",
+                  reason: "request_timeout",
+                },
               });
               timedOut = true;
             }, SESSION_REFRESH_CALL_TIMEOUT_MS);
@@ -101,6 +121,12 @@ export function useSessionRefreshBinding({
         if (refreshResult.ok) {
           consecutiveFailures = 0;
         } else {
+          if (
+            refreshResult.failure.reason === "request_aborted" ||
+            refreshResult.failure.reason === "request_superseded"
+          ) {
+            return;
+          }
           consecutiveFailures += 1;
           if (timedOut) {
             consecutiveFailures = Math.max(
@@ -113,6 +139,9 @@ export function useSessionRefreshBinding({
           }
         }
       } finally {
+        if (activeRefreshController === refreshController) {
+          activeRefreshController = null;
+        }
         refreshInFlight = false;
         if (!circuitOpen) {
           scheduleNext();
@@ -123,6 +152,7 @@ export function useSessionRefreshBinding({
     void runRefreshLoop();
     return () => {
       disposed = true;
+      abortActiveRefresh();
       if (refreshTimer !== null) {
         scheduler.clearTimeout(refreshTimer);
       }

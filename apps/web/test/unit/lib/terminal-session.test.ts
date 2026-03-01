@@ -64,54 +64,98 @@ describe("terminal-session helpers", () => {
     expect(
       parseServerMessageWithReason('{"type":"exit","code":"NaN","signal":15}'),
     ).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_exit_payload",
+      },
     });
     expect(
       parseServerMessageWithReason('{"type":"exit","code":1e309,"signal":15}'),
     ).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_exit_payload",
+      },
+    });
+    expect(
+      parseServerMessageWithReason('{"type":"exit","code":1.5,"signal":15}'),
+    ).toEqual({
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_exit_payload",
+      },
+    });
+    expect(
+      parseServerMessageWithReason('{"type":"exit","code":0,"signal":-1}'),
+    ).toEqual({
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_exit_payload",
+      },
     });
     expect(parseServerMessageWithReason('{"type":"pong"}')).toEqual({
       message: { type: "pong" },
     });
     expect(parseServerMessageWithReason('{"type":"ready"}')).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "missing_ready_session_id",
+      },
     });
     expect(
       parseServerMessageWithReason(
         '{"type":"ready","version":999,"sessionId":"abc"}',
       ),
     ).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_ready_read_only",
+      },
     });
     expect(
       parseServerMessageWithReason(
         `{"type":"ready","version":${TERMINAL_WIRE_CONTRACT_VERSION},"sessionId":"abc"}`,
       ),
     ).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_ready_read_only",
+      },
     });
     expect(
       parseServerMessageWithReason(
         `{"type":"ready","version":${TERMINAL_WIRE_CONTRACT_VERSION},"sessionId":"abc","readOnly":"nope"}`,
       ),
     ).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "invalid_ready_read_only",
+      },
     });
     expect(
       parseServerMessageWithReason(
         '{"type":"ready","version":999,"sessionId":"abc","readOnly":false}',
       ),
     ).toEqual({
-      reason: "incompatible_version",
+      failure: {
+        reason: "incompatible_version",
+        detail: "wire_version_mismatch",
+      },
     });
     expect(
       parseServerMessageWithReason('{"type":"future","value":"x"}'),
     ).toEqual({
-      reason: "unsupported_type",
+      failure: {
+        reason: "unsupported_type",
+        detail: "unsupported_message_type",
+      },
     });
     expect(parseServerMessageWithReason("not-json")).toEqual({
-      reason: "malformed_payload",
+      failure: {
+        reason: "malformed_payload",
+        detail: "json_parse_error",
+        cause: expect.any(SyntaxError),
+      },
     });
   });
 

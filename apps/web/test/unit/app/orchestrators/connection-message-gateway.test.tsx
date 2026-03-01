@@ -1,21 +1,16 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useConnectionMessageGateway } from "../../../../src/features/terminal/app/engine/connection-message-gateway";
-import {
-  handleIncomingServerMessage,
-  handleServerErrorPolicy,
-} from "../../../../src/features/terminal/app/engine/connection-message-policy";
+import { handleIncomingServerMessage } from "../../../../src/features/terminal/app/engine/connection-message-policy";
 
 vi.mock(
   "../../../../src/features/terminal/app/engine/connection-message-policy",
   () => ({
     handleIncomingServerMessage: vi.fn(),
-    handleServerErrorPolicy: vi.fn(),
   }),
 );
 
 const mockedIncomingHandler = vi.mocked(handleIncomingServerMessage);
-const mockedServerErrorPolicy = vi.mocked(handleServerErrorPolicy);
 
 function createGatewayArgs() {
   return {
@@ -36,13 +31,14 @@ function createGatewayArgs() {
 describe("connection message gateway", () => {
   beforeEach(() => {
     mockedIncomingHandler.mockReset();
-    mockedServerErrorPolicy.mockReset();
   });
 
   it("publishes protocol incompatibility notices and flags the status", () => {
     const args = createGatewayArgs();
     mockedIncomingHandler.mockImplementation(({ onProtocolFailure }) => {
-      onProtocolFailure("incompatible_version");
+      onProtocolFailure({
+        reason: "incompatible_version",
+      });
     });
 
     const { result } = renderHook(() => useConnectionMessageGateway(args));
@@ -78,7 +74,9 @@ describe("connection message gateway", () => {
     expect(args.applyReadySession).toHaveBeenCalledWith("session-1", false);
     expect(args.setStatusFlag).toHaveBeenCalledWith(null);
     expect(args.flushAfterReady).toHaveBeenCalledOnce();
-    expect(args.refreshLiveSessions).toHaveBeenCalledOnce();
+    expect(args.refreshLiveSessions).toHaveBeenCalledWith({
+      trigger: "transport_event",
+    });
   });
 
   it("maps known server errors through policy callbacks", () => {
@@ -90,11 +88,6 @@ describe("connection message gateway", () => {
         code: "session_not_found",
       });
     });
-    mockedServerErrorPolicy.mockImplementation(
-      ({ onSessionNotFound, ..._args }) => {
-        onSessionNotFound();
-      },
-    );
 
     const { result } = renderHook(() => useConnectionMessageGateway(args));
 
@@ -109,6 +102,8 @@ describe("connection message gateway", () => {
     });
     expect(args.clearMissingSession).toHaveBeenCalledOnce();
     expect(args.setStatusFlag).toHaveBeenCalledWith("session_not_found");
-    expect(args.refreshLiveSessions).toHaveBeenCalledOnce();
+    expect(args.refreshLiveSessions).toHaveBeenCalledWith({
+      trigger: "transport_event",
+    });
   });
 });

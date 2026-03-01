@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
 import { FloatingControls } from "../../../src/features/terminal/components/FloatingControls";
-import { floatingControlMetadata } from "../../../src/features/terminal/presentation/command-ui/floating-control-metadata";
+import { floatingControlMetadata } from "../../../src/features/terminal/view/floating-controls/metadata";
 
 describe("FloatingControls", () => {
   it("invokes action callbacks from control buttons", () => {

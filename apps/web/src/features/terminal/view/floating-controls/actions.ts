@@ -1,5 +1,5 @@
-import type { ShortcutAction } from "./shortcut-actions";
-import type { VIEWPORT_UI_COMMAND } from "./viewport-commands";
+import type { ShortcutAction } from "../../commands/shortcut-actions";
+import type { VIEWPORT_UI_COMMAND } from "../../commands/viewport-commands";
 
 export type FloatingControlCommand = Exclude<
   ShortcutAction,

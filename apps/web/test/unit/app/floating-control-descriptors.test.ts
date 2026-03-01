@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildFloatingControlDescriptors } from "../../../src/features/terminal/presentation/command-ui/floating-control-descriptors";
+import { buildFloatingControlDescriptors } from "../../../src/features/terminal/view/floating-controls/descriptors";
 
 describe("floating control descriptors", () => {
   it("keeps UI metadata complete for every floating control action", () => {

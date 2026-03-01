@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { TERMINAL_BACKEND_ROUTE } from "../../../src/features/terminal/protocol/generated-wire-contract";
 import {
@@ -54,14 +55,17 @@ type HttpRoutesContract = {
   terminal_ws: string;
 };
 
+const REPO_ROOT = resolve(
+  dirname(fileURLToPath(import.meta.url)),
+  "../../../../../",
+);
+
 function loadWireContract(): WireContract {
-  const candidates = [
-    resolve(process.cwd(), "contracts/terminal-wire-contract.json"),
-    resolve(process.cwd(), "../contracts/terminal-wire-contract.json"),
-    resolve(process.cwd(), "../../contracts/terminal-wire-contract.json"),
-  ];
-  const contractPath = candidates.find((path) => existsSync(path));
-  if (!contractPath) {
+  const contractPath = resolve(
+    REPO_ROOT,
+    "contracts/terminal-wire-contract.json",
+  );
+  if (!existsSync(contractPath)) {
     throw new Error("Unable to locate contracts/terminal-wire-contract.json");
   }
   const raw = readFileSync(contractPath, "utf8");
@@ -69,13 +73,8 @@ function loadWireContract(): WireContract {
 }
 
 function loadHttpRoutesContract(): HttpRoutesContract {
-  const candidates = [
-    resolve(process.cwd(), "contracts/http-routes.json"),
-    resolve(process.cwd(), "../contracts/http-routes.json"),
-    resolve(process.cwd(), "../../contracts/http-routes.json"),
-  ];
-  const contractPath = candidates.find((path) => existsSync(path));
-  if (!contractPath) {
+  const contractPath = resolve(REPO_ROOT, "contracts/http-routes.json");
+  if (!existsSync(contractPath)) {
     throw new Error("Unable to locate contracts/http-routes.json");
   }
   const raw = readFileSync(contractPath, "utf8");

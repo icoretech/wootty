@@ -5,7 +5,10 @@ import type { AttachMode } from "../contracts/session";
 import type { NoticePublisher } from "../notifications/notice-contract";
 import type { Scheduler } from "../platform/scheduler";
 import { useSessionRefreshBinding } from "../session/application/bindings/session-refresh-binding";
-import type { SessionRefreshResult } from "../session/application/session-refresh-result";
+import type {
+  SessionRefreshRequest,
+  SessionRefreshResult,
+} from "../session/application/session-refresh-result";
 import {
   useDocumentTitleBinding,
   useSessionMenuDismissBinding,
@@ -25,7 +28,9 @@ type UseControllerBindingsArgs = {
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
   closeSessionMenu: () => void;
-  refreshLiveSessions: (requestId?: number) => Promise<SessionRefreshResult>;
+  refreshLiveSessions: (
+    request: SessionRefreshRequest,
+  ) => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
   attachMode: AttachMode;
   sessionId: string | null;

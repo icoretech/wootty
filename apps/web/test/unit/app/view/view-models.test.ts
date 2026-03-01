@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildStatusAnnouncement,
   buildTerminalViewModels,
-} from "../../../src/features/terminal/view/terminal-view-models";
+} from "../../../../src/features/terminal/view/terminal-view-models";
 
 describe("terminal view-model mappers", () => {
   it("builds control, session, and status models from app state", () => {

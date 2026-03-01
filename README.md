@@ -191,7 +191,7 @@ Frontend module ownership:
 - `apps/web/src/features/terminal/platform/*`: platform-facing utilities shared by app/engine bindings (for example scheduler abstractions).
 - `apps/web/src/features/terminal/components/*`: presentational controls, status bar, and session menu UI.
 - `apps/web/src/features/terminal/view/*`: UI-facing formatting and presenter mapping for menu/session copy.
-- `apps/web/src/features/terminal/presentation/command-ui/*`: floating-control UI metadata and descriptor assembly.
+- `apps/web/src/features/terminal/view/floating-controls/*`: floating-controls registry, metadata, and descriptor assembly.
 - `apps/web/src/features/terminal/notifications/*`: user-facing terminal notice mapping.
 - `apps/web/src/features/terminal/session/domain/*`: session payload parsing and candidate derivation.
 - `apps/web/src/features/terminal/session/persistence/*`: storage adapters and storage key ownership.
@@ -204,10 +204,10 @@ Frontend module ownership:
 
 - Supported inbound message `type` values: `ready`, `output`, `exit`, `error`, `pong`.
 - Required fields:
-  - `ready`: `sessionId` (string), `readOnly` (boolean)
+  - `ready`: `sessionId` (string), `readOnly` (boolean), `version` (must match `TERMINAL_WIRE_CONTRACT_VERSION`)
   - `output`: `data` (string)
   - `exit`: `code` (number), `signal` (number)
-  - `error`: `message` (string), optional `code` (string)
+  - `error`: `message` (string), optional `code` (known server code string). Unknown non-empty codes are surfaced as `rawCode`.
   - `pong`: no additional fields
 - Compatibility policy:
   - Additive fields are allowed and ignored by older clients.

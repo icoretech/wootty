@@ -1,9 +1,23 @@
+import type { ServerErrorNoticePayload } from "../protocol/policies/server-error-policy";
+import type { TerminalProtocolFailureDetail } from "../protocol/terminal-protocol";
+
 export type SessionsRefreshNotice =
   | { context: "sessions_refresh"; reason: "generic" }
   | { context: "sessions_refresh"; reason: "http"; status: number }
   | { context: "sessions_refresh"; reason: "cause"; cause: unknown }
   | { context: "sessions_refresh"; reason: "invalid_payload" }
   | { context: "sessions_refresh"; reason: "missing_sessions_array" }
+  | {
+      context: "sessions_refresh";
+      reason: "all_sessions_invalid";
+      count: number;
+    }
+  | {
+      context: "sessions_refresh";
+      reason: "too_many_invalid_sessions";
+      count: number;
+      total: number;
+    }
   | { context: "sessions_refresh"; reason: "invalid_entries"; count: number }
   | {
       context: "sessions_refresh";
@@ -23,7 +37,12 @@ export type RuntimeNotice = {
 
 export type ProtocolNotice =
   | { context: "protocol"; reason: "unsupported_type" }
-  | { context: "protocol"; reason: "malformed_payload" }
+  | {
+      context: "protocol";
+      reason: "malformed_payload";
+      detail?: TerminalProtocolFailureDetail;
+      cause?: unknown;
+    }
   | { context: "protocol"; reason: "empty_transport_message" }
   | { context: "protocol"; reason: "incompatible_version" }
   | {
@@ -39,21 +58,15 @@ export type TransportNotice = {
   reason?: string;
 };
 
-export type ServerNotice =
-  | { context: "server"; reason: "session_not_found" }
-  | { context: "server"; reason: "attach_forbidden" }
-  | { context: "server"; reason: "incompatible_version" }
-  | { context: "server"; reason: "attach_required" }
-  | { context: "server"; reason: "read_only_forbidden" }
-  | { context: "server"; reason: "session_not_writable" }
-  | { context: "server"; reason: "session_not_resizable" }
-  | { context: "server"; reason: "missing_code" }
-  | { context: "server"; reason: "raw_code"; code: string };
+export type ServerNotice = {
+  context: "server";
+} & ServerErrorNoticePayload;
 
 export type BootstrapNotice = {
   context: "bootstrap";
   reason: "backend_resolution_failed";
   details: string;
+  code?: string;
 };
 
 export type StorageNotice = {

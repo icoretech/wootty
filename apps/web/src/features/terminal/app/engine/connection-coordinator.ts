@@ -12,7 +12,10 @@ import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
 import type { TerminalRuntime } from "../../runtime/xterm-runtime-contract";
-import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
+import type {
+  SessionRefreshRequest,
+  SessionRefreshResult,
+} from "../../session/application/session-refresh-result";
 import { useConnectionMessageGateway } from "./connection-message-gateway";
 import { useConnectionRuntimeIoBridge } from "./connection-runtime-io-bridge";
 import {
@@ -25,7 +28,7 @@ import { useTransportOrchestrator } from "./transport-orchestrator";
 type UseConnectionCoordinatorArgs = {
   createTransport: (url: string) => TerminalTransport;
   loadRuntime: () => Promise<TerminalRuntime>;
-  wsUrl: string;
+  wsUrl: string | null;
   documentRef: Document | null;
   initialFontSize: number;
   sessionId: string | null;
@@ -36,7 +39,9 @@ type UseConnectionCoordinatorArgs = {
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  refreshLiveSessions: (requestId?: number) => Promise<SessionRefreshResult>;
+  refreshLiveSessions: (
+    request: SessionRefreshRequest,
+  ) => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
 };
 
