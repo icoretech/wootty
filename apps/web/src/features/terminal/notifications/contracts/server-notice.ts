@@ -1,15 +1,11 @@
-export const NOTICE_SERVER_ERROR_REASONS = [
-  "session_not_found",
-  "attach_forbidden",
-  "incompatible_version",
-  "attach_required",
-  "read_only_forbidden",
-  "session_not_writable",
-  "session_not_resizable",
-] as const;
+import {
+  TERMINAL_SERVER_ERROR_CODES,
+  type TerminalServerErrorCode,
+} from "../../protocol/server-error-codes";
 
-export type NoticeServerErrorReason =
-  (typeof NOTICE_SERVER_ERROR_REASONS)[number];
+export const NOTICE_SERVER_ERROR_REASONS = TERMINAL_SERVER_ERROR_CODES;
+
+export type NoticeServerErrorReason = TerminalServerErrorCode;
 
 export type ServerNotice =
   | { context: "server"; reason: NoticeServerErrorReason }

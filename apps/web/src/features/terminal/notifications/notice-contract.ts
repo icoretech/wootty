@@ -28,7 +28,7 @@ export type NoticePublisher = (details: NoticeDetails) => void;
 
 export type SessionNoticePublisher = (details: SessionNotice) => void;
 
-export type ProtocolNoticePublisher = (
+export type ConnectionNoticePublisher = (
   details: ProtocolNotice | ServerNotice,
 ) => void;
 

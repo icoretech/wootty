@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import type { AttachMode } from "../../../contracts/session/session";
 import { toProtocolFailureNotice } from "../../../notifications/mappers/protocol-failure-notice";
 import { toServerPolicyNotice } from "../../../notifications/mappers/server-error-policy-notice";
-import type { ProtocolNoticePublisher } from "../../../notifications/notice-contract";
+import type { ConnectionNoticePublisher } from "../../../notifications/notice-contract";
 import { resolveServerErrorPolicy } from "../../../protocol/policies/server-error-policy";
 import type { TerminalServerErrorCode } from "../../../protocol/server-error-codes";
 import type {
@@ -13,7 +13,7 @@ import { handleIncomingServerMessage } from "./connection-message-policy";
 import type { ConnectionStatusFlag } from "./connection-status-projector";
 
 type UseConnectionMessageGatewayArgs = {
-  publishNotice: ProtocolNoticePublisher;
+  publishNotice: ConnectionNoticePublisher;
   setStatusFlag: (next: ConnectionStatusFlag | null) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
