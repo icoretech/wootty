@@ -1,9 +1,7 @@
-import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
   TerminalTransportCloseEvent,
   TerminalTransportErrorEvent,
-  TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
 } from "../../../contracts/transport/transport";
 import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
@@ -14,10 +12,11 @@ import {
   type TransportBootstrapFailureReasonCode,
   TransportConnectionBootstrap,
 } from "./transport-connection-bootstrap";
-import {
-  type SocketFailureSource,
-  TransportFailureReporter,
-} from "./transport-failure-reporter";
+import type {
+  SocketFailureSource,
+  TransportFailureSink,
+} from "./transport-failure-contract";
+import { TransportFailureReporter } from "./transport-failure-reporter";
 import { TransportHeartbeatMonitor } from "./transport-heartbeat-monitor";
 import { TERMINAL_CLOSE_CODE } from "./transport-policy";
 import { TransportReconnectController } from "./transport-reconnect-controller";
@@ -33,15 +32,6 @@ export type TransportHandlers = {
   onOpen: () => void;
   onMessage: (event: TerminalTransportMessageEvent) => void;
 };
-
-type TransportFailureSink = (
-  source: SocketFailureSource,
-  code?: TerminalTransportFailureCode,
-  reasonCode?: TransportFailureReasonCode,
-  technicalDetail?: string,
-  cause?: unknown,
-  noticeMessage?: string,
-) => void;
 
 type TransportRuntimeContext = {
   wsUrl: string | null;
@@ -124,13 +114,12 @@ export class TransportLifecycleService {
         error instanceof Error && error.message.length > 0
           ? error.message
           : "transport send failed";
-      this.failureReporter.report(
-        "error",
-        undefined,
-        "send_failed",
-        reason,
-        error,
-      );
+      this.failureReporter.report({
+        source: "error",
+        reasonCode: "send_failed",
+        technicalDetail: reason,
+        cause: error,
+      });
       this.deps.dispatchEvent({ type: "socket-error" });
       return false;
     }
@@ -163,9 +152,9 @@ export class TransportLifecycleService {
     }
 
     const ws = bootstrapResult.socket;
-    this.socketSession.attach(ws, {
+    const socketGeneration = this.socketSession.attach(ws, {
       onOpen: () => {
-        if (this.socketSession.current() !== ws) {
+        if (!this.socketSession.isCurrent(ws, socketGeneration)) {
           return;
         }
         this.socketErrorSinceConnect = false;
@@ -175,16 +164,16 @@ export class TransportLifecycleService {
         this.heartbeatMonitor.start();
       },
       onMessage: (event) => {
-        if (this.socketSession.current() !== ws) {
+        if (!this.socketSession.isCurrent(ws, socketGeneration)) {
           return;
         }
         this.runtimeContext.handlers.onMessage(event);
       },
       onClose: (event) => {
-        this.onSocketClose(ws, event);
+        this.onSocketClose(ws, socketGeneration, event);
       },
       onError: (event) => {
-        this.onSocketError(ws, event);
+        this.onSocketError(ws, socketGeneration, event);
       },
     });
   };
@@ -254,26 +243,31 @@ export class TransportLifecycleService {
 
   private onSocketError(
     socket: TerminalTransport,
+    socketGeneration: number,
     event: TerminalTransportErrorEvent,
   ): void {
-    if (this.socketSession.current() !== socket) {
+    if (!this.socketSession.isCurrent(socket, socketGeneration)) {
       return;
     }
     this.socketErrorSinceConnect = true;
-    this.failureReporter.report(
-      "error",
-      event.code,
-      "socket_failure",
-      event.message,
-    );
+    this.failureReporter.report({
+      source: "error",
+      code: event.code,
+      reasonCode: "socket_failure",
+      technicalDetail: event.message,
+    });
     this.deps.dispatchEvent({ type: "socket-error" });
   }
 
   private onSocketClose(
     socket: TerminalTransport,
+    socketGeneration: number,
     event: TerminalTransportCloseEvent,
   ): void {
-    const isCurrentSocket = this.socketSession.releaseIfCurrent(socket);
+    const isCurrentSocket = this.socketSession.releaseIfCurrent(
+      socket,
+      socketGeneration,
+    );
     if (!isCurrentSocket && this.socketSession.current() !== null) {
       return;
     }
@@ -303,12 +297,12 @@ export class TransportLifecycleService {
     }
 
     if (shouldReportCloseFailure) {
-      this.failureReporter.report(
-        "close",
-        event.code,
-        "socket_failure",
-        event.reason,
-      );
+      this.failureReporter.report({
+        source: "close",
+        code: event.code,
+        reasonCode: "socket_failure",
+        technicalDetail: event.reason,
+      });
     }
 
     if (closePlan.kind === "nonrecoverable") {
@@ -343,13 +337,12 @@ export class TransportLifecycleService {
     debugDetail: string,
     cause?: unknown,
   ): void {
-    this.failureReporter.report(
-      "error",
-      undefined,
+    this.failureReporter.report({
+      source: "error",
       reasonCode,
-      debugDetail,
+      technicalDetail: debugDetail,
       cause,
-    );
+    });
     this.deps.dispatchEvent({ type: "socket-error" });
   }
 

@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
-import type {
-  TerminalTransport,
-  TerminalTransportFailureCode,
-} from "../../../contracts/transport/transport";
+import type { TerminalTransport } from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
+import type { TransportFailureSink } from "./transport-failure-contract";
 import {
-  type SocketFailureSource,
   type TransportHandlers,
   TransportLifecycleService,
 } from "./transport-lifecycle-service";
@@ -24,14 +20,7 @@ type UseTransportOrchestratorArgs = {
   handlers: TransportHandlers;
   hasSessionContext: () => boolean;
   scheduler: Scheduler;
-  onSocketFailure: (
-    source: SocketFailureSource,
-    code?: TerminalTransportFailureCode,
-    reasonCode?: TransportFailureReasonCode,
-    technicalDetail?: string,
-    cause?: unknown,
-    noticeMessage?: string,
-  ) => void;
+  onSocketFailure: TransportFailureSink;
 };
 
 export type TransportOrchestrator = {

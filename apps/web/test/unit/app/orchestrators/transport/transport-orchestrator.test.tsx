@@ -69,14 +69,13 @@ describe("transport orchestrator", () => {
       expect(result.current.reconnectAttempt).toBe(1);
       expect(result.current.status).toBe("reconnecting");
     });
-    expect(onSocketFailure).toHaveBeenCalledWith(
-      "close",
-      TERMINAL_CLOSE_CODE.PONG_TIMEOUT,
-      "socket_failure",
-      "pong timeout",
-      undefined,
-      "pong timeout",
-    );
+    expect(onSocketFailure).toHaveBeenCalledWith({
+      source: "close",
+      code: TERMINAL_CLOSE_CODE.PONG_TIMEOUT,
+      reasonCode: "socket_failure",
+      technicalDetail: "pong timeout",
+      noticeMessage: "pong timeout",
+    });
   });
 
   it("exhausts reconnect attempts deterministically with scheduler-driven backoff", async () => {
@@ -138,14 +137,12 @@ describe("transport orchestrator", () => {
     });
 
     expect(onSocketFailure).toHaveBeenCalledTimes(1);
-    expect(onSocketFailure).toHaveBeenLastCalledWith(
-      "error",
-      undefined,
-      "socket_failure",
-      "boom",
-      undefined,
-      "boom",
-    );
+    expect(onSocketFailure).toHaveBeenLastCalledWith({
+      source: "error",
+      reasonCode: "socket_failure",
+      technicalDetail: "boom",
+      noticeMessage: "boom",
+    });
 
     act(() => {
       scheduler.advanceBy(16_000);
@@ -153,14 +150,12 @@ describe("transport orchestrator", () => {
     });
 
     expect(onSocketFailure).toHaveBeenCalledTimes(2);
-    expect(onSocketFailure).toHaveBeenLastCalledWith(
-      "error",
-      undefined,
-      "socket_failure",
-      "boom",
-      undefined,
-      "boom (repeated 3 times)",
-    );
+    expect(onSocketFailure).toHaveBeenLastCalledWith({
+      source: "error",
+      reasonCode: "socket_failure",
+      technicalDetail: "boom",
+      noticeMessage: "boom (repeated 3 times)",
+    });
   });
 
   it("reconnects with the updated websocket endpoint on endpoint change", () => {

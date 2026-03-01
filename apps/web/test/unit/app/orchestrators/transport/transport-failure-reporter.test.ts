@@ -20,21 +20,30 @@ describe("transport failure reporter", () => {
       onSocketFailure,
     });
 
-    reporter.report("close", 1006, "socket_failure", "broken pipe");
+    reporter.report({
+      source: "close",
+      code: 1006,
+      reasonCode: "socket_failure",
+      technicalDetail: "broken pipe",
+    });
 
     expect(dispatchSocketFailure).toHaveBeenCalledWith(
       "close reason=socket_failure code=1006 detail=broken pipe",
     );
-    expect(onSocketFailure).toHaveBeenCalledWith(
-      "close",
-      1006,
-      "socket_failure",
-      "broken pipe",
-      undefined,
-      "broken pipe",
-    );
+    expect(onSocketFailure).toHaveBeenCalledWith({
+      source: "close",
+      code: 1006,
+      reasonCode: "socket_failure",
+      technicalDetail: "broken pipe",
+      noticeMessage: "broken pipe",
+    });
     nowMs += 1000;
-    reporter.report("close", 1006, "socket_failure", "broken pipe");
+    reporter.report({
+      source: "close",
+      code: 1006,
+      reasonCode: "socket_failure",
+      technicalDetail: "broken pipe",
+    });
     expect(onSocketFailure).toHaveBeenCalledTimes(1);
   });
 
@@ -54,32 +63,33 @@ describe("transport failure reporter", () => {
       onSocketFailure,
     });
 
-    reporter.report("error", undefined, "send_failed");
+    reporter.report({
+      source: "error",
+      reasonCode: "send_failed",
+    });
     nowMs += 16_000;
-    reporter.report("error", undefined, "send_failed");
+    reporter.report({
+      source: "error",
+      reasonCode: "send_failed",
+    });
 
-    expect(onSocketFailure).toHaveBeenNthCalledWith(
-      2,
-      "error",
-      undefined,
-      "send_failed",
-      undefined,
-      undefined,
-      "send_failed (repeated 2 times)",
-    );
+    expect(onSocketFailure).toHaveBeenNthCalledWith(2, {
+      source: "error",
+      reasonCode: "send_failed",
+      noticeMessage: "send_failed (repeated 2 times)",
+    });
 
     reporter.reset();
     nowMs += 16_000;
-    reporter.report("error", undefined, "send_failed");
+    reporter.report({
+      source: "error",
+      reasonCode: "send_failed",
+    });
     expect(onSocketFailure).toHaveBeenCalledTimes(3);
-    expect(onSocketFailure).toHaveBeenNthCalledWith(
-      3,
-      "error",
-      undefined,
-      "send_failed",
-      undefined,
-      undefined,
-      "send_failed",
-    );
+    expect(onSocketFailure).toHaveBeenNthCalledWith(3, {
+      source: "error",
+      reasonCode: "send_failed",
+      noticeMessage: "send_failed",
+    });
   });
 });

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import type { TransportFailure } from "../../../../../src/features/terminal/app/engine/transport/transport-failure-contract";
 import {
-  type SocketFailureSource,
   type TransportHandlers,
   TransportLifecycleService,
 } from "../../../../../src/features/terminal/app/engine/transport/transport-lifecycle-service";
@@ -15,7 +15,6 @@ import {
   type TransportEvent,
   type TransportState,
 } from "../../../../../src/features/terminal/app/engine/transport/transport-state-machine";
-import type { TerminalTransportFailureCode } from "../../../../../src/features/terminal/contracts/transport/transport";
 import { createPingMessage } from "../../../../../src/features/terminal/protocol/terminal-client-messages";
 import { FakeScheduler } from "../../../../support/harness/fake-scheduler";
 import { FakeTransport } from "../../../../support/harness/fake-transport";
@@ -31,17 +30,7 @@ function createHarness({
   let currentWsUrl = wsUrl;
   let state: TransportState = initialTransportState;
   const events: TransportEvent[] = [];
-  const onSocketFailure =
-    vi.fn<
-      (
-        source: SocketFailureSource,
-        code?: TerminalTransportFailureCode,
-        reasonCode?: string,
-        technicalDetail?: string,
-        cause?: unknown,
-        noticeMessage?: string,
-      ) => void
-    >();
+  const onSocketFailure = vi.fn<(failure: TransportFailure) => void>();
 
   const handlers: TransportHandlers = {
     onOpen: vi.fn(),
@@ -106,12 +95,16 @@ describe("transport lifecycle service", () => {
       ]),
     );
     expect(harness.onSocketFailure).toHaveBeenCalledWith(
-      "error",
-      undefined,
-      "endpoint_unsupported_protocol",
-      expect.stringContaining("invalid websocket endpoint protocol"),
-      undefined,
-      expect.stringContaining("invalid websocket endpoint protocol"),
+      expect.objectContaining({
+        source: "error",
+        reasonCode: "endpoint_unsupported_protocol",
+        technicalDetail: expect.stringContaining(
+          "invalid websocket endpoint protocol",
+        ),
+        noticeMessage: expect.stringContaining(
+          "invalid websocket endpoint protocol",
+        ),
+      }),
     );
   });
 
@@ -186,12 +179,12 @@ describe("transport lifecycle service", () => {
 
     expect(harness.onSocketFailure).toHaveBeenCalledTimes(1);
     expect(harness.onSocketFailure).toHaveBeenCalledWith(
-      "error",
-      undefined,
-      "socket_failure",
-      "transport exploded",
-      undefined,
-      "transport exploded",
+      expect.objectContaining({
+        source: "error",
+        reasonCode: "socket_failure",
+        technicalDetail: "transport exploded",
+        noticeMessage: "transport exploded",
+      }),
     );
   });
 });

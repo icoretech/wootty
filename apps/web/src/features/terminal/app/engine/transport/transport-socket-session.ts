@@ -9,6 +9,7 @@ export class TransportSocketSession {
   private readonly eventBridge: TransportSocketEventBridge;
   private socket: TerminalTransport | null = null;
   private detachListeners: (() => void) | null = null;
+  private generation = 0;
 
   constructor(eventBridge = new TransportSocketEventBridge()) {
     this.eventBridge = eventBridge;
@@ -25,13 +26,23 @@ export class TransportSocketSession {
     );
   }
 
+  currentGeneration(): number {
+    return this.generation;
+  }
+
+  isCurrent(socket: TerminalTransport, generation: number): boolean {
+    return this.socket === socket && this.generation === generation;
+  }
+
   attach(
     socket: TerminalTransport,
     handlers: TransportSocketEventHandlers,
-  ): void {
+  ): number {
     this.clear();
+    this.generation += 1;
     this.socket = socket;
     this.detachListeners = this.eventBridge.bind(socket, handlers);
+    return this.generation;
   }
 
   closeActive(code: number, reason: string): boolean {
@@ -51,8 +62,8 @@ export class TransportSocketSession {
     return previous;
   }
 
-  releaseIfCurrent(socket: TerminalTransport): boolean {
-    if (this.socket !== socket) {
+  releaseIfCurrent(socket: TerminalTransport, generation: number): boolean {
+    if (!this.isCurrent(socket, generation)) {
       return false;
     }
     this.clear();
