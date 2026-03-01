@@ -24,7 +24,6 @@ type TransportBootstrapResult =
 
 type TransportConnectionBootstrapDeps = {
   createTransport: (url: string) => TerminalTransport;
-  getWsUrl: () => string | null;
 };
 
 export class TransportConnectionBootstrap {
@@ -34,8 +33,7 @@ export class TransportConnectionBootstrap {
     this.deps = deps;
   }
 
-  createSocket(): TransportBootstrapResult {
-    const endpoint = this.deps.getWsUrl();
+  createSocket(endpoint: string | null): TransportBootstrapResult {
     const validation = validateWebsocketEndpoint(endpoint);
     if (!validation.ok) {
       return this.endpointFailure(
