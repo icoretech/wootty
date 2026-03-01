@@ -161,4 +161,20 @@ describe("transport lifecycle service", () => {
     });
     expect(harness.sockets).toHaveLength(2);
   });
+
+  it("suppresses duplicate close notices when socket error already reported", () => {
+    const harness = createHarness();
+
+    harness.service.connect();
+    harness.sockets[0].emitOpen();
+    harness.sockets[0].emitError("transport exploded");
+    harness.sockets[0].emitClose(1006, "abnormal closure");
+
+    expect(harness.onSocketFailure).toHaveBeenCalledTimes(1);
+    expect(harness.onSocketFailure).toHaveBeenCalledWith(
+      "error",
+      undefined,
+      "transport exploded",
+    );
+  });
 });
