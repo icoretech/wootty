@@ -1,9 +1,7 @@
+import type { FloatingControlMetadataKey } from "./catalog";
 import type { FloatingControlMetadata } from "./floating-control-metadata";
 import { floatingControlMetadata } from "./metadata";
-import {
-  FLOATING_CONTROL_REGISTRY,
-  type FloatingControlMetadataKey,
-} from "./registry";
+import { FLOATING_CONTROL_REGISTRY } from "./registry";
 
 export type FloatingControlDescriptors = Record<
   FloatingControlMetadataKey,
