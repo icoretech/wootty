@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { useTerminalController } from "../../../../src/features/terminal/app/use-terminal-controller";
+import { useTerminalController } from "../../../../src/features/terminal/app/controller/use-terminal-controller";
 import type { SessionsFetchResult } from "../../../../src/features/terminal/contracts/session/sessions-fetch";
 import type { TerminalAppEnvironment } from "../../../../src/features/terminal/environment/terminal-environment-contract";
 import { browserScheduler } from "../../../../src/features/terminal/platform/scheduler";

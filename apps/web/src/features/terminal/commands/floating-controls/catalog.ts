@@ -1,5 +1,4 @@
-import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
+import { FLOATING_CONTROL_REGISTRY as COMMAND_FLOATING_CONTROL_REGISTRY } from "../definitions/command-manifest";
 import type { FloatingControlCommand } from "./actions";
 import type {
   FloatingControlCatalogEntry,
@@ -82,39 +81,6 @@ const FLOATING_CONTROL_POLICY: Record<
   },
 };
 
-const FLOATING_CONTROL_BINDINGS = [
-  {
-    action: TERMINAL_RUNTIME_COMMAND.RECONNECT,
-    testId: "reconnect-button",
-    metadataKey: "reconnect",
-  },
-  {
-    action: TERMINAL_RUNTIME_COMMAND.CLEAR,
-    testId: "clear-button",
-    metadataKey: "clear",
-  },
-  {
-    action: VIEWPORT_UI_COMMAND.DECREASE_FONT,
-    testId: "font-decrease-button",
-    metadataKey: "decreaseFont",
-  },
-  {
-    action: VIEWPORT_UI_COMMAND.INCREASE_FONT,
-    testId: "font-increase-button",
-    metadataKey: "increaseFont",
-  },
-  {
-    action: VIEWPORT_UI_COMMAND.RESET_FONT,
-    testId: "font-reset-button",
-    metadataKey: "resetFont",
-  },
-  {
-    action: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
-    testId: "fullscreen-button",
-    metadataKey: "fullscreen",
-  },
-] as const satisfies readonly FloatingControlRegistryEntry[];
-
 type FloatingControlLookup = {
   policyByAction: ReadonlyMap<FloatingControlCommand, FloatingControlPolicy>;
   metadataByKey: ReadonlyMap<
@@ -195,12 +161,12 @@ function requireLookupValue<K, V>(
 }
 
 export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog(
-  FLOATING_CONTROL_BINDINGS,
+  COMMAND_FLOATING_CONTROL_REGISTRY,
 );
 
 export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
   Object.freeze([
-    ...FLOATING_CONTROL_BINDINGS,
+    ...COMMAND_FLOATING_CONTROL_REGISTRY,
   ] satisfies readonly FloatingControlRegistryEntry[]);
 
 const FLOATING_CONTROL_LOOKUP = buildFloatingControlLookup(

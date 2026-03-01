@@ -1,13 +1,9 @@
+import type { CommandManifestFloatingControlMetadataKey } from "../definitions/command-manifest";
 import type { FloatingControlCommand } from "./actions";
 import type { FloatingControlMetadata } from "./floating-control-metadata";
 
 export type FloatingControlMetadataKey =
-  | "reconnect"
-  | "clear"
-  | "decreaseFont"
-  | "increaseFont"
-  | "resetFont"
-  | "fullscreen";
+  CommandManifestFloatingControlMetadataKey;
 
 export type FloatingControlIconToken =
   | "reconnect"

@@ -42,9 +42,12 @@ vi.mock(
   },
 );
 
-vi.mock("../../../../src/features/terminal/app/use-terminal-controller", () => {
-  return { useTerminalController };
-});
+vi.mock(
+  "../../../../src/features/terminal/app/controller/use-terminal-controller",
+  () => {
+    return { useTerminalController };
+  },
+);
 
 vi.mock("../../../../src/features/terminal/components/FloatingControls", () => {
   return { FloatingControls: () => null };

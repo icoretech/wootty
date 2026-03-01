@@ -19,7 +19,7 @@ function buildCommandRegistry(): CommandRegistry {
     }
     commandByShortcutCode.set(command.shortcutCode, command.id);
     if (command.handler === "runtime") {
-      runtimeCommands.add(command.id);
+      runtimeCommands.add(command.id as TerminalRuntimeCommand);
     }
   }
 
