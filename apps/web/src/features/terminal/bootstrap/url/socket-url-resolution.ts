@@ -107,10 +107,25 @@ function resolveRelativeSocketUrl(
   }
 
   const protocol = windowRef.location.protocol === "https:" ? "wss:" : "ws:";
-  const pathname = configured.startsWith("/") ? configured : `/${configured}`;
+  const candidatePath = configured.startsWith("/")
+    ? configured
+    : `/${configured}`;
+  let parsedRelative: URL;
+  try {
+    parsedRelative = new URL(
+      candidatePath,
+      `${windowRef.location.protocol}//${windowRef.location.host}`,
+    );
+  } catch {
+    return {
+      ok: false,
+      issue: invalidFormatIssue(configured),
+    };
+  }
+  const terminalPath = deriveTerminalPathFromHttpUrl(parsedRelative.pathname);
   return {
     ok: true,
-    socketUrl: `${protocol}//${windowRef.location.host}${pathname}`,
+    socketUrl: `${protocol}//${windowRef.location.host}${terminalPath}${parsedRelative.search}`,
   };
 }
 

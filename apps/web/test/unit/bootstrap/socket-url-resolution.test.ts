@@ -44,6 +44,18 @@ describe("socket url resolution", () => {
     });
   });
 
+  it("normalizes relative sessions env paths to terminal websocket path", () => {
+    const resolution = resolveSocketUrl(
+      createWindow("https:", "app.example.test"),
+      TERMINAL_BACKEND_ROUTE.SESSIONS_HTTP,
+    );
+
+    expect(resolution).toEqual({
+      ok: true,
+      socketUrl: `wss://app.example.test${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`,
+    });
+  });
+
   it("falls back to generated default route when env url is blank", () => {
     const resolution = resolveSocketUrl(
       createWindow("https:", "app.example.test"),

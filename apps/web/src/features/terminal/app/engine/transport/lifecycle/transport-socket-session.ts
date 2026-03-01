@@ -1,15 +1,22 @@
 import type { TerminalTransport } from "../../../../contracts/transport/transport";
 import { TRANSPORT_READY_STATE } from "../../../../contracts/transport/transport";
+import type { SocketCloseIntent } from "../state/transport-state-machine";
 import {
   TransportSocketEventBridge,
   type TransportSocketEventHandlers,
 } from "./transport-socket-event-bridge";
+
+type ReleasedSocket = {
+  released: boolean;
+  closeIntent: SocketCloseIntent;
+};
 
 export class TransportSocketSession {
   private readonly eventBridge: TransportSocketEventBridge;
   private socket: TerminalTransport | null = null;
   private detachListeners: (() => void) | null = null;
   private generation = 0;
+  private closeIntent: SocketCloseIntent = "normal";
 
   constructor(eventBridge = new TransportSocketEventBridge()) {
     this.eventBridge = eventBridge;
@@ -52,6 +59,23 @@ export class TransportSocketSession {
     ) {
       return false;
     }
+    this.closeIntent = "normal";
+    this.socket.close(code, reason);
+    return true;
+  }
+
+  closeActiveWithIntent(
+    code: number,
+    reason: string,
+    closeIntent: SocketCloseIntent,
+  ): boolean {
+    if (
+      this.socket === null ||
+      this.socket.readyState >= TRANSPORT_READY_STATE.CLOSING
+    ) {
+      return false;
+    }
+    this.closeIntent = closeIntent;
     this.socket.close(code, reason);
     return true;
   }
@@ -70,11 +94,30 @@ export class TransportSocketSession {
     return true;
   }
 
+  releaseIfCurrentWithIntent(
+    socket: TerminalTransport,
+    generation: number,
+  ): ReleasedSocket {
+    if (!this.isCurrent(socket, generation)) {
+      return {
+        released: false,
+        closeIntent: "normal",
+      };
+    }
+    const closeIntent = this.closeIntent;
+    this.clear();
+    return {
+      released: true,
+      closeIntent,
+    };
+  }
+
   clear(): void {
     if (this.detachListeners !== null) {
       this.detachListeners();
       this.detachListeners = null;
     }
     this.socket = null;
+    this.closeIntent = "normal";
   }
 }
