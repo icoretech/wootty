@@ -32,6 +32,22 @@ describe("session refresh failure notice mapping", () => {
     ).toEqual({
       kind: "ignore",
     });
+    const cause = new Error("handler exploded");
+    expect(
+      toSessionRefreshFailureNotice({
+        source: "lifecycle",
+        reason: "refresh_pipeline_error",
+        cause,
+      }),
+    ).toEqual({
+      kind: "throttle",
+      failureKey: "refresh_pipeline_error",
+      notice: {
+        context: "sessions_refresh",
+        reason: "cause",
+        cause,
+      },
+    });
   });
 
   it("maps fetch and parse failures to deterministic notice payloads", () => {

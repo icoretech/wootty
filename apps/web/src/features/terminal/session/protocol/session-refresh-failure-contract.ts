@@ -19,6 +19,7 @@ export const SESSION_REFRESH_FAILURE_REASONS = [
   "request_timeout",
   "request_aborted",
   "request_superseded",
+  "refresh_pipeline_error",
 ] as const;
 
 export type SessionRefreshFailure =
@@ -44,4 +45,9 @@ export type SessionRefreshFailure =
   | {
       source: "lifecycle";
       reason: "request_superseded";
+    }
+  | {
+      source: "lifecycle";
+      reason: "refresh_pipeline_error";
+      cause: unknown;
     };

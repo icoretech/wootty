@@ -56,10 +56,18 @@ export class FakeTransport implements TerminalTransport {
     this.emit("message", event);
   }
 
-  emitError(message: string): void {
+  emitError(
+    message: string,
+    options?: {
+      code?: string | number;
+      cause?: unknown;
+    },
+  ): void {
     const event: TerminalTransportErrorEvent = {
       source: "transport",
       message,
+      code: options?.code,
+      cause: options?.cause,
     };
     this.emit("error", event);
   }

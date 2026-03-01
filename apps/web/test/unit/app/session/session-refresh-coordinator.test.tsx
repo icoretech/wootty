@@ -199,4 +199,43 @@ describe("session refresh coordinator", () => {
       },
     });
   });
+
+  it("classifies refresh pipeline exceptions as lifecycle failures", async () => {
+    const fetchSessions = vi.fn(async () => validSessionsResponse());
+    const onRefreshFailure = vi.fn();
+    const onRefreshSuccess = vi.fn(() => {
+      throw new Error("handler exploded");
+    });
+
+    const { result } = renderHook(() => {
+      return useSessionRefreshCoordinator({
+        fetchSessions,
+        scheduler: browserLikeScheduler,
+        onRefreshFailure,
+        onRefreshSuccess,
+        onInvalidEntries: vi.fn(),
+      });
+    });
+
+    const refreshResult = await result.current.requestSessionRefresh({
+      trigger: "manual",
+    });
+
+    expect(refreshResult.ok).toBe(false);
+    if (refreshResult.ok) {
+      throw new Error("expected failure result");
+    }
+    expect(refreshResult.failure).toMatchObject({
+      source: "lifecycle",
+      reason: "refresh_pipeline_error",
+      cause: expect.any(Error),
+    });
+    expect(onRefreshFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "lifecycle",
+        reason: "refresh_pipeline_error",
+        cause: expect.any(Error),
+      }),
+    );
+  });
 });
