@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createBrowserTransport } from "../../../src/features/terminal/adapters/browser-transport";
 import { TRANSPORT_READY_STATE } from "../../../src/features/terminal/contracts/transport/transport";
-import { createBrowserTransport } from "../../../src/features/terminal/orchestration/browser-transport";
 import {
   BrowserSocketMock,
   createBrowserSocketMockHarness,

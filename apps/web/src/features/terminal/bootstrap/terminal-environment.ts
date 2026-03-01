@@ -1,9 +1,9 @@
+import { createBrowserTransport } from "../adapters/browser-transport";
 import type {
   TerminalAppEnvironment,
   TerminalDomainEnvironment,
   TerminalPlatformEnvironment,
 } from "../environment/terminal-environment-contract";
-import { createBrowserTransport } from "../orchestration/browser-transport";
 import { browserScheduler } from "../platform/scheduler";
 import {
   type AuthTokenProvider,

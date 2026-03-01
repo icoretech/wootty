@@ -198,7 +198,7 @@ Frontend module ownership:
 - `apps/web/src/features/terminal/session/persistence/*`: storage adapters and storage key ownership.
 - `apps/web/src/features/terminal/lib/*`: terminal-only utility helpers (formatting, outbox buffering).
 - `apps/web/src/features/terminal/protocol/*`: protocol parsing owned by the terminal feature.
-- `apps/web/src/features/terminal/orchestration/*`: transport orchestration adapters owned by the terminal feature.
+- `apps/web/src/features/terminal/adapters/*`: transport adapters owned by the terminal feature.
 - `apps/web/src/features/terminal/runtime/*`: xterm runtime loading owned by the terminal feature.
 <!-- governance:module-ownership:end -->
 
@@ -224,7 +224,7 @@ Transport responsibilities are split by contract:
 
 - `apps/web/src/features/terminal/contracts/transport/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
 - `apps/web/src/features/terminal/app/engine/transport/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
-- `apps/web/src/features/terminal/orchestration/transport-event-normalizer.ts` adapts browser runtime events into typed contract payloads.
+- `apps/web/src/features/terminal/adapters/transport-event-normalizer.ts` adapts browser runtime events into typed contract payloads.
 
 - Canonical ready states:
   - `TRANSPORT_READY_STATE.CONNECTING` (`0`)
