@@ -4,9 +4,16 @@ import type { SessionRefreshFailure } from "../../session/protocol/session-refre
 import { toBackendResolutionNotice } from "./backend-resolution-notice";
 
 type SessionRefreshFailureNotice = {
-  failureKey: string | null;
-  notice: NoticeDetails | null;
+  kind: "throttle";
+  failureKey: string;
+  notice: NoticeDetails;
 };
+
+type SessionRefreshFailureNoticeResult =
+  | {
+      kind: "ignore";
+    }
+  | SessionRefreshFailureNotice;
 
 function parseFailureKey(
   failure: Extract<SessionRefreshFailure, { source: "parse" }>,
@@ -29,6 +36,7 @@ function toParseFailureNotice(
     case "invalid_payload":
     case "missing_sessions_array":
       return {
+        kind: "throttle",
         failureKey: parseFailureKey(failure),
         notice: {
           context: "sessions_refresh",
@@ -37,6 +45,7 @@ function toParseFailureNotice(
       };
     case "all_sessions_invalid":
       return {
+        kind: "throttle",
         failureKey: parseFailureKey(failure),
         notice: {
           context: "sessions_refresh",
@@ -46,6 +55,7 @@ function toParseFailureNotice(
       };
     case "too_many_invalid_sessions":
       return {
+        kind: "throttle",
         failureKey: parseFailureKey(failure),
         notice: {
           context: "sessions_refresh",
@@ -65,6 +75,7 @@ function toFetchFailureNotice(
   switch (failure.reason) {
     case "http_error":
       return {
+        kind: "throttle",
         failureKey: `http:${failure.status}`,
         notice: {
           context: "sessions_refresh",
@@ -74,12 +85,14 @@ function toFetchFailureNotice(
       };
     case "bootstrap_error":
       return {
+        kind: "throttle",
         failureKey: "bootstrap:backend_resolution_failed",
         notice: toBackendResolutionNotice(failure.issue),
       };
     case "json_parse_error":
     case "network_error":
       return {
+        kind: "throttle",
         failureKey: failure.reason,
         notice: {
           context: "sessions_refresh",
@@ -94,16 +107,16 @@ function toFetchFailureNotice(
 
 function toLifecycleFailureNotice(
   failure: Extract<SessionRefreshFailure, { source: "lifecycle" }>,
-): SessionRefreshFailureNotice {
+): SessionRefreshFailureNoticeResult {
   switch (failure.reason) {
     case "request_aborted":
     case "request_superseded":
       return {
-        failureKey: null,
-        notice: null,
+        kind: "ignore",
       };
     case "request_timeout":
       return {
+        kind: "throttle",
         failureKey: "request_timeout",
         notice: {
           context: "sessions_refresh",
@@ -117,7 +130,7 @@ function toLifecycleFailureNotice(
 
 export function toSessionRefreshFailureNotice(
   failure: SessionRefreshFailure,
-): SessionRefreshFailureNotice {
+): SessionRefreshFailureNoticeResult {
   switch (failure.source) {
     case "parse":
       return toParseFailureNotice(failure);

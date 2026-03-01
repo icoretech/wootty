@@ -9,6 +9,7 @@ describe("session refresh failure notice mapping", () => {
         reason: "request_timeout",
       }),
     ).toEqual({
+      kind: "throttle",
       failureKey: "request_timeout",
       notice: {
         context: "sessions_refresh",
@@ -21,8 +22,7 @@ describe("session refresh failure notice mapping", () => {
         reason: "request_aborted",
       }),
     ).toEqual({
-      failureKey: null,
-      notice: null,
+      kind: "ignore",
     });
     expect(
       toSessionRefreshFailureNotice({
@@ -30,8 +30,7 @@ describe("session refresh failure notice mapping", () => {
         reason: "request_superseded",
       }),
     ).toEqual({
-      failureKey: null,
-      notice: null,
+      kind: "ignore",
     });
   });
 
@@ -46,6 +45,7 @@ describe("session refresh failure notice mapping", () => {
         },
       }),
     ).toEqual({
+      kind: "throttle",
       failureKey: "bootstrap:backend_resolution_failed",
       notice: {
         context: "bootstrap",
@@ -62,6 +62,7 @@ describe("session refresh failure notice mapping", () => {
         totalEntries: 5,
       }),
     ).toEqual({
+      kind: "throttle",
       failureKey: "payload:too_many_invalid_sessions",
       notice: {
         context: "sessions_refresh",
