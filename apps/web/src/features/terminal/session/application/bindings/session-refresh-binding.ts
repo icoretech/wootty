@@ -94,7 +94,6 @@ export function useSessionRefreshBinding({
       activeRefreshController = refreshController;
       try {
         let refreshTimeout: SchedulerTimerHandle | null = null;
-        let timedOut = false;
         const refreshResult = await Promise.race([
           refreshLiveSessions({
             trigger: "poll",
@@ -110,7 +109,6 @@ export function useSessionRefreshBinding({
                   reason: "request_timeout",
                 },
               });
-              timedOut = true;
             }, SESSION_REFRESH_CALL_TIMEOUT_MS);
           }),
         ]);
@@ -128,12 +126,6 @@ export function useSessionRefreshBinding({
             return;
           }
           consecutiveFailures += 1;
-          if (timedOut) {
-            consecutiveFailures = Math.max(
-              consecutiveFailures,
-              SESSION_REFRESH_FAILURE_LIMIT,
-            );
-          }
           if (consecutiveFailures >= SESSION_REFRESH_FAILURE_LIMIT) {
             openCircuitBreaker();
           }

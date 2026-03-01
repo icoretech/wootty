@@ -52,7 +52,7 @@ describe("session refresh binding delay policy", () => {
     expect(nextSessionRefreshDelayMs(0)).toBe(4_000);
   });
 
-  it("opens refresh circuit after repeated timeout failures", async () => {
+  it("opens refresh circuit after timeout failures reach the configured threshold", async () => {
     vi.useFakeTimers();
     try {
       const onRefreshCircuitOpen = vi.fn();
@@ -69,11 +69,19 @@ describe("session refresh binding delay policy", () => {
         />,
       );
 
-      await vi.advanceTimersByTimeAsync(15_001);
-      expect(refreshLiveSessions).toHaveBeenCalledTimes(1);
+      const failureLimit = 6;
+      for (let failureCount = 1; failureCount <= failureLimit; failureCount++) {
+        await vi.advanceTimersByTimeAsync(15_001);
+        expect(refreshLiveSessions).toHaveBeenCalledTimes(failureCount);
+        if (failureCount < failureLimit) {
+          await vi.advanceTimersByTimeAsync(
+            nextSessionRefreshDelayMs(failureCount),
+          );
+        }
+      }
       expect(onRefreshCircuitOpen).toHaveBeenCalledWith(6);
     } finally {
       vi.useRealTimers();
     }
-  }, 15_000);
+  }, 200_000);
 });
