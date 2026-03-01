@@ -41,7 +41,7 @@ individual is officially representing the project in public spaces.
 
 Report abusive, harassing, or otherwise unacceptable behavior to:
 
-- icoretech.inc@gmail.com
+- [icoretech.inc@gmail.com](mailto:icoretech.inc@gmail.com)
 
 All complaints will be reviewed and investigated promptly and fairly.
 
