@@ -1,8 +1,8 @@
 import { useCallback } from "react";
+import type { NoticePublisher } from "../../../contracts/notice";
 import type { AttachMode } from "../../../contracts/session";
 import { toProtocolFailureNotice } from "../../../notifications/mappers/protocol-failure-notice";
 import { toServerPolicyNotice } from "../../../notifications/mappers/server-error-policy-notice";
-import type { NoticePublisher } from "../../../notifications/notice-contract";
 import { resolveServerErrorPolicy } from "../../../protocol/policies/server-error-policy";
 import type { TerminalServerErrorCode } from "../../../protocol/server-error-codes";
 import type {

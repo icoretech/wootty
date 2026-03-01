@@ -1,9 +1,9 @@
-import { parseNonNegativeInteger } from "../../contracts/non-negative-integer";
 import type { SessionSnapshot } from "../../contracts/session";
 import {
   SESSION_SNAPSHOT_REQUIRED_FIELDS,
   SESSIONS_ENVELOPE_FIELD,
 } from "../../protocol/generated-wire-contract";
+import { parseNonNegativeInteger } from "../../validation/non-negative-integer";
 import type { SessionRefreshFailure } from "./session-refresh-failure-contract";
 import { evaluateSessionsParsePolicy } from "./sessions-parse-policy";
 

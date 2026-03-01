@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useConnectionCoordinator } from "../../../../src/features/terminal/app/engine/connection-coordinator";
-import type { NoticeDetails } from "../../../../src/features/terminal/notifications/notice-contract";
+import type { NoticeDetails } from "../../../../src/features/terminal/contracts/notice";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import { browserScheduler } from "../../../../src/features/terminal/platform/scheduler";
 

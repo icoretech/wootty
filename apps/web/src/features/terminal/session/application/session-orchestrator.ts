@@ -5,12 +5,12 @@ import {
   useRef,
   useState,
 } from "react";
+import type { FailureNoticeState } from "../../app/reliability/failure-notice-throttle";
+import type { NoticeDetails } from "../../contracts/notice";
 import type { AttachMode, SessionSnapshot } from "../../contracts/session";
 import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
-import type { FailureNoticeState } from "../../notifications/failure-notice-throttle";
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
-import type { NoticeDetails } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
 import type { SessionsFetchResult } from "../../session/protocol/sessions-fetch-contract";
@@ -99,6 +99,7 @@ export function useSessionOrchestrator({
   formatNotice,
 }: UseSessionOrchestratorArgs): SessionOrchestratorState {
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
+  const storageFailureNoticeRef = useRef<FailureNoticeState>(null);
   const latestRefreshRequestIdRef = useRef(0);
   const activeRefreshControllerRef = useRef<AbortController | null>(null);
   const pendingRefreshTriggerRef = useRef<
@@ -129,9 +130,15 @@ export function useSessionOrchestrator({
 
   const reportStorageFailure = useCallback(
     (failure: StorageAccessFailure) => {
-      publishNotice(toStorageFailureNoticeDetails(failure));
+      const notice = toStorageFailureNoticeDetails(failure);
+      publishThrottledSessionNotice({
+        stateRef: storageFailureNoticeRef,
+        failureKey: `storage:${failure.operation}:${failure.key}:${failure.reason ?? ""}`,
+        message: formatNotice(notice),
+        cooldownMs: REFRESH_FAILURE_NOTICE_COOLDOWN_MS,
+      });
     },
-    [publishNotice],
+    [formatNotice, publishThrottledSessionNotice],
   );
 
   const persistence = useSessionPersistence({

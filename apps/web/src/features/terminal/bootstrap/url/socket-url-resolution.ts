@@ -1,6 +1,6 @@
 import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
-import { validateWebsocketEndpoint } from "../../contracts/websocket-endpoint-validation";
 import { TERMINAL_BACKEND_ROUTE } from "../../protocol/generated-wire-contract";
+import { validateWebsocketEndpoint } from "../../validation/websocket-endpoint";
 import { createBackendResolutionIssue } from "./backend-resolution-issue";
 import { redactTokenInUrlForNotice } from "./redact-token-in-url";
 

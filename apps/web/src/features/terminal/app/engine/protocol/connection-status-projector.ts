@@ -7,13 +7,13 @@ export type ConnectionStatusFlag =
   | "attach_forbidden"
   | "remote_exit";
 
-export type ConnectionStatusState = {
+type ConnectionStatusState = {
   transportStatus: ConnectionStatus;
   statusFlag: ConnectionStatusFlag | null;
   status: ConnectionStatus;
 };
 
-export type ConnectionStatusEvent =
+type ConnectionStatusEvent =
   | { type: "transport-status"; status: ConnectionStatus }
   | { type: "status-flag"; flag: ConnectionStatusFlag | null };
 

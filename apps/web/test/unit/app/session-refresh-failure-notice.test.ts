@@ -40,8 +40,10 @@ describe("session refresh failure notice mapping", () => {
       toSessionRefreshFailureNotice({
         source: "fetch",
         reason: "bootstrap_error",
-        issue: "invalid socket",
-        issueCode: "socket_url_invalid_format",
+        issue: {
+          code: "socket_url_invalid_format",
+          details: "invalid socket",
+        },
       }),
     ).toEqual({
       failureKey: "bootstrap:backend_resolution_failed",

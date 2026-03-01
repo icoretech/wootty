@@ -89,6 +89,7 @@ export function reduceTransportState(
         ...state,
         reconnectAttempt: 0,
       };
+    default:
+      return assertNever(event);
   }
-  return assertNever(event);
 }
