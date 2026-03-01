@@ -26,6 +26,7 @@ type UseConnectionCoordinatorArgs = {
   attachMode: AttachMode;
   hasActiveSession: boolean;
   transportEnabled: boolean;
+  bootstrapFailure: boolean;
   publishNotice: NoticePublisher;
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
@@ -68,6 +69,7 @@ export function useConnectionCoordinator({
   attachMode,
   hasActiveSession,
   transportEnabled,
+  bootstrapFailure,
   publishNotice,
   setSessionMode,
   applyReadySession,
@@ -219,7 +221,7 @@ export function useConnectionCoordinator({
       resetRuntimeBuffers: runtimeBridge.resetRuntimeBuffers,
     },
     transport: {
-      status: statusState.status,
+      status: bootstrapFailure ? "error" : statusState.status,
       reconnectAttempt,
       latencyMs,
       lastSocketFailure,
