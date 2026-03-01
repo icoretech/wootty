@@ -15,6 +15,17 @@ type GovernanceMap = {
   }>;
 };
 
+type TraceabilityAssertionManifest = {
+  requirements: Array<{
+    id: string;
+    assertions: Array<{
+      lane: "unitIntegration" | "e2e";
+      path: string;
+      contains: string;
+    }>;
+  }>;
+};
+
 const repoRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../../../../../",
@@ -25,6 +36,10 @@ const governancePath = path.join(
   "docs/governance/terminal-governance-map.json",
 );
 const readmePath = path.join(repoRoot, "README.md");
+const traceabilityAssertionsPath = path.join(
+  repoRoot,
+  "docs/governance/terminal-traceability-assertions.json",
+);
 
 function normalizeGovernancePath(value: string): string {
   return value.replace(/\/\*$/, "");
@@ -48,9 +63,19 @@ function hasExecutableTestPattern(linkedPath: string, source: string): boolean {
   return /\b(it|test)\s*\(/.test(source);
 }
 
+function requirementIdFromLabel(label: string): string | null {
+  const match = /^FR-\d+\b/.exec(label);
+  return match ? match[0] : null;
+}
+
 async function readGovernanceMap(): Promise<GovernanceMap> {
   const source = await fs.readFile(governancePath, "utf8");
   return JSON.parse(source) as GovernanceMap;
+}
+
+async function readTraceabilityAssertions(): Promise<TraceabilityAssertionManifest> {
+  const source = await fs.readFile(traceabilityAssertionsPath, "utf8");
+  return JSON.parse(source) as TraceabilityAssertionManifest;
 }
 
 describe("terminal governance map", () => {
@@ -103,5 +128,45 @@ describe("terminal governance map", () => {
     );
 
     expect(actualBlock).toBe(expectedBlock);
+  });
+
+  it("keeps requirement-to-test assertions executable and semantically anchored", async () => {
+    const governance = await readGovernanceMap();
+    const assertions = await readTraceabilityAssertions();
+    const sourceByPath = new Map<string, string>();
+
+    const mapRequirementIds = new Set(
+      governance.traceability
+        .map((entry) => requirementIdFromLabel(entry.requirement))
+        .filter((value): value is string => value !== null),
+    );
+    const assertionRequirementIds = new Set(
+      assertions.requirements.map((entry) => entry.id),
+    );
+
+    expect(assertionRequirementIds).toEqual(mapRequirementIds);
+
+    for (const requirement of assertions.requirements) {
+      const coveredLanes = new Set<string>();
+      for (const assertion of requirement.assertions) {
+        coveredLanes.add(assertion.lane);
+        const absolutePath = path.join(repoRoot, assertion.path);
+        await expect(fs.access(absolutePath)).resolves.toBeUndefined();
+
+        let source = sourceByPath.get(assertion.path);
+        if (!source) {
+          source = await fs.readFile(absolutePath, "utf8");
+          sourceByPath.set(assertion.path, source);
+        }
+
+        if (isTraceabilityTestFile(assertion.path)) {
+          expect(hasExecutableTestPattern(assertion.path, source)).toBe(true);
+        }
+        expect(source.includes(assertion.contains)).toBe(true);
+      }
+
+      expect(coveredLanes.has("unitIntegration")).toBe(true);
+      expect(coveredLanes.has("e2e")).toBe(true);
+    }
   });
 });

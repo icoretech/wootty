@@ -1,0 +1,149 @@
+{
+  "requirements": [
+    {
+      "id": "FR-1",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/server/internal/protocol/protocol_test.go",
+          "contains": "func TestParseAttach(t *testing.T)"
+        },
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/protocol/terminal-wire-contract.test.ts",
+          "contains": "keeps client/server message kinds aligned with the contract file"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "renders terminal UI and reaches connected state"
+        }
+      ]
+    },
+    {
+      "id": "FR-2",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/lib/terminal-session.test.ts",
+          "contains": "stores and clears session id in storage"
+        },
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/integration/app/app-connection-integration.test.tsx",
+          "contains": "connects and stores ready session id in tab and resume storage"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "new session rotates session id"
+        }
+      ]
+    },
+    {
+      "id": "FR-3",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/lib/terminal-session.test.ts",
+          "contains": "parses valid server messages and rejects invalid payloads"
+        },
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/app/orchestrators/transport/transport-orchestrator.test.tsx",
+          "contains": "drives heartbeat timeout through an injectable scheduler"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "stays connected through resize bursts and reconnect churn"
+        }
+      ]
+    },
+    {
+      "id": "FR-4",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/unit/lib/terminal-session.test.ts",
+          "contains": "buffers and flushes input while preserving byte accounting"
+        },
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/integration/app/app-connection-integration.test.tsx",
+          "contains": "buffers input while disconnected and flushes after reconnect"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "manual reconnect returns to connected"
+        }
+      ]
+    },
+    {
+      "id": "FR-5",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/server/internal/session/history_test.go",
+          "contains": "func TestHistoryBufferTrimsOldChunks(t *testing.T)"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "stays stable through viewport resizes"
+        }
+      ]
+    },
+    {
+      "id": "FR-6",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/integration/app/terminal-app-direct.test.tsx",
+          "contains": "boots websocket transport from the feature entrypoint"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "renders terminal UI and reaches connected state"
+        }
+      ]
+    },
+    {
+      "id": "FR-7",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/integration/app/app-ui-integration.test.tsx",
+          "contains": "updates font size controls and persists preference"
+        },
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/integration/app/app-sessions-integration.test.tsx",
+          "contains": "attaches in watch mode for sessions already controlled elsewhere"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "font size controls update terminal preference"
+        }
+      ]
+    },
+    {
+      "id": "FR-8",
+      "assertions": [
+        {
+          "lane": "unitIntegration",
+          "path": "apps/web/test/integration/app/app-ui-integration.test.tsx",
+          "contains": "announces reconnect status changes for assistive tech"
+        },
+        {
+          "lane": "e2e",
+          "path": "apps/web/e2e/terminal.spec.ts",
+          "contains": "renders terminal UI and reaches connected state"
+        }
+      ]
+    }
+  ]
+}
