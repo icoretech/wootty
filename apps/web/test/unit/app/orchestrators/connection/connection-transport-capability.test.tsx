@@ -73,7 +73,7 @@ function createTransportCapabilityArgs() {
     setSessionMode: vi.fn(),
     applyReadySession: vi.fn(),
     clearMissingSession: vi.fn(),
-    requestSessionRefresh: vi.fn(async () => ({ ok: true as const })),
+    requestTransportRefresh: vi.fn(async () => ({ ok: true as const })),
     writeServerError: vi.fn(),
     flushAfterReady: vi.fn(),
     writeOutputAndTrackBytes: vi.fn(),

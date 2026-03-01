@@ -66,6 +66,7 @@ function createSessionDomain(): TerminalSessionDomain {
       reportStorageFailure: vi.fn(),
       setSessionMode: vi.fn(),
       requestSessionRefresh: vi.fn(async () => ({ ok: true })),
+      requestTransportRefresh: vi.fn(async () => ({ ok: true })),
       applyReadySession: vi.fn(),
       clearMissingSession: vi.fn(),
       transitionSessionContext: vi.fn(),

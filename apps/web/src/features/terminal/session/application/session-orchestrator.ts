@@ -43,6 +43,7 @@ type UseSessionOrchestratorArgs = {
 };
 
 const REFRESH_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
+const TRANSPORT_REFRESH_MIN_INTERVAL_MS = 750;
 
 type SessionOrchestratorState = {
   state: {
@@ -68,6 +69,7 @@ type SessionOrchestratorState = {
     requestSessionRefresh: (
       request: SessionRefreshRequest,
     ) => Promise<SessionRefreshResult>;
+    requestTransportRefresh: () => Promise<SessionRefreshResult>;
     applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
     clearMissingSession: () => void;
     transitionSessionContext: (
@@ -86,6 +88,7 @@ export function useSessionOrchestrator({
 }: UseSessionOrchestratorArgs): SessionOrchestratorState {
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
   const storageFailureNoticeRef = useRef<FailureNoticeState>(null);
+  const lastTransportRefreshAtRef = useRef<number>(Number.NEGATIVE_INFINITY);
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
   const [attachMode, setAttachMode] = useState<AttachMode>("control");
   const [sessionMenuOpen, setSessionMenuOpenState] = useState<boolean>(false);
@@ -170,6 +173,26 @@ export function useSessionOrchestrator({
       });
     },
   });
+
+  const requestTransportRefresh = useCallback(() => {
+    const now = scheduler.now();
+    if (
+      now - lastTransportRefreshAtRef.current <
+      TRANSPORT_REFRESH_MIN_INTERVAL_MS
+    ) {
+      return Promise.resolve({
+        ok: false,
+        failure: {
+          source: "lifecycle" as const,
+          reason: "request_superseded" as const,
+        },
+      });
+    }
+    lastTransportRefreshAtRef.current = now;
+    return requestSessionRefresh({
+      trigger: "transport_event",
+    });
+  }, [requestSessionRefresh, scheduler]);
 
   const publishSessionNoticeDetails = useCallback<SessionNoticePublisher>(
     (details) => {
@@ -275,6 +298,7 @@ export function useSessionOrchestrator({
       reportStorageFailure,
       setSessionMode,
       requestSessionRefresh,
+      requestTransportRefresh,
       applyReadySession,
       clearMissingSession,
       transitionSessionContext,

@@ -11,10 +11,7 @@ import type {
 import type { Scheduler } from "../../platform/scheduler";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
 import type { TerminalRuntime } from "../../runtime/xterm-runtime-contract";
-import type {
-  SessionRefreshRequest,
-  SessionRefreshResult,
-} from "../../session/application/session-refresh-result";
+import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
 import { useConnectionTransportCapability } from "./connection-transport-capability";
 import {
   type ConnectionStatusFlag,
@@ -39,9 +36,7 @@ type UseConnectionCoordinatorArgs = {
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  requestSessionRefresh: (
-    request: SessionRefreshRequest,
-  ) => Promise<SessionRefreshResult>;
+  requestTransportRefresh: () => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
 };
 
@@ -85,7 +80,7 @@ export function useConnectionCoordinator({
   setSessionMode,
   applyReadySession,
   clearMissingSession,
-  requestSessionRefresh,
+  requestTransportRefresh,
   scheduler,
 }: UseConnectionCoordinatorArgs): ConnectionCoordinatorState {
   const sendPayloadRef = useRef<(payload: TerminalClientMessage) => boolean>(
@@ -146,7 +141,7 @@ export function useConnectionCoordinator({
     setSessionMode,
     applyReadySession,
     clearMissingSession,
-    requestSessionRefresh,
+    requestTransportRefresh,
     writeServerError: runtimeBridge.writeServerError,
     flushAfterReady: runtimeBridge.flushAfterReady,
     writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
