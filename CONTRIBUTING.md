@@ -27,13 +27,24 @@ then runs typechecks.
 
 ## Commit conventions
 
-Use conventional commits when possible:
+Use Conventional Commits for every change (required for Release Please):
 
 - `feat:` new behavior
 - `fix:` bug fixes
 - `docs:` documentation-only
 - `chore:` maintenance
 - `test:` tests-only changes
+
+Format:
+
+```text
+<type>(optional-scope): <summary>
+```
+
+Examples:
+
+- `fix: resolve Playwright webServer cwd in CI`
+- `refactor(session): split transport lifecycle boundaries`
 
 ## Scope guidance
 
