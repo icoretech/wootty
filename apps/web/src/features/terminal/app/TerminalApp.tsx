@@ -1,5 +1,5 @@
 import { SquareTerminal } from "lucide-react";
-import { useState } from "react";
+import { useRef } from "react";
 import { createTerminalAppEnvironment } from "../bootstrap/terminal-environment";
 import { FloatingControls } from "../components/FloatingControls";
 import { SessionMenu } from "../components/SessionMenu";
@@ -14,10 +14,17 @@ type TerminalAppProps = {
 export type { TerminalAppEnvironment };
 
 export function TerminalApp({ environment }: TerminalAppProps = {}) {
-  const [defaultEnvironment] = useState<TerminalAppEnvironment>(() => {
-    return createTerminalAppEnvironment();
-  });
-  const controller = useTerminalController(environment ?? defaultEnvironment);
+  const defaultEnvironmentRef = useRef<TerminalAppEnvironment | null>(null);
+  const effectiveEnvironment = (() => {
+    if (environment) {
+      return environment;
+    }
+    if (!defaultEnvironmentRef.current) {
+      defaultEnvironmentRef.current = createTerminalAppEnvironment();
+    }
+    return defaultEnvironmentRef.current;
+  })();
+  const controller = useTerminalController(effectiveEnvironment);
 
   return (
     <main

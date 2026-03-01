@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toSessionRefreshFailureNotice } from "../../../src/features/terminal/session/application/session-refresh-failure-notice";
+import { toSessionRefreshFailureNotice } from "../../../src/features/terminal/notifications/mappers/session-refresh-failure-notice";
 
 describe("session refresh failure notice mapping", () => {
   it("maps every lifecycle failure reason explicitly", () => {

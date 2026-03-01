@@ -32,7 +32,9 @@ function parseNonNegativeInteger(value: unknown): number | null {
 }
 
 function hasRequiredSessionFields(record: Record<string, unknown>): boolean {
-  return SESSION_SNAPSHOT_REQUIRED_FIELDS.every((field) => field in record);
+  return SESSION_SNAPSHOT_REQUIRED_FIELDS.every((field) => {
+    return Object.hasOwn(record, field);
+  });
 }
 
 function parseSessionSnapshot(entry: unknown): SessionSnapshot | null {

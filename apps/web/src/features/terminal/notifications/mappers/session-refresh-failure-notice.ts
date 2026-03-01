@@ -1,6 +1,6 @@
 import { assertNever } from "../../lib/assert-never";
-import type { NoticeDetails } from "../../notifications/notice-contract";
-import type { SessionRefreshFailure } from "../protocol/session-refresh-failure-contract";
+import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
+import type { NoticeDetails } from "../notice-contract";
 
 type SessionRefreshFailureNotice = {
   failureKey: string | null;
