@@ -2,7 +2,7 @@ import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
 import type { ShortcutAction } from "../shortcut-actions";
 import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
 
-export type CommandHandler = "runtime" | "viewport";
+type CommandHandler = "runtime" | "viewport";
 
 type FloatingControlBinding = {
   testId: string;
@@ -92,7 +92,7 @@ type CommandManifestWithFloatingControl = Extract<
 export type CommandManifestFloatingControlMetadataKey =
   CommandManifestWithFloatingControl["floatingControl"]["metadataKey"];
 
-export type CommandManifestFloatingControlEntry = {
+type CommandManifestFloatingControlEntry = {
   action: CommandManifestWithFloatingControl["id"];
   testId: CommandManifestWithFloatingControl["floatingControl"]["testId"];
   metadataKey: CommandManifestWithFloatingControl["floatingControl"]["metadataKey"];
