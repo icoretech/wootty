@@ -1,5 +1,5 @@
+import { normalizeCauseToMessage } from "../../shared/sanitization/normalize-cause-message";
 import type { RuntimeNotice } from "../contracts/runtime-notice";
-import { normalizeCauseToMessage } from "./cause-message";
 
 export function toRuntimeNotice(details: RuntimeNotice): string {
   if (details.reason && details.reason.length > 0) {

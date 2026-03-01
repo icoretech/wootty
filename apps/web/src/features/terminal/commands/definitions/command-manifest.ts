@@ -126,3 +126,44 @@ export const FLOATING_CONTROL_REGISTRY = Object.freeze(
     ];
   }),
 ) as readonly CommandManifestFloatingControlEntry[];
+
+type CommandFloatingControlMetadata = {
+  tooltip: string;
+  ariaLabel: string;
+  ariaKeyShortcuts?: string;
+};
+
+export const COMMAND_FLOATING_CONTROL_METADATA = Object.freeze({
+  reconnect: {
+    tooltip: "Reconnect",
+    ariaLabel: "Reconnect terminal session",
+    ariaKeyShortcuts: "Control+Shift+R Meta+Shift+R",
+  },
+  clear: {
+    tooltip: "Clear",
+    ariaLabel: "Clear terminal viewport",
+    ariaKeyShortcuts: "Control+Shift+K Meta+Shift+K",
+  },
+  decreaseFont: {
+    tooltip: "Font down",
+    ariaLabel: "Decrease terminal font size",
+    ariaKeyShortcuts: "Control+Shift+- Meta+Shift+-",
+  },
+  increaseFont: {
+    tooltip: "Font up",
+    ariaLabel: "Increase terminal font size",
+    ariaKeyShortcuts: "Control+Shift+= Meta+Shift+=",
+  },
+  resetFont: {
+    tooltip: "Reset font",
+    ariaLabel: "Reset terminal font size",
+    ariaKeyShortcuts: "Control+Shift+0 Meta+Shift+0",
+  },
+  fullscreen: {
+    tooltip: "Fullscreen",
+    ariaLabel: "Toggle fullscreen terminal",
+  },
+} satisfies Record<
+  CommandManifestFloatingControlMetadataKey,
+  CommandFloatingControlMetadata
+>);

@@ -1,5 +1,5 @@
+import { normalizeCauseToMessage } from "../../shared/sanitization/normalize-cause-message";
 import type { FullscreenNotice } from "../contracts/runtime-notice";
-import { normalizeCauseToMessage } from "./cause-message";
 
 export function toFullscreenNotice(details: FullscreenNotice): string {
   const cause = normalizeCauseToMessage(details.cause);

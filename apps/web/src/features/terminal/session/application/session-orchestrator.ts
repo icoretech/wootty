@@ -9,9 +9,9 @@ import {
 import type {
   AttachMode,
   SessionSnapshot,
-  SessionsFetchResult,
-  StorageAccessResult,
-} from "../../contracts/terminal-contract-surface";
+} from "../../contracts/session/session";
+import type { SessionsFetchResult } from "../../contracts/session/sessions-fetch";
+import type { StorageAccessResult } from "../../contracts/storage-access";
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type {

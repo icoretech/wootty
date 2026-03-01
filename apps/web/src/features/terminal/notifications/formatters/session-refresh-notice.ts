@@ -1,6 +1,6 @@
 import { assertNever } from "../../lib/assert-never";
+import { normalizeCauseToMessage } from "../../shared/sanitization/normalize-cause-message";
 import type { SessionsRefreshNotice } from "../contracts/session-notice";
-import { normalizeCauseToMessage } from "./cause-message";
 
 export function toSessionRefreshNotice(details: SessionsRefreshNotice): string {
   switch (details.reason) {
