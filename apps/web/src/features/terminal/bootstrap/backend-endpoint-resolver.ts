@@ -63,7 +63,7 @@ function withAuthQueryParam(
   socketUrl: string,
   authToken?: string,
 ): SocketUrlMutationResult {
-  if (TERMINAL_AUTH_POLICY.websocket !== "query_token") {
+  if (TERMINAL_AUTH_POLICY.websocket !== "query_token_legacy") {
     return {
       ok: true,
       socketUrl,
