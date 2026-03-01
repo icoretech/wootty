@@ -22,11 +22,22 @@ else
   commit_range="${head_sha}^..${head_sha}"
 fi
 
+if ! git rev-list "${commit_range}" >/dev/null 2>&1; then
+  echo "::error::Unable to evaluate commit range ${commit_range}"
+  exit 1
+fi
+
 conventional_regex='^(revert: )?(feat|fix|docs|style|refactor|perf|test|build|ci|chore)(\([[:alnum:]_.\/-]+\))?(!)?: .+'
 failed=0
 
 while IFS=$'\t' read -r sha subject; do
   if [[ -z "${sha}" ]]; then
+    continue
+  fi
+
+  # GitHub pull_request workflows validate a synthetic merge commit.
+  # It is not part of project history and should not be linted.
+  if [[ "${subject}" =~ ^Merge[[:space:]] ]]; then
     continue
   fi
 
