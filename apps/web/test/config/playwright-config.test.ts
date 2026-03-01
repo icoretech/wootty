@@ -54,6 +54,7 @@ describe("playwright config", () => {
       "mobile-chromium",
     ]);
     expect(config.webServer.url).toBe(expected.healthUrl);
+    expect(config.webServer.cwd).toBe("../../../server");
   });
 
   it("enables cross-browser projects when WOOTTY_E2E_CROSS is set", async () => {
