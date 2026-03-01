@@ -1,4 +1,7 @@
-import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
+import {
+  FETCH_SESSION_FAILURE_REASONS,
+  type FetchSessionFailure,
+} from "../../contracts/session/sessions-fetch";
 
 export const SESSION_REFRESH_PARSE_FAILURE_REASONS = [
   "invalid_payload",
@@ -11,37 +14,15 @@ export type SessionRefreshParseFailureReason =
   (typeof SESSION_REFRESH_PARSE_FAILURE_REASONS)[number];
 
 export const SESSION_REFRESH_FAILURE_REASONS = [
-  "http_error",
-  "bootstrap_error",
-  "json_parse_error",
+  ...FETCH_SESSION_FAILURE_REASONS,
   ...SESSION_REFRESH_PARSE_FAILURE_REASONS,
   "request_timeout",
   "request_aborted",
   "request_superseded",
-  "network_error",
 ] as const;
 
 export type SessionRefreshFailure =
-  | {
-      source: "fetch";
-      reason: "http_error";
-      status: number;
-    }
-  | {
-      source: "fetch";
-      reason: "bootstrap_error";
-      issue: TerminalBackendResolutionIssue;
-    }
-  | {
-      source: "fetch";
-      reason: "json_parse_error";
-      cause: unknown;
-    }
-  | {
-      source: "fetch";
-      reason: "network_error";
-      cause: unknown;
-    }
+  | FetchSessionFailure
   | {
       source: "parse";
       reason: "invalid_payload" | "missing_sessions_array";

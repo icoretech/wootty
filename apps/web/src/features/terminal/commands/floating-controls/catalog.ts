@@ -1,5 +1,4 @@
-import { COMMAND_CATALOG } from "../catalog";
-import type { ShortcutAction } from "../shortcut-actions";
+import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
 import type { FloatingControlCommand } from "./actions";
 import type {
@@ -83,11 +82,40 @@ const FLOATING_CONTROL_POLICY: Record<
   },
 };
 
+const FLOATING_CONTROL_BINDINGS = [
+  {
+    action: TERMINAL_RUNTIME_COMMAND.RECONNECT,
+    testId: "reconnect-button",
+    metadataKey: "reconnect",
+  },
+  {
+    action: TERMINAL_RUNTIME_COMMAND.CLEAR,
+    testId: "clear-button",
+    metadataKey: "clear",
+  },
+  {
+    action: VIEWPORT_UI_COMMAND.DECREASE_FONT,
+    testId: "font-decrease-button",
+    metadataKey: "decreaseFont",
+  },
+  {
+    action: VIEWPORT_UI_COMMAND.INCREASE_FONT,
+    testId: "font-increase-button",
+    metadataKey: "increaseFont",
+  },
+  {
+    action: VIEWPORT_UI_COMMAND.RESET_FONT,
+    testId: "font-reset-button",
+    metadataKey: "resetFont",
+  },
+  {
+    action: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
+    testId: "fullscreen-button",
+    metadataKey: "fullscreen",
+  },
+] as const satisfies readonly FloatingControlRegistryEntry[];
+
 type FloatingControlLookup = {
-  metadataByAction: ReadonlyMap<
-    FloatingControlCommand,
-    FloatingControlMetadata
-  >;
   policyByAction: ReadonlyMap<FloatingControlCommand, FloatingControlPolicy>;
   metadataByKey: ReadonlyMap<
     FloatingControlMetadataKey,
@@ -95,42 +123,18 @@ type FloatingControlLookup = {
   >;
 };
 
-type CommandCatalogEntry = (typeof COMMAND_CATALOG)[number];
-type CommandWithFloatingControl = CommandCatalogEntry & {
-  floatingControl: {
-    testId: string;
-    metadataKey: FloatingControlMetadataKey;
-  };
-};
-
-function hasFloatingControl(
-  entry: CommandCatalogEntry,
-): entry is CommandWithFloatingControl {
-  return "floatingControl" in entry && entry.floatingControl !== undefined;
-}
-
-function isFloatingControlCommand(
-  action: ShortcutAction,
-): action is FloatingControlCommand {
-  return action !== VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS;
-}
-
-function buildFloatingControlCatalog(): readonly FloatingControlCatalogEntry[] {
+function buildFloatingControlCatalog(
+  entries: readonly FloatingControlRegistryEntry[],
+): readonly FloatingControlCatalogEntry[] {
   return Object.freeze(
-    COMMAND_CATALOG.flatMap((entry): FloatingControlCatalogEntry[] => {
-      if (!hasFloatingControl(entry) || !isFloatingControlCommand(entry.id)) {
-        return [];
-      }
-      const { metadataKey, testId } = entry.floatingControl;
-      return [
-        {
-          action: entry.id,
-          testId,
-          metadataKey,
-          metadata: FLOATING_CONTROL_METADATA[metadataKey],
-          policy: FLOATING_CONTROL_POLICY[metadataKey],
-        },
-      ];
+    entries.map((entry) => {
+      return {
+        action: entry.action,
+        testId: entry.testId,
+        metadataKey: entry.metadataKey,
+        metadata: FLOATING_CONTROL_METADATA[entry.metadataKey],
+        policy: FLOATING_CONTROL_POLICY[entry.metadataKey],
+      };
     }),
   );
 }
@@ -138,10 +142,6 @@ function buildFloatingControlCatalog(): readonly FloatingControlCatalogEntry[] {
 function buildFloatingControlLookup(
   entries: readonly FloatingControlCatalogEntry[],
 ): FloatingControlLookup {
-  const metadataByAction = new Map<
-    FloatingControlCommand,
-    FloatingControlMetadata
-  >();
   const policyByAction = new Map<
     FloatingControlCommand,
     FloatingControlPolicy
@@ -152,12 +152,6 @@ function buildFloatingControlLookup(
   >();
 
   for (const entry of entries) {
-    insertUnique(
-      metadataByAction,
-      entry.action,
-      entry.metadata,
-      "floating-control action metadata",
-    );
     insertUnique(
       policyByAction,
       entry.action,
@@ -172,7 +166,7 @@ function buildFloatingControlLookup(
     );
   }
 
-  return { metadataByAction, policyByAction, metadataByKey };
+  return { policyByAction, metadataByKey };
 }
 
 function insertUnique<K, V>(
@@ -200,32 +194,18 @@ function requireLookupValue<K, V>(
   throw new Error(`Unknown ${label} '${String(key)}'.`);
 }
 
-export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog();
+export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog(
+  FLOATING_CONTROL_BINDINGS,
+);
 
 export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
-  Object.freeze(
-    FLOATING_CONTROL_CATALOG.map((entry) => {
-      return {
-        testId: entry.testId,
-        metadataKey: entry.metadataKey,
-        action: entry.action,
-      };
-    }) satisfies readonly FloatingControlRegistryEntry[],
-  );
+  Object.freeze([
+    ...FLOATING_CONTROL_BINDINGS,
+  ] satisfies readonly FloatingControlRegistryEntry[]);
 
 const FLOATING_CONTROL_LOOKUP = buildFloatingControlLookup(
   FLOATING_CONTROL_CATALOG,
 );
-
-export function floatingControlMetadata(
-  command: FloatingControlCommand,
-): FloatingControlMetadata {
-  return requireLookupValue(
-    FLOATING_CONTROL_LOOKUP.metadataByAction,
-    command,
-    "floating control action metadata",
-  );
-}
 
 export function floatingControlPolicy(
   command: FloatingControlCommand,

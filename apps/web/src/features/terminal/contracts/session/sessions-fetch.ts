@@ -4,7 +4,14 @@ export type SessionsFetchPayload = Record<string, unknown> & {
   sessions: unknown[];
 };
 
-export type SessionsFetchFailure =
+export const FETCH_SESSION_FAILURE_REASONS = [
+  "http_error",
+  "bootstrap_error",
+  "json_parse_error",
+  "network_error",
+] as const;
+
+export type FetchSessionFailure =
   | {
       source: "fetch";
       reason: "http_error";
@@ -24,7 +31,10 @@ export type SessionsFetchFailure =
       source: "fetch";
       reason: "network_error";
       cause: unknown;
-    }
+    };
+
+export type SessionsFetchFailure =
+  | FetchSessionFailure
   | {
       source: "lifecycle";
       reason: "request_aborted";

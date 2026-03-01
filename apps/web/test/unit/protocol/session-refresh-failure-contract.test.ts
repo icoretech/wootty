@@ -19,6 +19,7 @@ describe("session refresh failure contract", () => {
       "http_error",
       "bootstrap_error",
       "json_parse_error",
+      "network_error",
       "invalid_payload",
       "missing_sessions_array",
       "all_sessions_invalid",
@@ -26,7 +27,6 @@ describe("session refresh failure contract", () => {
       "request_timeout",
       "request_aborted",
       "request_superseded",
-      "network_error",
     ]);
   });
 });
