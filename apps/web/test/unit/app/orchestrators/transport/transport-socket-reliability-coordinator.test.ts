@@ -2,25 +2,18 @@ import { describe, expect, it, vi } from "vitest";
 import type { TransportFailure } from "../../../../../src/features/terminal/app/engine/transport/contracts/transport-failure-contract";
 import { TransportSocketReliabilityCoordinator } from "../../../../../src/features/terminal/app/engine/transport/reliability/transport-socket-reliability-coordinator";
 import {
-  reconnectDelayMs,
   TERMINAL_CLOSE_CODE,
   TERMINAL_HEARTBEAT_MS,
 } from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
 import type { TransportEvent } from "../../../../../src/features/terminal/app/engine/transport/state/transport-state-machine";
 import { FakeScheduler } from "../../../../support/harness/fake-scheduler";
 
-function createHarness({
-  reconnectAttempt = 0,
-}: {
-  reconnectAttempt?: number;
-} = {}) {
+function createHarness() {
   const scheduler = new FakeScheduler();
   const events: TransportEvent[] = [];
   const onSocketFailure = vi.fn<(failure: TransportFailure) => void>();
-  const connect = vi.fn();
   const sendPing = vi.fn();
   const closeActive = vi.fn().mockReturnValue(true);
-  let attempt = reconnectAttempt;
 
   const coordinator = new TransportSocketReliabilityCoordinator({
     scheduler,
@@ -28,8 +21,6 @@ function createHarness({
       events.push(event);
     },
     onSocketFailure,
-    connect,
-    getReconnectAttempt: () => attempt,
     sendPing,
     closeActive,
   });
@@ -39,12 +30,8 @@ function createHarness({
     scheduler,
     events,
     onSocketFailure,
-    connect,
     sendPing,
     closeActive,
-    setReconnectAttempt: (next: number) => {
-      attempt = next;
-    },
   };
 }
 
@@ -82,39 +69,39 @@ describe("transport socket reliability coordinator", () => {
     );
   });
 
-  it("suppresses duplicate close failure notices after socket-error on same generation", () => {
+  it("suppresses duplicate close failure reporting after socket-error on same generation", () => {
     const harness = createHarness();
 
     harness.coordinator.handleSocketError(5, {
       source: "transport",
       message: "socket exploded",
     });
-    harness.coordinator.handleSocketClose({
-      closeIntent: "normal",
-      closeCode: 1006,
-      closeReason: "abnormal closure",
+    const closeResult = harness.coordinator.handleSocketClose({
       socketGeneration: 5,
     });
 
     expect(harness.onSocketFailure).toHaveBeenCalledTimes(1);
-    expect(harness.events).toContainEqual({
-      type: "schedule-reconnect",
-      attempt: 1,
+    expect(closeResult).toEqual({
+      shouldReportCloseFailure: false,
     });
-
-    harness.scheduler.advanceBy(reconnectDelayMs(0));
-    expect(harness.connect).toHaveBeenCalledTimes(1);
   });
 
-  it("reports close failures when there was no prior socket-error for generation", () => {
-    const harness = createHarness({ reconnectAttempt: 1 });
+  it("marks close failures reportable when there was no prior socket-error for generation", () => {
+    const harness = createHarness();
 
-    harness.coordinator.handleSocketClose({
-      closeIntent: "normal",
-      closeCode: 1006,
-      closeReason: "abnormal closure",
+    const closeResult = harness.coordinator.handleSocketClose({
       socketGeneration: 12,
     });
+
+    expect(closeResult).toEqual({
+      shouldReportCloseFailure: true,
+    });
+  });
+
+  it("reports close failures via the shared failure sink", () => {
+    const harness = createHarness();
+
+    harness.coordinator.reportCloseFailure(1006, "abnormal closure");
 
     expect(harness.onSocketFailure).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -124,8 +111,8 @@ describe("transport socket reliability coordinator", () => {
       }),
     );
     expect(harness.events).toContainEqual({
-      type: "schedule-reconnect",
-      attempt: 2,
+      type: "socket-failure",
+      context: expect.anything(),
     });
   });
 

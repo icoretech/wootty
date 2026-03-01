@@ -1,3 +1,4 @@
+import { TerminalBootstrapInvariantError } from "../shared/errors/terminal-bootstrap-invariant";
 import { COMMAND_MANIFEST } from "./definitions/command-manifest";
 import type { TerminalRuntimeCommand } from "./runtime-commands";
 import type { ShortcutAction } from "./shortcut-actions";
@@ -16,13 +17,13 @@ function buildCommandRegistry(): CommandRegistry {
 
   for (const command of COMMAND_MANIFEST) {
     if (commandByShortcutCode.has(command.shortcutCode)) {
-      throw new Error(
+      throw new TerminalBootstrapInvariantError(
         `Duplicate shortcut descriptor for key code '${command.shortcutCode}'.`,
       );
     }
     commandByShortcutCode.set(command.shortcutCode, command.id);
     if (handlerByCommand.has(command.id)) {
-      throw new Error(
+      throw new TerminalBootstrapInvariantError(
         `Duplicate command handler descriptor for '${command.id}'.`,
       );
     }
@@ -46,7 +47,9 @@ export function resolveCommandFromShortcutCode(
 function resolveHandlerForCommand(command: ShortcutAction): CommandHandlerKind {
   const handler = COMMAND_REGISTRY.handlerByCommand.get(command);
   if (!handler) {
-    throw new Error(`No command handler descriptor found for '${command}'.`);
+    throw new TerminalBootstrapInvariantError(
+      `No command handler descriptor found for '${command}'.`,
+    );
   }
   return handler;
 }

@@ -123,7 +123,8 @@ function toLifecycleFailureNotice(
         failureKey: "request_timeout",
         notice: {
           context: "sessions_refresh",
-          reason: "generic",
+          reason: "request_timeout",
+          timeoutMs: failure.timeoutMs,
         },
       };
     case "refresh_pipeline_error":

@@ -36,4 +36,16 @@ describe("storage failure notice", () => {
       ),
     ).toContain("quota exceeded");
   });
+
+  it("sanitizes token-bearing storage failure causes", () => {
+    const notice = toUserNotice(
+      toStorageFailureNoticeDetails({
+        operation: "read",
+        key: "wootty.session",
+        cause: "failed at https://host/path?token=secret&x=1",
+      }),
+    );
+    expect(notice).toContain("token=[redacted]");
+    expect(notice).not.toContain("token=secret");
+  });
 });

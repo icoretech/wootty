@@ -56,16 +56,7 @@ export function useTerminalDomainController({
       initialFontSize: session.uiState.initialFontSize,
     },
     session: {
-      sessionId: session.sessionState.sessionId,
-      attachMode: session.sessionState.attachMode,
-      hasActiveSession: session.sessionState.hasActiveSession,
-      setSessionMode: session.sessionActions.setSessionMode,
-      applyReadySession: session.sessionActions.applyReadySession,
-      clearMissingSession: session.sessionActions.clearMissingSession,
-      requestTransportRefresh: session.sessionActions.requestTransportRefresh,
-    },
-    notifications: {
-      publishNotice: session.sessionActions.publishNoticeDetails,
+      ...session.connectionSession,
     },
   });
 

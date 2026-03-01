@@ -40,8 +40,6 @@ describe("connection coordinator", () => {
           applyReadySession: vi.fn(),
           clearMissingSession: vi.fn(),
           requestTransportRefresh: async () => ({ ok: true }),
-        },
-        notifications: {
           publishNotice,
         },
       });
@@ -86,8 +84,6 @@ describe("connection coordinator", () => {
           applyReadySession: vi.fn(),
           clearMissingSession: vi.fn(),
           requestTransportRefresh: async () => ({ ok: true }),
-        },
-        notifications: {
           publishNotice,
         },
       });

@@ -59,8 +59,6 @@ type UseConnectionCoordinatorArgs = {
     applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
     clearMissingSession: () => void;
     requestTransportRefresh: () => Promise<SessionRefreshResult>;
-  };
-  notifications: {
     publishNotice: NoticePublisher;
   };
 };
@@ -93,7 +91,6 @@ export function useConnectionCoordinator({
   transport,
   runtime,
   session,
-  notifications,
 }: UseConnectionCoordinatorArgs): ConnectionCoordinatorState {
   const {
     createTransport,
@@ -111,8 +108,8 @@ export function useConnectionCoordinator({
     applyReadySession,
     clearMissingSession,
     requestTransportRefresh,
+    publishNotice,
   } = session;
-  const { publishNotice } = notifications;
   const sendPayloadRef = useRef<(payload: TerminalClientMessage) => boolean>(
     () => false,
   );

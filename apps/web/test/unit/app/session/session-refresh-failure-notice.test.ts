@@ -7,13 +7,15 @@ describe("session refresh failure notice mapping", () => {
       toSessionRefreshFailureNotice({
         source: "lifecycle",
         reason: "request_timeout",
+        timeoutMs: 15_000,
       }),
     ).toEqual({
       kind: "throttle",
       failureKey: "request_timeout",
       notice: {
         context: "sessions_refresh",
-        reason: "generic",
+        reason: "request_timeout",
+        timeoutMs: 15_000,
       },
     });
     expect(

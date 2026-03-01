@@ -1,4 +1,5 @@
 import type { StorageAccessFailure } from "../../contracts/storage-access";
+import { normalizeCauseToMessage } from "../../shared/sanitization/normalize-cause-message";
 import type { StorageNotice } from "../contracts/session-notice";
 
 function describeStorageFailureReason(
@@ -10,8 +11,9 @@ function describeStorageFailureReason(
   if (failure.reason === "invalid_value") {
     return "stored value invalid";
   }
-  if (failure.cause instanceof Error && failure.cause.message.length > 0) {
-    return failure.cause.message;
+  const normalizedCause = normalizeCauseToMessage(failure.cause);
+  if (normalizedCause) {
+    return normalizedCause;
   }
   return undefined;
 }
