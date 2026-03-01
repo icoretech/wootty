@@ -23,8 +23,11 @@ export function useSessionMenuDismissBinding({
       return;
     }
 
-    const onPointerDown = (event: MouseEvent) => {
-      const target = event.target as Node;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
       if (sessionMenuRef.current?.contains(target)) {
         return;
       }
@@ -40,10 +43,10 @@ export function useSessionMenuDismissBinding({
       }
     };
 
-    documentRef.addEventListener("mousedown", onPointerDown);
+    documentRef.addEventListener("pointerdown", onPointerDown);
     documentRef.addEventListener("keydown", onKeyDown);
     return () => {
-      documentRef.removeEventListener("mousedown", onPointerDown);
+      documentRef.removeEventListener("pointerdown", onPointerDown);
       documentRef.removeEventListener("keydown", onKeyDown);
     };
   }, [

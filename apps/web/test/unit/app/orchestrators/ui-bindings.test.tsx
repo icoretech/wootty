@@ -123,6 +123,45 @@ describe("ui bindings", () => {
     input.remove();
   });
 
+  it("dismisses the session menu on outside pointer interactions", () => {
+    const closeSessionMenu = vi.fn();
+    const menuElement = document.createElement("div");
+    const buttonElement = document.createElement("div");
+    const outsideElement = document.createElement("button");
+    document.body.appendChild(menuElement);
+    document.body.appendChild(buttonElement);
+    document.body.appendChild(outsideElement);
+
+    const sessionMenuRef: RefObject<HTMLDivElement | null> = {
+      current: menuElement,
+    };
+    const sessionButtonRef: RefObject<HTMLDivElement | null> = {
+      current: buttonElement,
+    };
+
+    const { unmount } = renderHook(() =>
+      useSessionMenuDismissBinding({
+        documentRef: document,
+        sessionMenuOpen: true,
+        sessionMenuRef,
+        sessionButtonRef,
+        closeSessionMenu,
+      }),
+    );
+
+    fireEvent.pointerDown(menuElement);
+    fireEvent.pointerDown(buttonElement);
+    expect(closeSessionMenu).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(outsideElement);
+    expect(closeSessionMenu).toHaveBeenCalledTimes(1);
+
+    unmount();
+    menuElement.remove();
+    buttonElement.remove();
+    outsideElement.remove();
+  });
+
   it("clears pending fullscreen resize timer on unmount", () => {
     const setTimeoutSpy = vi
       .fn<(task: ScheduledTask, delayMs: number) => SchedulerTimerHandle>()
