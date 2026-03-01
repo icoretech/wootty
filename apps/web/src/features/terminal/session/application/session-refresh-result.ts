@@ -21,3 +21,30 @@ export type SessionRefreshResult =
       readonly ok: false;
       readonly failure: SessionRefreshFailure;
     };
+
+export type PollingRefreshResultKind =
+  | "success"
+  | "ignored_failure"
+  | "bootstrap_retry"
+  | "counted_failure";
+
+export function classifyPollingRefreshResult(
+  result: SessionRefreshResult,
+): PollingRefreshResultKind {
+  if (result.ok) {
+    return "success";
+  }
+
+  if (
+    result.failure.reason === "request_aborted" ||
+    result.failure.reason === "request_superseded"
+  ) {
+    return "ignored_failure";
+  }
+
+  if (result.failure.reason === "bootstrap_error") {
+    return "bootstrap_retry";
+  }
+
+  return "counted_failure";
+}

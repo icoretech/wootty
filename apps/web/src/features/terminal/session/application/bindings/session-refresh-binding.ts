@@ -10,9 +10,10 @@ import {
   SESSION_REFRESH_FAILURE_LIMIT,
 } from "../session-refresh-policy";
 
-import type {
-  SessionRefreshRequest,
-  SessionRefreshResult,
+import {
+  classifyPollingRefreshResult,
+  type SessionRefreshRequest,
+  type SessionRefreshResult,
 } from "../session-refresh-result";
 
 type SessionRefreshBindingArgs = {
@@ -109,24 +110,23 @@ export function useSessionRefreshBinding({
           signal: refreshController.signal,
         });
 
-        if (refreshResult.ok) {
+        const pollingResult = classifyPollingRefreshResult(refreshResult);
+        if (pollingResult === "success") {
           consecutiveFailures = 0;
-        } else {
-          if (
-            refreshResult.failure.reason === "request_aborted" ||
-            refreshResult.failure.reason === "request_superseded"
-          ) {
-            return;
-          }
-          if (refreshResult.failure.reason === "bootstrap_error") {
-            consecutiveFailures = 0;
-            scheduleBootstrapRecoveryRetry();
-            return;
-          }
-          consecutiveFailures += 1;
-          if (consecutiveFailures >= SESSION_REFRESH_FAILURE_LIMIT) {
-            openCircuitBreaker();
-          }
+          return;
+        }
+        if (pollingResult === "ignored_failure") {
+          return;
+        }
+        if (pollingResult === "bootstrap_retry") {
+          consecutiveFailures = 0;
+          scheduleBootstrapRecoveryRetry();
+          return;
+        }
+
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= SESSION_REFRESH_FAILURE_LIMIT) {
+          openCircuitBreaker();
         }
       } finally {
         if (activeRefreshController === refreshController) {
