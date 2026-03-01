@@ -2,9 +2,7 @@ import { renderHook } from "@testing-library/react";
 import { createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { TerminalPlatformContext } from "../../../../src/features/terminal/app/composition/terminal-platform-composition";
-import type { TerminalSessionDomain } from "../../../../src/features/terminal/app/composition/terminal-session-domain";
 import { useUiBindingsController } from "../../../../src/features/terminal/app/composition/ui-command-adapter";
-import type { ConnectionCoordinatorState } from "../../../../src/features/terminal/app/engine/connection-coordinator";
 
 const dispatchSessionMenu = vi.fn();
 const dispatchFloatingControls = vi.fn();
@@ -33,68 +31,34 @@ vi.mock("../../../../src/features/terminal/app/controller-bindings", () => ({
   },
 }));
 
-function createSessionDomain(): TerminalSessionDomain {
+function createSessionContext() {
   return {
-    uiState: {
-      initialFontSize: 14,
-      fontSize: 14,
-      controlsOpen: true,
-      isFullscreen: false,
-      setControlsOpen: vi.fn(),
-      setIsFullscreen: vi.fn(),
-      readFontSize: () => 14,
-      applyFontSize: vi.fn(),
-    },
-    sessionState: {
-      sessionId: "s-1",
-      lastSessionId: "s-1",
-      sessionHistoryIds: ["s-1"],
-      liveSessions: [],
-      sessionNotice: "",
-      attachMode: "control",
-      sessionMenuOpen: true,
-      hasActiveSession: true,
-    },
-    sessionActions: {
-      setSessionMenuOpen: vi.fn(),
-      publishNoticeDetails: vi.fn(),
-      publishSessionNotice: vi.fn(),
-      clearSessionNotice: vi.fn(),
-      reportStorageFailure: vi.fn(),
-      setSessionMode: vi.fn(),
-      requestSessionRefresh: vi.fn(async () => ({ ok: true })),
-      requestTransportRefresh: vi.fn(async () => ({ ok: true })),
-      applyReadySession: vi.fn(),
-      clearMissingSession: vi.fn(),
-      transitionSessionContext: vi.fn(),
-    },
-    wsUrl: "ws://127.0.0.1/api/terminal",
+    lastSessionId: "s-1",
+    attachMode: "control" as const,
+    sessionId: "s-1",
+    sessionMenuOpen: true,
+    readFontSize: () => 14,
+    applyFontSize: vi.fn(),
+    setControlsOpen: vi.fn(),
+    setIsFullscreen: vi.fn(),
+    setSessionMenuOpen: vi.fn(),
+    transitionSessionContext: vi.fn(),
+    requestSessionRefresh: vi.fn(async (_request: unknown) => ({ ok: true })),
+    publishNotice: vi.fn(),
   };
 }
 
-function createConnectionState(): ConnectionCoordinatorState {
+function createTransportContext() {
   return {
-    runtime: {
-      terminalElementRef: { current: null },
-      terminalReady: false,
-      clearTerminal: vi.fn(),
-      updateFontSize: vi.fn(),
-      fitAndSyncSize: vi.fn(),
-      resetRuntimeBuffers: vi.fn(),
-    },
-    transport: {
-      status: "connecting",
-      reconnectAttempt: 0,
-      latencyMs: null,
-      lastSocketFailure: null,
-      reconnectNow: vi.fn(),
-      scheduleFreshConnection: vi.fn(),
-    },
-    telemetry: {
-      outputBytes: 0,
-      queuedInputBytes: 0,
-      droppedInputBytes: 0,
-    },
+    status: "connecting" as const,
+    terminalReady: false,
+    terminalElementRef: { current: null },
+    clearTerminal: vi.fn(),
+    updateFontSize: vi.fn(),
+    fitAndSyncSize: vi.fn(),
+    resetRuntimeBuffers: vi.fn(),
+    reconnectNow: vi.fn(),
+    scheduleFreshConnection: vi.fn(),
   };
 }
 
@@ -123,8 +87,8 @@ describe("ui command adapter", () => {
       },
       fetchSessions: vi.fn(async () => ({ ok: true, payload: {} })),
     };
-    const session = createSessionDomain();
-    const connection = createConnectionState();
+    const sessionContext = createSessionContext();
+    const transportContext = createTransportContext();
 
     const { result } = renderHook(() => {
       return useUiBindingsController({
@@ -132,8 +96,8 @@ describe("ui command adapter", () => {
         sessionMenuRef: createRef<HTMLDivElement>(),
         sessionButtonRef: createRef<HTMLDivElement>(),
         platform,
-        session,
-        connection,
+        sessionContext,
+        transportContext,
       });
     });
 

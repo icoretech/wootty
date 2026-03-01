@@ -71,20 +71,11 @@ export function useTransportOrchestrator({
     return new TransportLifecycleService({
       createTransport,
       scheduler,
-      runtimeContext: runtimeContextRef.current,
+      getRuntimeContext: () => runtimeContextRef.current,
       getState: () => stateRef.current,
       dispatchEvent,
     });
   }, [createTransport, dispatchEvent, scheduler]);
-
-  useEffect(() => {
-    lifecycleService.updateRuntimeContext({
-      wsUrl,
-      handlers,
-      hasSessionContext,
-      onSocketFailure,
-    });
-  }, [handlers, hasSessionContext, lifecycleService, onSocketFailure, wsUrl]);
 
   useEffect(
     () => () => {

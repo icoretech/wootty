@@ -45,12 +45,12 @@ function createHarness({
       return socket;
     },
     scheduler,
-    runtimeContext: {
+    getRuntimeContext: () => ({
       wsUrl: currentWsUrl,
       handlers,
       hasSessionContext: () => true,
       onSocketFailure,
-    },
+    }),
     getState: () => state,
     dispatchEvent: (event) => {
       events.push(event);
@@ -64,12 +64,6 @@ function createHarness({
     transportUrls,
     setWsUrl: (nextWsUrl: string | null) => {
       currentWsUrl = nextWsUrl;
-      service.updateRuntimeContext({
-        wsUrl: nextWsUrl,
-        handlers,
-        hasSessionContext: () => true,
-        onSocketFailure,
-      });
     },
     state: () => state,
     events,
@@ -167,6 +161,21 @@ describe("transport lifecycle service", () => {
       reason: "endpoint changed",
     });
     expect(harness.sockets).toHaveLength(2);
+  });
+
+  it("opens a fresh socket immediately when starting a fresh session", () => {
+    const harness = createHarness();
+
+    harness.service.connect();
+    harness.sockets[0].emitOpen();
+
+    harness.service.scheduleFreshConnection();
+
+    expect(harness.sockets).toHaveLength(2);
+    expect(harness.sockets[0].closeCalls).toContainEqual({
+      code: TERMINAL_CLOSE_CODE.START_FRESH_SESSION,
+      reason: "start fresh session",
+    });
   });
 
   it("suppresses duplicate close notices when socket error already reported", () => {

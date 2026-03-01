@@ -61,8 +61,31 @@ export function useTerminalDomainController({
     sessionMenuRef,
     sessionButtonRef,
     platform,
-    session,
-    connection,
+    sessionContext: {
+      lastSessionId: session.sessionState.lastSessionId,
+      attachMode: session.sessionState.attachMode,
+      sessionId: session.sessionState.sessionId,
+      sessionMenuOpen: session.sessionState.sessionMenuOpen,
+      readFontSize: session.uiState.readFontSize,
+      applyFontSize: session.uiState.applyFontSize,
+      setControlsOpen: session.uiState.setControlsOpen,
+      setIsFullscreen: session.uiState.setIsFullscreen,
+      setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
+      transitionSessionContext: session.sessionActions.transitionSessionContext,
+      requestSessionRefresh: session.sessionActions.requestSessionRefresh,
+      publishNotice: session.sessionActions.publishNoticeDetails,
+    },
+    transportContext: {
+      status: connection.transport.status,
+      terminalReady: connection.runtime.terminalReady,
+      terminalElementRef: connection.runtime.terminalElementRef,
+      clearTerminal: connection.runtime.clearTerminal,
+      updateFontSize: connection.runtime.updateFontSize,
+      fitAndSyncSize: connection.runtime.fitAndSyncSize,
+      resetRuntimeBuffers: connection.runtime.resetRuntimeBuffers,
+      reconnectNow: connection.transport.reconnectNow,
+      scheduleFreshConnection: connection.transport.scheduleFreshConnection,
+    },
   });
 
   return {

@@ -5,13 +5,15 @@ import type {
   TerminalTransportMessageEvent,
 } from "../../../../contracts/transport/transport";
 import { TRANSPORT_READY_STATE } from "../../../../contracts/transport/transport";
-import type { Scheduler } from "../../../../platform/scheduler";
+import type {
+  Scheduler,
+  SchedulerTimerHandle,
+} from "../../../../platform/scheduler";
 import { createPingMessage } from "../../../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../../../protocol/terminal-wire-schema";
 import type { TransportFailureSink } from "../contracts/transport-failure-contract";
 import { TransportFailureReporter } from "../reliability/transport-failure-reporter";
 import { TransportHeartbeatMonitor } from "../reliability/transport-heartbeat-monitor";
-import { TransportReconnectController } from "../reliability/transport-reconnect-controller";
 import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
 import type {
   SocketCloseIntent,
@@ -40,24 +42,24 @@ type TransportRuntimeContext = {
 type TransportLifecycleServiceDeps = {
   createTransport: (url: string) => TerminalTransport;
   scheduler: Scheduler;
-  runtimeContext: TransportRuntimeContext;
+  getRuntimeContext: () => TransportRuntimeContext;
   getState: () => TransportState;
   dispatchEvent: (event: TransportEvent) => void;
 };
+
+type TimerHandle = SchedulerTimerHandle | null;
 
 export class TransportLifecycleService {
   private readonly deps: TransportLifecycleServiceDeps;
   private readonly heartbeatMonitor: TransportHeartbeatMonitor;
   private readonly failureReporter: TransportFailureReporter;
   private readonly connectionBootstrap: TransportConnectionBootstrap;
-  private readonly reconnectController: TransportReconnectController;
   private readonly socketSession: TransportSocketSession;
-  private runtimeContext: TransportRuntimeContext;
   private socketErrorSinceConnect = false;
+  private reconnectTimer: TimerHandle = null;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
-    this.runtimeContext = deps.runtimeContext;
     this.heartbeatMonitor = new TransportHeartbeatMonitor({
       scheduler: this.deps.scheduler,
       onPing: () => {
@@ -81,20 +83,14 @@ export class TransportLifecycleService {
       dispatchSocketFailure: (context) => {
         this.deps.dispatchEvent({ type: "socket-failure", context });
       },
-      onSocketFailure: this.runtimeContext.onSocketFailure,
+      onSocketFailure: (failure) => {
+        this.getRuntimeContext().onSocketFailure(failure);
+      },
     });
     this.connectionBootstrap = new TransportConnectionBootstrap({
       createTransport: this.deps.createTransport,
     });
-    this.reconnectController = new TransportReconnectController({
-      scheduler: this.deps.scheduler,
-    });
     this.socketSession = new TransportSocketSession();
-  }
-
-  updateRuntimeContext(next: TransportRuntimeContext): void {
-    this.runtimeContext = next;
-    this.failureReporter.setOnSocketFailure(next.onSocketFailure);
   }
 
   sendPayload = (payload: TerminalClientMessage): boolean => {
@@ -130,14 +126,15 @@ export class TransportLifecycleService {
     if (this.socketSession.hasActiveConnection()) {
       return;
     }
+    const runtimeContext = this.getRuntimeContext();
 
     this.deps.dispatchEvent({
       type: "set-connecting",
-      reconnecting: this.runtimeContext.hasSessionContext(),
+      reconnecting: runtimeContext.hasSessionContext(),
     });
 
     const bootstrapResult = this.connectionBootstrap.createSocket(
-      this.runtimeContext.wsUrl,
+      runtimeContext.wsUrl,
     );
     if (!bootstrapResult.ok) {
       this.failConnectionBootstrap(
@@ -157,14 +154,14 @@ export class TransportLifecycleService {
         this.socketErrorSinceConnect = false;
         this.failureReporter.reset();
         this.deps.dispatchEvent({ type: "connected" });
-        this.runtimeContext.handlers.onOpen();
+        this.getRuntimeContext().handlers.onOpen();
         this.heartbeatMonitor.start();
       },
       onMessage: (event) => {
         if (!this.socketSession.isCurrent(ws, socketGeneration)) {
           return;
         }
-        this.runtimeContext.handlers.onMessage(event);
+        this.getRuntimeContext().handlers.onMessage(event);
       },
       onClose: (event) => {
         this.onSocketClose(ws, socketGeneration, event);
@@ -316,7 +313,7 @@ export class TransportLifecycleService {
           this.connect();
         },
         scheduleReconnect: (delayMs, task) => {
-          this.reconnectController.scheduleReconnect(delayMs, task);
+          this.scheduleReconnect(delayMs, task);
         },
         reportCloseFailure: () => {
           this.failureReporter.report({
@@ -350,6 +347,26 @@ export class TransportLifecycleService {
 
   private clearLifecycleTimers(): void {
     this.heartbeatMonitor.stop();
-    this.reconnectController.clearReconnectTimer();
+    this.clearReconnectTimer();
+  }
+
+  private getRuntimeContext(): TransportRuntimeContext {
+    return this.deps.getRuntimeContext();
+  }
+
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer === null) {
+      return;
+    }
+    this.deps.scheduler.clearTimeout(this.reconnectTimer);
+    this.reconnectTimer = null;
+  }
+
+  private scheduleReconnect(delayMs: number, task: () => void): void {
+    this.clearReconnectTimer();
+    this.reconnectTimer = this.deps.scheduler.setTimeout(() => {
+      this.reconnectTimer = null;
+      task();
+    }, delayMs);
   }
 }
