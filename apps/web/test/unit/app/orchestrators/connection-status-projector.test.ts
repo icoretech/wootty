@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   projectConnectionStatus,
   shouldClearStatusOverride,
-} from "../../../../src/features/terminal/app/engine/connection-status-projector";
+} from "../../../../src/features/terminal/app/engine/protocol/connection-status-projector";
 
 describe("connection status projector", () => {
   it("projects explicit flags over transport state coherently", () => {

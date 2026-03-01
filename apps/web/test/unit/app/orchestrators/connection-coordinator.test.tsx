@@ -1,7 +1,7 @@
 import { renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useConnectionCoordinator } from "../../../../src/features/terminal/app/engine/connection-coordinator";
-import { createNoticePublisher } from "../../../../src/features/terminal/notifications/notice-publisher";
+import type { NoticeDetails } from "../../../../src/features/terminal/notifications/notice-contract";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import { browserScheduler } from "../../../../src/features/terminal/platform/scheduler";
 
@@ -14,10 +14,9 @@ describe("connection coordinator", () => {
     const createTransport = vi.fn(() => failIfCalled("createTransport"));
     const loadRuntime = vi.fn(async () => failIfCalled("loadRuntime"));
     const publishSessionNotice = vi.fn();
-    const publishNotice = createNoticePublisher(
-      publishSessionNotice,
-      toUserNotice,
-    );
+    const publishNotice = (details: NoticeDetails) => {
+      publishSessionNotice(toUserNotice(details));
+    };
 
     const { result } = renderHook(() => {
       return useConnectionCoordinator({

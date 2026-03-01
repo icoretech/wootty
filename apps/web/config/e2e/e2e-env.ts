@@ -22,7 +22,11 @@ export function resolveE2ePort(envPort: string | undefined): number {
     return DEFAULT_E2E_PORT;
   }
 
-  const parsed = Number.parseInt(normalized, 10);
+  if (!/^\d+$/u.test(normalized)) {
+    return DEFAULT_E2E_PORT;
+  }
+
+  const parsed = Number(normalized);
   if (Number.isInteger(parsed) && parsed >= MIN_PORT && parsed <= MAX_PORT) {
     return parsed;
   }

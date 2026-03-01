@@ -1,5 +1,5 @@
-import type { ConnectionStatus } from "../../contracts/connection";
-import type { AttachMode } from "../../contracts/session";
+import type { ConnectionStatus } from "../contracts/connection";
+import type { AttachMode } from "../contracts/session";
 
 export type StatusBarModel = {
   controlsOpen: boolean;

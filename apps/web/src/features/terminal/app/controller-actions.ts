@@ -1,5 +1,6 @@
 import { type Dispatch, type SetStateAction, useCallback } from "react";
 import { isRuntimeCommand } from "../commands/command-registry";
+import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import {
   TERMINAL_RUNTIME_COMMAND,
   type TerminalRuntimeCommand,
@@ -13,7 +14,6 @@ import {
 } from "../commands/viewport-commands";
 import type { AttachMode } from "../contracts/session";
 import { assertNever } from "../lib/assert-never";
-import type { FloatingControlsAction } from "../view/floating-controls/actions";
 import { DEFAULT_FONT_SIZE } from "./preferences/font-size-preferences";
 
 type UseSessionMenuActionsArgs = {

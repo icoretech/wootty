@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { useRuntimeOrchestrator } from "../../../../src/features/terminal/app/engine/runtime-orchestrator";
+import { useRuntimeOrchestrator } from "../../../../src/features/terminal/app/engine/runtime/runtime-orchestrator";
 import type {
   TerminalRuntimeAddon,
   TerminalRuntimeMountElement,

@@ -3,9 +3,9 @@ import {
   isRuntimeCommand,
   resolveCommandFromShortcutCode,
 } from "../../../src/features/terminal/commands/command-registry";
+import { floatingControlMetadata } from "../../../src/features/terminal/commands/floating-controls/metadata";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../src/features/terminal/commands/viewport-commands";
-import { floatingControlMetadata } from "../../../src/features/terminal/view/floating-controls/metadata";
 
 describe("terminal command registry", () => {
   it("maps shortcut codes to command ids", () => {

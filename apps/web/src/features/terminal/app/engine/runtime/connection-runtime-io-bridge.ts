@@ -1,9 +1,9 @@
 import type { MutableRefObject, RefObject } from "react";
 import { useCallback, useState } from "react";
-import type { AttachMode } from "../../contracts/session";
-import type { NoticePublisher } from "../../notifications/notice-contract";
-import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
-import type { TerminalRuntime } from "../../runtime/xterm-runtime-contract";
+import type { AttachMode } from "../../../contracts/session";
+import type { NoticePublisher } from "../../../notifications/notice-contract";
+import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
+import type { TerminalRuntime } from "../../../runtime/xterm-runtime-contract";
 import { useConnectionInputBackpressure } from "./connection-input-backpressure";
 import { useRuntimeOrchestrator } from "./runtime-orchestrator";
 

@@ -1,17 +1,17 @@
 import type { MutableRefObject } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AttachMode } from "../../contracts/session";
+import type { AttachMode } from "../../../contracts/session";
 import {
   createOutbox,
   enqueueOutbox,
   flushOutbox,
   resetOutbox,
-} from "../../lib/terminal-outbox";
+} from "../../../lib/terminal-outbox";
 import {
   createInputMessage,
   createResizeMessage,
-} from "../../protocol/terminal-client-messages";
-import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
+} from "../../../protocol/terminal-client-messages";
+import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 
 type UseConnectionInputBackpressureArgs = {
   attachMode: AttachMode;

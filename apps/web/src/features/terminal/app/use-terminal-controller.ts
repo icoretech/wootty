@@ -1,12 +1,12 @@
 import { type RefObject, useRef } from "react";
+import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../commands/session-menu-actions";
 import type { StatusBarAction } from "../commands/status-bar-actions";
-import type { FloatingControlsModel } from "../components/models/floating-controls-model";
-import type { SessionMenuModel } from "../components/models/session-menu-model";
-import type { StatusBarModel } from "../components/models/status-bar-model";
 import type { ConnectionStatus } from "../contracts/connection";
 import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
-import type { FloatingControlsAction } from "../view/floating-controls/actions";
+import type { FloatingControlsModel } from "../view-models/floating-controls-model";
+import type { SessionMenuModel } from "../view-models/session-menu-model";
+import type { StatusBarModel } from "../view-models/status-bar-model";
 import { useTerminalDomainController } from "./composition/terminal-domain-composition";
 import { useTerminalPlatformContext } from "./composition/terminal-platform-composition";
 import { useTerminalPresentationModel } from "./terminal-presentation";

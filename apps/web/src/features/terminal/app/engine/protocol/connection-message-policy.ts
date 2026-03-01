@@ -1,9 +1,9 @@
-import { assertNever } from "../../lib/assert-never";
+import { assertNever } from "../../../lib/assert-never";
 import {
   parseServerMessageWithReason,
   type ServerMessage,
   type TerminalProtocolFailure,
-} from "../../protocol/terminal-protocol";
+} from "../../../protocol/terminal-protocol";
 
 type HandleIncomingServerMessageArgs = {
   rawData: string;

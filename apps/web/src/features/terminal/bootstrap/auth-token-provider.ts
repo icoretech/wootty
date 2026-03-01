@@ -1,5 +1,5 @@
-import { resolveSocketUrl } from "./backend-endpoint-resolver";
 import { readWindow } from "./browser-environment-access";
+import { resolveSocketUrl } from "./url/socket-url-resolution";
 
 export type AuthTokenResolution = {
   token: string | undefined;

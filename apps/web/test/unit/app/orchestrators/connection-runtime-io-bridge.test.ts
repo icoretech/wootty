@@ -1,25 +1,25 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createNoticePublisher } from "../../../../src/features/terminal/notifications/notice-publisher";
+import type { NoticeDetails } from "../../../../src/features/terminal/notifications/notice-contract";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import type { TerminalClientMessage } from "../../../../src/features/terminal/protocol/terminal-wire-schema";
 
 vi.mock(
-  "../../../../src/features/terminal/app/engine/connection-input-backpressure",
+  "../../../../src/features/terminal/app/engine/runtime/connection-input-backpressure",
   () => ({
     useConnectionInputBackpressure: vi.fn(),
   }),
 );
 vi.mock(
-  "../../../../src/features/terminal/app/engine/runtime-orchestrator",
+  "../../../../src/features/terminal/app/engine/runtime/runtime-orchestrator",
   () => ({
     useRuntimeOrchestrator: vi.fn(),
   }),
 );
 
-import { useConnectionInputBackpressure } from "../../../../src/features/terminal/app/engine/connection-input-backpressure";
-import { useConnectionRuntimeIoBridge } from "../../../../src/features/terminal/app/engine/connection-runtime-io-bridge";
-import { useRuntimeOrchestrator } from "../../../../src/features/terminal/app/engine/runtime-orchestrator";
+import { useConnectionInputBackpressure } from "../../../../src/features/terminal/app/engine/runtime/connection-input-backpressure";
+import { useConnectionRuntimeIoBridge } from "../../../../src/features/terminal/app/engine/runtime/connection-runtime-io-bridge";
+import { useRuntimeOrchestrator } from "../../../../src/features/terminal/app/engine/runtime/runtime-orchestrator";
 
 describe("connection runtime io bridge", () => {
   const mockedBackpressureHook = vi.mocked(useConnectionInputBackpressure);
@@ -61,10 +61,9 @@ describe("connection runtime io bridge", () => {
   it("wires backpressure/runtime hooks and tracks io counters", () => {
     const sendNow = vi.fn((_payload: TerminalClientMessage) => true);
     const publishSessionNotice = vi.fn();
-    const publishNotice = createNoticePublisher(
-      publishSessionNotice,
-      toUserNotice,
-    );
+    const publishNotice = (details: NoticeDetails) => {
+      publishSessionNotice(toUserNotice(details));
+    };
     const onRuntimeBootError = vi.fn();
 
     const { result } = renderHook(() => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { handleIncomingServerMessage } from "../../../../src/features/terminal/app/engine/connection-message-policy";
+import { handleIncomingServerMessage } from "../../../../src/features/terminal/app/engine/protocol/connection-message-policy";
 
 describe("connection message policy", () => {
   it("routes incoming server messages to typed handlers", () => {

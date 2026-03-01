@@ -1,5 +1,5 @@
-import { TERMINAL_RUNTIME_COMMAND } from "../../commands/runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../../commands/viewport-commands";
+import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
+import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
 import type { FloatingControlCommand } from "./actions";
 
 export type FloatingControlMetadataKey =

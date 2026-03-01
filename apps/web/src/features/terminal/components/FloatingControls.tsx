@@ -8,66 +8,27 @@ import {
   RotateCcw,
 } from "lucide-react";
 import type { ReactNode } from "react";
-import { TERMINAL_RUNTIME_COMMAND } from "../commands/runtime-commands";
-import { VIEWPORT_UI_COMMAND } from "../commands/viewport-commands";
-import type {
-  FloatingControlCommand,
-  FloatingControlsAction,
-} from "../view/floating-controls/actions";
-import { FLOATING_CONTROL_REGISTRY } from "../view/floating-controls/registry";
-import type { FloatingControlsModel } from "./models/floating-controls-model";
+import type { FloatingControlsAction } from "../commands/floating-controls/actions";
+import {
+  FLOATING_CONTROL_POLICY,
+  type FloatingControlIconToken,
+} from "../commands/floating-controls/policy";
+import { FLOATING_CONTROL_REGISTRY } from "../commands/floating-controls/registry";
+import type { FloatingControlsModel } from "../view-models/floating-controls-model";
 
 type FloatingControlsProps = {
   model: FloatingControlsModel;
   dispatch: (action: FloatingControlsAction) => void;
 };
 
-type FloatingControlBehavior = {
-  isDisabled: (model: FloatingControlsModel) => boolean;
-  renderIcon: (model: FloatingControlsModel) => ReactNode;
-  resolveLabel?: (model: FloatingControlsModel, defaultLabel: string) => string;
-  resolveTooltip?: (
-    model: FloatingControlsModel,
-    defaultTooltip: string,
-  ) => string;
-};
-
-const FLOATING_CONTROL_BEHAVIORS: Record<
-  FloatingControlCommand,
-  FloatingControlBehavior
-> = {
-  [TERMINAL_RUNTIME_COMMAND.RECONNECT]: {
-    isDisabled: (model) => !model.terminalReady,
-    renderIcon: () => <RotateCcw size={16} />,
-  },
-  [TERMINAL_RUNTIME_COMMAND.CLEAR]: {
-    isDisabled: (model) => !model.terminalReady,
-    renderIcon: () => <Eraser size={16} />,
-  },
-  [VIEWPORT_UI_COMMAND.DECREASE_FONT]: {
-    isDisabled: (model) =>
-      !model.terminalReady || model.fontSize <= model.fontSizeMin,
-    renderIcon: () => <Minus size={16} />,
-  },
-  [VIEWPORT_UI_COMMAND.INCREASE_FONT]: {
-    isDisabled: (model) =>
-      !model.terminalReady || model.fontSize >= model.fontSizeMax,
-    renderIcon: () => <Plus size={16} />,
-  },
-  [VIEWPORT_UI_COMMAND.RESET_FONT]: {
-    isDisabled: (model) =>
-      !model.terminalReady || model.fontSize === model.defaultFontSize,
-    renderIcon: () => <RefreshCcw size={16} />,
-  },
-  [VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN]: {
-    isDisabled: (model) => !model.terminalReady,
-    renderIcon: (model) =>
-      model.isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />,
-    resolveLabel: (model, defaultLabel) =>
-      model.isFullscreen ? "Exit fullscreen terminal" : defaultLabel,
-    resolveTooltip: (model, defaultTooltip) =>
-      model.isFullscreen ? "Exit fullscreen" : defaultTooltip,
-  },
+const FLOATING_CONTROL_ICONS: Record<FloatingControlIconToken, ReactNode> = {
+  reconnect: <RotateCcw size={16} />,
+  clear: <Eraser size={16} />,
+  fontDecrease: <Minus size={16} />,
+  fontIncrease: <Plus size={16} />,
+  fontReset: <RefreshCcw size={16} />,
+  fullscreenEnter: <Maximize2 size={16} />,
+  fullscreenExit: <Minimize2 size={16} />,
 };
 
 export function FloatingControls({ model, dispatch }: FloatingControlsProps) {
@@ -78,13 +39,14 @@ export function FloatingControls({ model, dispatch }: FloatingControlsProps) {
     >
       {FLOATING_CONTROL_REGISTRY.map((descriptor) => {
         const metadata = model.metadata[descriptor.metadataKey];
-        const behavior = FLOATING_CONTROL_BEHAVIORS[descriptor.action];
-        const ariaLabel = behavior.resolveLabel
-          ? behavior.resolveLabel(model, metadata.ariaLabel)
+        const policy = FLOATING_CONTROL_POLICY[descriptor.action];
+        const ariaLabel = policy.resolveLabel
+          ? policy.resolveLabel(model, metadata.ariaLabel)
           : metadata.ariaLabel;
-        const tooltip = behavior.resolveTooltip
-          ? behavior.resolveTooltip(model, metadata.tooltip)
+        const tooltip = policy.resolveTooltip
+          ? policy.resolveTooltip(model, metadata.tooltip)
           : metadata.tooltip;
+        const icon = FLOATING_CONTROL_ICONS[policy.resolveIcon(model)];
 
         return (
           <div className="floating-controls__item" key={descriptor.testId}>
@@ -94,11 +56,11 @@ export function FloatingControls({ model, dispatch }: FloatingControlsProps) {
                 dispatch({ type: descriptor.action });
               }}
               data-testid={descriptor.testId}
-              disabled={behavior.isDisabled(model)}
+              disabled={policy.isDisabled(model)}
               aria-keyshortcuts={metadata.ariaKeyShortcuts}
               aria-label={ariaLabel}
             >
-              {behavior.renderIcon(model)}
+              {icon}
             </button>
             <span className="floating-controls__tooltip">{tooltip}</span>
           </div>

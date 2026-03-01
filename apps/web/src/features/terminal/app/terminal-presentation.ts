@@ -1,12 +1,12 @@
-import type { FloatingControlsModel } from "../components/models/floating-controls-model";
-import type { SessionMenuModel } from "../components/models/session-menu-model";
-import type { StatusBarModel } from "../components/models/status-bar-model";
 import type { ConnectionStatus } from "../contracts/connection";
 import type { AttachMode, SessionSnapshot } from "../contracts/session";
 import {
   buildStatusAnnouncement,
   buildTerminalViewModels,
 } from "../view/terminal-view-models";
+import type { FloatingControlsModel } from "../view-models/floating-controls-model";
+import type { SessionMenuModel } from "../view-models/session-menu-model";
+import type { StatusBarModel } from "../view-models/status-bar-model";
 
 type TerminalPresentationInput = {
   uiState: {
