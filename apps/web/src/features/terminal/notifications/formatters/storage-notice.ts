@@ -1,4 +1,4 @@
-import type { StorageNotice } from "../notice-contract";
+import type { StorageNotice } from "../contracts/session-notice";
 
 export function toStorageNotice(details: StorageNotice): string {
   const reasonSuffix =

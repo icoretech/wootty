@@ -1,12 +1,15 @@
 import { assertNever } from "../../lib/assert-never";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
-import type { NoticeDetails } from "../notice-contract";
+import type { BootstrapNotice } from "../contracts/bootstrap-notice";
+import type { SessionsRefreshNotice } from "../contracts/session-notice";
 import { toBackendResolutionNotice } from "./backend-resolution-notice";
+
+type SessionRefreshPipelineNotice = SessionsRefreshNotice | BootstrapNotice;
 
 type SessionRefreshFailureNotice = {
   kind: "throttle";
   failureKey: string;
-  notice: NoticeDetails;
+  notice: SessionRefreshPipelineNotice;
 };
 
 type SessionRefreshFailureNoticeResult =

@@ -3,7 +3,7 @@ import {
   NOTICE_PROTOCOL_FAILURE_DETAILS,
   type NoticeProtocolFailureDetail,
   type ProtocolNotice,
-} from "../notice-contract";
+} from "../contracts/protocol-notice";
 
 function toNoticeProtocolFailureDetail(
   detail: TerminalProtocolFailure["detail"],

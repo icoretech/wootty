@@ -1,5 +1,5 @@
 import { assertNever } from "../../lib/assert-never";
-import type { SessionsRefreshNotice } from "../notice-contract";
+import type { SessionsRefreshNotice } from "../contracts/session-notice";
 import { normalizeCauseToMessage } from "./cause-message";
 
 export function toSessionRefreshNotice(details: SessionsRefreshNotice): string {
