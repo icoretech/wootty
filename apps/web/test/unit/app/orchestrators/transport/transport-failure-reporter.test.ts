@@ -27,9 +27,12 @@ describe("transport failure reporter", () => {
       technicalDetail: "broken pipe",
     });
 
-    expect(dispatchSocketFailure).toHaveBeenCalledWith(
-      "close reason=socket_failure code=1006 detail=broken pipe",
-    );
+    expect(dispatchSocketFailure).toHaveBeenCalledWith({
+      source: "close",
+      reasonCode: "socket_failure",
+      code: 1006,
+      technicalDetail: "broken pipe",
+    });
     expect(onSocketFailure).toHaveBeenCalledWith({
       source: "close",
       code: 1006,

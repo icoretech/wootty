@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { resolveTransportClosePlan } from "../../../../../src/features/terminal/app/engine/transport/lifecycle/transport-close-plan-executor";
 import { TERMINAL_CLOSE_CODE } from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
-import { resolveTransportClosePlan } from "../../../../../src/features/terminal/app/engine/transport/state/transport-recovery-plan";
 
 describe("transport recovery plan", () => {
   it("reconnects immediately for manual and fresh intents", () => {

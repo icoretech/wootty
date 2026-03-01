@@ -29,7 +29,7 @@ describe("controller composition helpers", () => {
       terminalReady: true,
       status: "connected",
       reconnectAttempt: 0,
-      lastSocketFailure: "",
+      lastSocketFailure: null,
       statusText: models.statusText,
       attachMode: "control",
     });
@@ -67,7 +67,7 @@ describe("controller composition helpers", () => {
       queuedInputBytes: 0,
       droppedInputBytes: 0,
       outputBytes: 42,
-      lastSocketFailure: "",
+      lastSocketFailure: null,
     };
     expect(models.statusBarModel.status).toBe(connectionContext.status);
     expect(models.floatingControlsModel.terminalReady).toBe(true);

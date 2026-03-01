@@ -1,3 +1,4 @@
+import type { TransportFailureContext } from "../app/engine/transport/state/transport-state-machine";
 import type { ConnectionStatus } from "../contracts/connection";
 import type { AttachMode, SessionSnapshot } from "../contracts/session/session";
 import { formatBytes, formatLatency } from "../lib/terminal-format";
@@ -130,19 +131,39 @@ export function buildStatusAnnouncement({
   terminalReady: boolean;
   status: ConnectionStatus;
   reconnectAttempt: number;
-  lastSocketFailure: string;
+  lastSocketFailure: TransportFailureContext | null;
   statusText: string;
   attachMode: AttachMode;
 }): string {
   const modeLabel = attachMode === "watch" ? "Read-only watch" : "Control";
+  const failureSummary = summarizeTransportFailure(lastSocketFailure);
   if (!terminalReady) {
     return "Loading terminal runtime.";
   }
   if (status === "reconnecting") {
-    return `Reconnecting. Attempt ${reconnectAttempt}. ${lastSocketFailure || "Connection issue detected."}`;
+    return `Reconnecting. Attempt ${reconnectAttempt}. ${failureSummary || "Connection issue detected."}`;
   }
   if (status === "error") {
-    return `Connection error. ${lastSocketFailure || "Unable to maintain transport."}`;
+    return `Connection error. ${failureSummary || "Unable to maintain transport."}`;
   }
   return `Connection status ${statusText}. ${modeLabel} mode.`;
+}
+
+function summarizeTransportFailure(
+  failure: TransportFailureContext | null,
+): string | null {
+  if (!failure) {
+    return null;
+  }
+  const parts: string[] = [failure.source];
+  if (failure.reasonCode) {
+    parts.push(`reason=${failure.reasonCode}`);
+  }
+  if (typeof failure.code === "string" || typeof failure.code === "number") {
+    parts.push(`code=${failure.code}`);
+  }
+  if (failure.technicalDetail && failure.technicalDetail.length > 0) {
+    parts.push(`detail=${failure.technicalDetail}`);
+  }
+  return parts.join(" ");
 }

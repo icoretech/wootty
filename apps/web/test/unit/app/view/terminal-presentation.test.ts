@@ -25,7 +25,7 @@ describe("terminal presentation model", () => {
         status: "connected",
         latencyMs: 8,
         reconnectAttempt: 0,
-        lastSocketFailure: "",
+        lastSocketFailure: null,
       },
       connectionTelemetry: {
         queuedInputBytes: 0,

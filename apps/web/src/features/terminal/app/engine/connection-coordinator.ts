@@ -15,6 +15,7 @@ import {
   reduceConnectionStatusState,
 } from "./protocol/connection-status-projector";
 import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
+import type { TransportFailureContext } from "./transport/state/transport-state-machine";
 
 type UseConnectionCoordinatorArgs = {
   createTransport: (url: string) => TerminalTransport;
@@ -48,7 +49,7 @@ export type ConnectionCoordinatorState = {
     status: ConnectionStatus;
     reconnectAttempt: number;
     latencyMs: number | null;
-    lastSocketFailure: string;
+    lastSocketFailure: TransportFailureContext | null;
     reconnectNow: () => void;
     scheduleFreshConnection: () => void;
   };

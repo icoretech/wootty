@@ -76,4 +76,23 @@ describe("transport heartbeat monitor", () => {
     expect(scheduler.clearInterval).toHaveBeenCalledWith(201);
     expect(scheduler.clearTimeout).toHaveBeenCalledWith(101);
   });
+
+  it("does not postpone pong timeout while pings continue without pong", () => {
+    const scheduler = createScheduler(() => 10_000);
+    const onPongTimeout = vi.fn();
+    const monitor = new TransportHeartbeatMonitor({
+      scheduler,
+      onPing: vi.fn(),
+      onPongTimeout,
+      onLatency: vi.fn(),
+    });
+
+    monitor.start();
+    scheduler.intervalTask?.();
+    scheduler.intervalTask?.();
+
+    expect(scheduler.setTimeout).toHaveBeenCalledTimes(1);
+    scheduler.timeoutTask?.();
+    expect(onPongTimeout).toHaveBeenCalledTimes(1);
+  });
 });

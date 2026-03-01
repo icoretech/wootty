@@ -49,7 +49,7 @@ function createOrchestratorDouble(): TransportOrchestrator {
     status: "connected",
     reconnectAttempt: 0,
     latencyMs: null,
-    lastSocketFailure: "",
+    lastSocketFailure: null,
     sendPayload: vi.fn(),
     markPong: vi.fn(),
     connect: vi.fn(),
