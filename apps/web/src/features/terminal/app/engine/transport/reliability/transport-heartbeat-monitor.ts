@@ -26,11 +26,11 @@ export class TransportHeartbeatMonitor {
   start(): void {
     this.stop();
     this.pingTimer = this.deps.scheduler.setInterval(() => {
-      this.deps.onPing();
       if (this.pongTimeout !== null) {
         return;
       }
       this.pingSentAt = this.deps.scheduler.now();
+      this.deps.onPing();
       this.pongTimeout = this.deps.scheduler.setTimeout(() => {
         this.deps.onPongTimeout();
       }, TERMINAL_HEARTBEAT_MS.PONG_TIMEOUT);
