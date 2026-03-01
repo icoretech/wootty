@@ -12,6 +12,13 @@ const APP_URL_NO_TOKEN = "https://app.example/";
 const SOCKET_URL_WITH_TOKEN = "wss://ws.example/api/terminal?token=env";
 const INVALID_SOCKET_URL = "ftp://ws.example";
 const TOKEN_URL_FOR_PARSE = "wss://host.example/api/terminal?token=abc";
+const EXPECTED_SESSIONS_URL = (() => {
+  const parsed = new URL(SOCKET_URL_WITH_TOKEN);
+  parsed.protocol = parsed.protocol === "wss:" ? "https:" : "http:";
+  parsed.pathname = "/api/sessions";
+  parsed.search = "";
+  return parsed.toString();
+})();
 
 function createWindowLike(url: string): Window {
   const parsed = new URL(url);
@@ -59,7 +66,7 @@ describe("bootstrap context", () => {
       ok: true,
       endpoints: {
         terminalWsUrl: SOCKET_URL_WITH_TOKEN,
-        sessionsHttpUrl: "https://ws.example/api/sessions",
+        sessionsHttpUrl: EXPECTED_SESSIONS_URL,
       },
     });
     expect(invalid).toMatchObject({
