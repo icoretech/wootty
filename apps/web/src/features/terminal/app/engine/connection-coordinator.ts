@@ -250,8 +250,8 @@ export function useConnectionCoordinator({
       return;
     }
     previousWsUrlRef.current = wsUrl;
-    connect();
-  }, [connect, runtimeBridge.terminalReady, transportEnabled, wsUrl]);
+    reconnectNow();
+  }, [reconnectNow, runtimeBridge.terminalReady, transportEnabled, wsUrl]);
 
   useEffect(() => {
     if (shouldClearStatusOverride(statusFlag, transportStatus)) {
