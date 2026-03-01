@@ -50,7 +50,7 @@ export class TransportLifecycleService {
   private readonly connectionBootstrap: TransportConnectionBootstrap;
   private readonly closeCoordinator: TransportCloseCoordinator;
   private readonly socketSession: TransportSocketSession;
-  private socketErrorSinceConnect = false;
+  private socketErrorGeneration: number | null = null;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
@@ -160,7 +160,7 @@ export class TransportLifecycleService {
         if (!this.socketSession.isCurrent(ws, socketGeneration)) {
           return;
         }
-        this.socketErrorSinceConnect = false;
+        this.socketErrorGeneration = null;
         this.failureReporter.reset();
         this.deps.dispatchEvent({ type: "connected" });
         this.getRuntimeContext().handlers.onOpen();
@@ -277,7 +277,7 @@ export class TransportLifecycleService {
     if (!this.socketSession.isCurrent(socket, socketGeneration)) {
       return;
     }
-    this.socketErrorSinceConnect = true;
+    this.socketErrorGeneration = socketGeneration;
     this.failureReporter.report({
       source: "error",
       code: event.code,
@@ -302,9 +302,10 @@ export class TransportLifecycleService {
     }
 
     this.clearLifecycleTimers();
-    const shouldReportCloseFailure = !this.socketErrorSinceConnect;
+    const shouldReportCloseFailure =
+      this.socketErrorGeneration !== socketGeneration;
     const reconnectAttempt = this.deps.getState().reconnectAttempt;
-    this.socketErrorSinceConnect = false;
+    this.socketErrorGeneration = null;
 
     this.closeCoordinator.handleSocketClose({
       closeIntent: closedSocket.closeIntent,

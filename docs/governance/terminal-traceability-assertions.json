@@ -50,8 +50,8 @@
         },
         {
           "lane": "unitIntegration",
-          "path": "apps/web/test/unit/app/orchestrators/transport/transport-orchestrator.test.tsx",
-          "contains": "drives heartbeat timeout through an injectable scheduler"
+          "path": "apps/web/test/unit/app/orchestrators/transport/transport-lifecycle-service.test.ts",
+          "contains": "drives heartbeat timeout and schedules reconnect"
         },
         {
           "lane": "e2e",
