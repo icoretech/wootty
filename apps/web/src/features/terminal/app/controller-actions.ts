@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback } from "react";
-import { isRuntimeCommand } from "../commands/command-registry";
+import { handlerForCommand } from "../commands/command-registry";
 import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import {
   TERMINAL_RUNTIME_COMMAND,
@@ -145,22 +145,23 @@ export function useTerminalCommandActions({
 
   const dispatchFloatingControls = useCallback(
     (action: FloatingControlsAction) => {
-      if (isRuntimeCommand(action.type)) {
-        runRuntimeCommand(action.type);
-        return;
+      const command = action.type;
+      if (handlerForCommand(command) === "runtime") {
+        runRuntimeCommand(command as TerminalRuntimeCommand);
+      } else {
+        runViewportCommand(command as ViewportUiCommand);
       }
-      runViewportCommand(action.type);
     },
     [runRuntimeCommand, runViewportCommand],
   );
 
   const dispatchShortcutAction = useCallback(
     (action: ShortcutAction) => {
-      if (isRuntimeCommand(action)) {
-        runRuntimeCommand(action);
-        return;
+      if (handlerForCommand(action) === "runtime") {
+        runRuntimeCommand(action as TerminalRuntimeCommand);
+      } else {
+        runViewportCommand(action as ViewportUiCommand);
       }
-      runViewportCommand(action);
     },
     [runRuntimeCommand, runViewportCommand],
   );

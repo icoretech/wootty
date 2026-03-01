@@ -2,14 +2,16 @@ import { COMMAND_CATALOG } from "./catalog";
 import type { TerminalRuntimeCommand } from "./runtime-commands";
 import type { ShortcutAction } from "./shortcut-actions";
 
+type CommandHandlerKind = (typeof COMMAND_CATALOG)[number]["handler"];
+
 type CommandRegistry = {
   commandByShortcutCode: Map<string, ShortcutAction>;
-  runtimeCommands: Set<ShortcutAction>;
+  handlerByCommand: Map<ShortcutAction, CommandHandlerKind>;
 };
 
 function buildCommandRegistry(): CommandRegistry {
   const commandByShortcutCode = new Map<string, ShortcutAction>();
-  const runtimeCommands = new Set<ShortcutAction>();
+  const handlerByCommand = new Map<ShortcutAction, CommandHandlerKind>();
 
   for (const command of COMMAND_CATALOG) {
     if (commandByShortcutCode.has(command.shortcutCode)) {
@@ -18,14 +20,17 @@ function buildCommandRegistry(): CommandRegistry {
       );
     }
     commandByShortcutCode.set(command.shortcutCode, command.id);
-    if (command.handler === "runtime") {
-      runtimeCommands.add(command.id);
+    if (handlerByCommand.has(command.id)) {
+      throw new Error(
+        `Duplicate command handler descriptor for '${command.id}'.`,
+      );
     }
+    handlerByCommand.set(command.id, command.handler);
   }
 
   return {
     commandByShortcutCode,
-    runtimeCommands,
+    handlerByCommand,
   };
 }
 
@@ -37,8 +42,16 @@ export function resolveCommandFromShortcutCode(
   return COMMAND_REGISTRY.commandByShortcutCode.get(code) ?? null;
 }
 
+export function handlerForCommand(command: ShortcutAction): CommandHandlerKind {
+  const handler = COMMAND_REGISTRY.handlerByCommand.get(command);
+  if (!handler) {
+    throw new Error(`No command handler descriptor found for '${command}'.`);
+  }
+  return handler;
+}
+
 export function isRuntimeCommand(
   command: ShortcutAction,
 ): command is TerminalRuntimeCommand {
-  return COMMAND_REGISTRY.runtimeCommands.has(command);
+  return handlerForCommand(command) === "runtime";
 }
