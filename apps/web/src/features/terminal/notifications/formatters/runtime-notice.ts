@@ -1,4 +1,4 @@
-import type { RuntimeNotice } from "../../contracts/notice";
+import type { RuntimeNotice } from "../notice-contract";
 import { normalizeCauseToMessage } from "./cause-message";
 
 export function toRuntimeNotice(details: RuntimeNotice): string {

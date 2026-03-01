@@ -1,5 +1,5 @@
-import type { StorageNotice } from "../../contracts/notice";
 import type { StorageAccessFailure } from "../../session/persistence/session-storage";
+import type { StorageNotice } from "../notice-contract";
 
 function describeStorageFailureReason(
   failure: StorageAccessFailure,

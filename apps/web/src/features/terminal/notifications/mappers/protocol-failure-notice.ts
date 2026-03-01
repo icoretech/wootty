@@ -1,9 +1,9 @@
+import type { TerminalProtocolFailure } from "../../protocol/terminal-protocol";
 import {
   NOTICE_PROTOCOL_FAILURE_DETAILS,
   type NoticeProtocolFailureDetail,
   type ProtocolNotice,
-} from "../../contracts/notice";
-import type { TerminalProtocolFailure } from "../../protocol/terminal-protocol";
+} from "../notice-contract";
 
 function toNoticeProtocolFailureDetail(
   detail: TerminalProtocolFailure["detail"],

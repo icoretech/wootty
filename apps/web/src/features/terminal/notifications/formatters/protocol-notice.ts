@@ -1,5 +1,5 @@
-import type { ProtocolNotice } from "../../contracts/notice";
 import { assertNever } from "../../lib/assert-never";
+import type { ProtocolNotice } from "../notice-contract";
 import { normalizeCauseToMessage } from "./cause-message";
 
 export function toProtocolNotice(details: ProtocolNotice): string {

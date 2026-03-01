@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { NoticeDetails } from "../../../../src/features/terminal/contracts/notice";
+import type { NoticeDetails } from "../../../../src/features/terminal/notifications/notice-contract";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import type { TerminalClientMessage } from "../../../../src/features/terminal/protocol/terminal-wire-schema";
 
