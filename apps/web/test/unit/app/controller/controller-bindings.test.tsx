@@ -43,7 +43,7 @@ describe("controller bindings", () => {
         closeSessionMenu: () => {
           // no-op
         },
-        refreshLiveSessions: async () => ({ ok: true }),
+        requestSessionRefresh: async () => ({ ok: true }),
         scheduler,
         attachMode: "control",
         sessionId: "session-a",

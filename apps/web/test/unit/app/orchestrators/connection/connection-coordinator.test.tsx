@@ -29,11 +29,13 @@ describe("connection coordinator", () => {
         attachMode: "control",
         hasActiveSession: false,
         transportEnabled: true,
-        publishNotice,
+        publishConnectionNotice: publishNotice,
+        publishRuntimeNotice: publishNotice,
+        publishTransportNotice: publishNotice,
         setSessionMode: vi.fn(),
         applyReadySession: vi.fn(),
         clearMissingSession: vi.fn(),
-        refreshLiveSessions: async () => ({ ok: true }),
+        requestSessionRefresh: async () => ({ ok: true }),
         scheduler: browserScheduler,
       });
     });

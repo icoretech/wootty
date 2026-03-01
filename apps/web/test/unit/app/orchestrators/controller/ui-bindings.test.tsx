@@ -68,7 +68,7 @@ function useBindingsProbe(): void {
   useSessionRefreshBinding({
     sessionMenuOpen: false,
     windowRef: null,
-    refreshLiveSessions: runNoopAsync,
+    requestSessionRefresh: runNoopAsync,
     scheduler: noopScheduler,
   });
   useDocumentTitleBinding({

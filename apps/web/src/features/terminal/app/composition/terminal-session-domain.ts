@@ -10,10 +10,7 @@ import {
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
-import type {
-  NoticePublisher,
-  SessionNoticePublisher,
-} from "../../notifications/notice-contract";
+import type { SessionNoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import {
@@ -145,7 +142,6 @@ export type TerminalSessionDomain = {
   uiState: ControllerUiState;
   sessionState: ReturnType<typeof useSessionOrchestrator>["state"];
   sessionActions: ReturnType<typeof useSessionOrchestrator>["actions"];
-  publishNotice: NoticePublisher;
   wsUrl: string | null;
 };
 
@@ -165,19 +161,20 @@ export function useTerminalSessionDomain({
   });
   const sessionState = session.state;
   const sessionActions = session.actions;
-  const publishNotice = sessionActions.publishNotice;
   const uiState = useControllerUiState(
     environment.getLocalStorage,
     sessionActions.reportStorageFailure,
   );
 
-  useBackendResolutionNotice(platform.backendResolution, publishNotice);
+  useBackendResolutionNotice(
+    platform.backendResolution,
+    sessionActions.publishSessionNoticeDetails,
+  );
 
   return {
     uiState,
     sessionState,
     sessionActions,
-    publishNotice,
     wsUrl: platform.backendResolution.ok
       ? platform.backendResolution.endpoints.terminalWsUrl
       : null,

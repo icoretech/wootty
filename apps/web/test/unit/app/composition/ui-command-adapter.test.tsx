@@ -57,17 +57,19 @@ function createSessionDomain(): TerminalSessionDomain {
     },
     sessionActions: {
       setSessionMenuOpen: vi.fn(),
-      publishNotice: vi.fn(),
+      publishSessionNoticeDetails: vi.fn(),
+      publishRuntimeNoticeDetails: vi.fn(),
+      publishConnectionNoticeDetails: vi.fn(),
+      publishTransportNoticeDetails: vi.fn(),
       publishSessionNotice: vi.fn(),
       clearSessionNotice: vi.fn(),
       reportStorageFailure: vi.fn(),
       setSessionMode: vi.fn(),
-      refreshLiveSessions: vi.fn(async () => ({ ok: true })),
+      requestSessionRefresh: vi.fn(async () => ({ ok: true })),
       applyReadySession: vi.fn(),
       clearMissingSession: vi.fn(),
       transitionSessionContext: vi.fn(),
     },
-    publishNotice: vi.fn(),
     wsUrl: "ws://127.0.0.1/api/terminal",
   };
 }

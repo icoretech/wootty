@@ -17,7 +17,7 @@ type UseConnectionMessageGatewayArgs = {
   setStatusFlag: (next: ConnectionStatusFlag | null) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  refreshLiveSessions: (
+  requestSessionRefresh: (
     request: SessionRefreshRequest,
   ) => Promise<SessionRefreshResult>;
   setSessionMode: (mode: AttachMode) => void;
@@ -37,7 +37,7 @@ export function useConnectionMessageGateway({
   setStatusFlag,
   applyReadySession,
   clearMissingSession,
-  refreshLiveSessions,
+  requestSessionRefresh,
   setSessionMode,
   writeServerError,
   flushAfterReady,
@@ -65,7 +65,7 @@ export function useConnectionMessageGateway({
         setStatusFlag(statusFlag);
       }
       if (policy.refreshSessions) {
-        void refreshLiveSessions({
+        void requestSessionRefresh({
           trigger: "transport_event",
         });
       }
@@ -73,7 +73,7 @@ export function useConnectionMessageGateway({
     [
       clearMissingSession,
       publishNotice,
-      refreshLiveSessions,
+      requestSessionRefresh,
       setSessionMode,
       setStatusFlag,
       writeServerError,
@@ -100,7 +100,7 @@ export function useConnectionMessageGateway({
           applyReadySession(readySessionId, readOnly);
           setStatusFlag(null);
           flushAfterReady();
-          void refreshLiveSessions({
+          void requestSessionRefresh({
             trigger: "transport_event",
           });
         },
@@ -125,7 +125,7 @@ export function useConnectionMessageGateway({
       handleServerError,
       markPong,
       publishNotice,
-      refreshLiveSessions,
+      requestSessionRefresh,
       setStatusFlag,
       writeExit,
       writeOutputAndTrackBytes,

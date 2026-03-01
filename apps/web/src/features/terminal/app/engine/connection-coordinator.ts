@@ -8,7 +8,11 @@ import type {
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
 } from "../../contracts/transport/transport";
-import type { NoticePublisher } from "../../notifications/notice-contract";
+import type {
+  ConnectionNoticePublisher,
+  RuntimeNoticePublisher,
+  TransportNoticePublisher,
+} from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
@@ -36,11 +40,13 @@ type UseConnectionCoordinatorArgs = {
   attachMode: AttachMode;
   hasActiveSession: boolean;
   transportEnabled: boolean;
-  publishNotice: NoticePublisher;
+  publishConnectionNotice: ConnectionNoticePublisher;
+  publishRuntimeNotice: RuntimeNoticePublisher;
+  publishTransportNotice: TransportNoticePublisher;
   setSessionMode: (mode: AttachMode) => void;
   applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
   clearMissingSession: () => void;
-  refreshLiveSessions: (
+  requestSessionRefresh: (
     request: SessionRefreshRequest,
   ) => Promise<SessionRefreshResult>;
   scheduler: Scheduler;
@@ -80,11 +86,13 @@ export function useConnectionCoordinator({
   attachMode,
   hasActiveSession,
   transportEnabled,
-  publishNotice,
+  publishConnectionNotice,
+  publishRuntimeNotice,
+  publishTransportNotice,
   setSessionMode,
   applyReadySession,
   clearMissingSession,
-  refreshLiveSessions,
+  requestSessionRefresh,
   scheduler,
 }: UseConnectionCoordinatorArgs): ConnectionCoordinatorState {
   const sendPayloadRef = useRef<(payload: TerminalClientMessage) => boolean>(
@@ -123,7 +131,7 @@ export function useConnectionCoordinator({
     initialFontSize,
     attachMode,
     sendNow,
-    publishNotice,
+    publishNotice: publishRuntimeNotice,
     onRuntimeBootError: handleRuntimeBootError,
   });
 
@@ -136,7 +144,7 @@ export function useConnectionCoordinator({
       cause?: unknown,
       noticeMessage?: string,
     ) => {
-      publishNotice({
+      publishTransportNotice({
         context: "transport",
         source,
         reasonCode: reasonCode ?? "socket_failure",
@@ -146,11 +154,11 @@ export function useConnectionCoordinator({
         cause,
       });
     },
-    [publishNotice],
+    [publishTransportNotice],
   );
 
   const { handleSocketMessage } = useConnectionMessageGateway({
-    publishNotice,
+    publishNotice: publishConnectionNotice,
     setStatusFlag: (next: ConnectionStatusFlag | null) => {
       dispatchStatusEvent({
         type: "status-flag",
@@ -159,7 +167,7 @@ export function useConnectionCoordinator({
     },
     applyReadySession,
     clearMissingSession,
-    refreshLiveSessions,
+    requestSessionRefresh,
     setSessionMode,
     writeServerError: runtimeBridge.writeServerError,
     flushAfterReady: runtimeBridge.flushAfterReady,
@@ -189,14 +197,14 @@ export function useConnectionCoordinator({
         if (attachSent) {
           return;
         }
-        publishNotice({
+        publishTransportNotice({
           context: "transport",
           reasonCode: "attach_handshake_send_failed",
         });
       },
       onMessage: (event: TerminalTransportMessageEvent) => {
         if (event.malformed) {
-          publishNotice({
+          publishConnectionNotice({
             context: "protocol",
             reason: "malformed_transport_event",
             details: event.malformed,
@@ -209,7 +217,8 @@ export function useConnectionCoordinator({
     [
       attachMode,
       handleSocketMessage,
-      publishNotice,
+      publishConnectionNotice,
+      publishTransportNotice,
       runtimeBridge,
       sendNow,
       sessionId,

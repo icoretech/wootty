@@ -47,7 +47,7 @@ function SessionProbe({
 
   const runRefresh = (trigger: "manual" | "poll" | "transport_event") => {
     void session.actions
-      .refreshLiveSessions({
+      .requestSessionRefresh({
         trigger,
       })
       .then((result) => {

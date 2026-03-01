@@ -18,10 +18,10 @@ const browserLikeScheduler: Scheduler = {
 };
 
 function SessionRefreshBindingProbe({
-  refreshLiveSessions,
+  requestSessionRefresh,
   onRefreshCircuitOpen,
 }: {
-  refreshLiveSessions: (request: {
+  requestSessionRefresh: (request: {
     trigger: "poll" | "transport_event" | "manual";
     signal?: AbortSignal;
   }) => Promise<SessionRefreshResult>;
@@ -30,7 +30,7 @@ function SessionRefreshBindingProbe({
   useSessionRefreshBinding({
     sessionMenuOpen: true,
     windowRef: window,
-    refreshLiveSessions,
+    requestSessionRefresh,
     scheduler: browserLikeScheduler,
     onRefreshCircuitOpen,
   });
@@ -56,7 +56,7 @@ describe("session refresh binding delay policy", () => {
     vi.useFakeTimers();
     try {
       const onRefreshCircuitOpen = vi.fn();
-      const refreshLiveSessions = vi.fn(async () => {
+      const requestSessionRefresh = vi.fn(async () => {
         return {
           ok: false,
           failure: {
@@ -68,7 +68,7 @@ describe("session refresh binding delay policy", () => {
 
       render(
         <SessionRefreshBindingProbe
-          refreshLiveSessions={refreshLiveSessions}
+          requestSessionRefresh={requestSessionRefresh}
           onRefreshCircuitOpen={onRefreshCircuitOpen}
         />,
       );
@@ -76,7 +76,7 @@ describe("session refresh binding delay policy", () => {
       const failureLimit = 6;
       for (let failureCount = 1; failureCount <= failureLimit; failureCount++) {
         await vi.advanceTimersByTimeAsync(0);
-        expect(refreshLiveSessions).toHaveBeenCalledTimes(failureCount);
+        expect(requestSessionRefresh).toHaveBeenCalledTimes(failureCount);
         if (failureCount < failureLimit) {
           await vi.advanceTimersByTimeAsync(
             nextSessionRefreshDelayMs(failureCount),
@@ -108,7 +108,7 @@ describe("session refresh binding delay policy", () => {
 
       const { rerender } = render(
         <SessionRefreshBindingProbe
-          refreshLiveSessions={bootstrapFailureRefresh}
+          requestSessionRefresh={bootstrapFailureRefresh}
         />,
       );
 
@@ -119,7 +119,7 @@ describe("session refresh binding delay policy", () => {
 
       const recoveredRefresh = vi.fn(async () => ({ ok: true }) as const);
       rerender(
-        <SessionRefreshBindingProbe refreshLiveSessions={recoveredRefresh} />,
+        <SessionRefreshBindingProbe requestSessionRefresh={recoveredRefresh} />,
       );
 
       await vi.advanceTimersByTimeAsync(0);
