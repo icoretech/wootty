@@ -1,17 +1,8 @@
 import type { TerminalBackendResolutionIssue } from "../../contracts/backend-resolution";
 import { validateWebsocketEndpoint } from "../../contracts/websocket-endpoint-validation";
 import { TERMINAL_BACKEND_ROUTE } from "../../protocol/generated-wire-contract";
+import { createBackendResolutionIssue } from "./backend-resolution-issue";
 import { redactTokenInUrlForNotice } from "./redact-token-in-url";
-
-function toIssue(
-  code: TerminalBackendResolutionIssue["code"],
-  details: string,
-): TerminalBackendResolutionIssue {
-  return {
-    code,
-    details,
-  };
-}
 
 type SocketUrlResolutionResult =
   | {
@@ -34,7 +25,7 @@ export function resolveSocketUrl(
       if (!validated.ok) {
         return {
           ok: false,
-          issue: toIssue(
+          issue: createBackendResolutionIssue(
             validated.reason === "unsupported_protocol"
               ? "env_socket_url_unsupported_protocol"
               : "env_socket_url_invalid_format",
@@ -60,7 +51,7 @@ export function resolveSocketUrl(
       } catch {
         return {
           ok: false,
-          issue: toIssue(
+          issue: createBackendResolutionIssue(
             "env_socket_url_invalid_format",
             `VITE_WOOTTY_WS_URL is not a valid URL: ${redactTokenInUrlForNotice(configured)}`,
           ),
@@ -70,7 +61,7 @@ export function resolveSocketUrl(
     if (configured.includes("://")) {
       return {
         ok: false,
-        issue: toIssue(
+        issue: createBackendResolutionIssue(
           "env_socket_url_unsupported_protocol",
           `VITE_WOOTTY_WS_URL uses an unsupported protocol: ${redactTokenInUrlForNotice(configured)}`,
         ),
@@ -89,7 +80,7 @@ export function resolveSocketUrl(
     }
     return {
       ok: false,
-      issue: toIssue(
+      issue: createBackendResolutionIssue(
         "env_socket_url_requires_window_host",
         "VITE_WOOTTY_WS_URL requires a browser host to resolve relative path values.",
       ),

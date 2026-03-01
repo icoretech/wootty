@@ -1,3 +1,4 @@
+import { parseNonNegativeInteger } from "../../contracts/non-negative-integer";
 import type { SessionSnapshot } from "../../contracts/session";
 import {
   SESSION_SNAPSHOT_REQUIRED_FIELDS,
@@ -16,20 +17,6 @@ type SessionParseResult =
       readonly ok: false;
       readonly failure: Extract<SessionRefreshFailure, { source: "parse" }>;
     };
-
-function parseNonNegativeInteger(value: unknown): number | null {
-  if (
-    typeof value !== "number" ||
-    !Number.isFinite(value) ||
-    !Number.isInteger(value)
-  ) {
-    return null;
-  }
-  if (value < 0) {
-    return null;
-  }
-  return value;
-}
 
 function hasRequiredSessionFields(record: Record<string, unknown>): boolean {
   return SESSION_SNAPSHOT_REQUIRED_FIELDS.every((field) => {
