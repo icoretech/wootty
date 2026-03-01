@@ -15,6 +15,7 @@ describe("session refresh result contract", () => {
       "request_timeout",
       "request_aborted",
       "request_superseded",
+      "refresh_pipeline_error",
     ]);
   });
 });

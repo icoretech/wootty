@@ -126,6 +126,16 @@ function toLifecycleFailureNotice(
           reason: "generic",
         },
       };
+    case "refresh_pipeline_error":
+      return {
+        kind: "throttle",
+        failureKey: "refresh_pipeline_error",
+        notice: {
+          context: "sessions_refresh",
+          reason: "cause",
+          cause: failure.cause,
+        },
+      };
     default:
       return assertNever(failure);
   }

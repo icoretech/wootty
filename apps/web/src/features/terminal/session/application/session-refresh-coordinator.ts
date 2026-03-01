@@ -20,6 +20,14 @@ const REQUEST_ABORTED_FAILURE: SessionRefreshFailure = {
   reason: "request_aborted",
 };
 
+function toRefreshPipelineFailure(cause: unknown): SessionRefreshFailure {
+  return {
+    source: "lifecycle",
+    reason: "refresh_pipeline_error",
+    cause,
+  };
+}
+
 type PendingRefreshRequest = {
   trigger: SessionRefreshRequest["trigger"];
   queuedForRequestId: number;
@@ -118,8 +126,9 @@ export function useSessionRefreshCoordinator({
         null;
       const refreshTimeoutToken = Symbol("refresh_timeout");
       let timedOut = false;
+      let responseOrTimeout: SessionsFetchResult | typeof refreshTimeoutToken;
       try {
-        const responseOrTimeout = await Promise.race<
+        responseOrTimeout = await Promise.race<
           SessionsFetchResult | typeof refreshTimeoutToken
         >([
           fetchSessions({
@@ -133,40 +142,6 @@ export function useSessionRefreshCoordinator({
             }, SESSION_REFRESH_CALL_TIMEOUT_MS);
           }),
         ]);
-        if (refreshTimeoutHandle !== null) {
-          scheduler.clearTimeout(refreshTimeoutHandle);
-        }
-        if (responseOrTimeout === refreshTimeoutToken) {
-          const timeoutFailure: SessionRefreshFailure = {
-            source: "lifecycle",
-            reason: "request_timeout",
-          };
-          onRefreshFailure(timeoutFailure);
-          return { ok: false, failure: timeoutFailure };
-        }
-        const response = responseOrTimeout;
-        if (isStaleRequest()) {
-          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
-        }
-        if (!response.ok) {
-          onRefreshFailure(response.failure);
-          return { ok: false, failure: response.failure };
-        }
-
-        const parsed = parseSessionsResponse(response.payload);
-        if (isStaleRequest()) {
-          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
-        }
-        if (!parsed.ok) {
-          onRefreshFailure(parsed.failure);
-          return { ok: false, failure: parsed.failure };
-        }
-
-        onRefreshSuccess(parsed.sessions);
-        if (parsed.invalidEntries > 0) {
-          onInvalidEntries(parsed.invalidEntries);
-        }
-        return { ok: true };
       } catch (error) {
         if (isStaleRequest()) {
           return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
@@ -190,6 +165,46 @@ export function useSessionRefreshCoordinator({
           reason: "network_error",
           cause: error,
         };
+        onRefreshFailure(failure);
+        return { ok: false, failure };
+      }
+      if (responseOrTimeout === refreshTimeoutToken) {
+        const timeoutFailure: SessionRefreshFailure = {
+          source: "lifecycle",
+          reason: "request_timeout",
+        };
+        onRefreshFailure(timeoutFailure);
+        return { ok: false, failure: timeoutFailure };
+      }
+      const response = responseOrTimeout;
+      if (isStaleRequest()) {
+        return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+      }
+      if (!response.ok) {
+        onRefreshFailure(response.failure);
+        return { ok: false, failure: response.failure };
+      }
+
+      try {
+        const parsed = parseSessionsResponse(response.payload);
+        if (isStaleRequest()) {
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+        }
+        if (!parsed.ok) {
+          onRefreshFailure(parsed.failure);
+          return { ok: false, failure: parsed.failure };
+        }
+
+        onRefreshSuccess(parsed.sessions);
+        if (parsed.invalidEntries > 0) {
+          onInvalidEntries(parsed.invalidEntries);
+        }
+        return { ok: true };
+      } catch (error) {
+        if (isStaleRequest()) {
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+        }
+        const failure = toRefreshPipelineFailure(error);
         onRefreshFailure(failure);
         return { ok: false, failure };
       } finally {

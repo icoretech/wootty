@@ -187,4 +187,26 @@ describe("transport lifecycle service", () => {
       }),
     );
   });
+
+  it("forwards socket error cause details to the failure sink", () => {
+    const harness = createHarness();
+    const failureCause = new Error("transport cause");
+
+    harness.service.connect();
+    harness.sockets[0].emitOpen();
+    harness.sockets[0].emitError("transport exploded", {
+      code: "ws_error",
+      cause: failureCause,
+    });
+
+    expect(harness.onSocketFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: "error",
+        reasonCode: "socket_failure",
+        technicalDetail: "transport exploded",
+        code: "ws_error",
+        cause: failureCause,
+      }),
+    );
+  });
 });
