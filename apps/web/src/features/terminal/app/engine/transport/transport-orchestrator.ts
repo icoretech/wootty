@@ -58,21 +58,7 @@ export function useTransportOrchestrator({
 }: UseTransportOrchestratorArgs): TransportOrchestrator {
   const [state, setState] = useState(initialTransportState);
   const stateRef = useRef(initialTransportState);
-  const createTransportRef = useRef(createTransport);
-  const wsUrlRef = useRef(wsUrl);
-  const handlersRef = useRef(handlers);
-  const hasSessionContextRef = useRef(hasSessionContext);
-  const onSocketFailureRef = useRef(onSocketFailure);
-  const schedulerRef = useRef(scheduler);
-  const schedulerProxyRef = useRef<Scheduler | null>(null);
   const lifecycleServiceRef = useRef<TransportLifecycleService | null>(null);
-
-  createTransportRef.current = createTransport;
-  wsUrlRef.current = wsUrl;
-  handlersRef.current = handlers;
-  hasSessionContextRef.current = hasSessionContext;
-  onSocketFailureRef.current = onSocketFailure;
-  schedulerRef.current = scheduler;
 
   const dispatchEvent = useCallback((event: TransportEvent) => {
     const nextState = reduceTransportState(stateRef.current, event);
@@ -80,41 +66,30 @@ export function useTransportOrchestrator({
     setState(nextState);
   }, []);
 
-  if (schedulerProxyRef.current === null) {
-    schedulerProxyRef.current = {
-      now: () => schedulerRef.current.now(),
-      setTimeout: (task, delayMs) => {
-        return schedulerRef.current.setTimeout(task, delayMs);
-      },
-      clearTimeout: (timerId) => {
-        schedulerRef.current.clearTimeout(timerId);
-      },
-      setInterval: (task, delayMs) => {
-        return schedulerRef.current.setInterval(task, delayMs);
-      },
-      clearInterval: (timerId) => {
-        schedulerRef.current.clearInterval(timerId);
-      },
-    };
-  }
-
   if (lifecycleServiceRef.current === null) {
     lifecycleServiceRef.current = new TransportLifecycleService({
-      createTransport: (url) => {
-        return createTransportRef.current(url);
-      },
-      getWsUrl: () => wsUrlRef.current,
-      getHandlers: () => handlersRef.current,
-      hasSessionContext: () => hasSessionContextRef.current(),
-      scheduler: schedulerProxyRef.current,
-      onSocketFailure: (...args) => {
-        onSocketFailureRef.current(...args);
+      createTransport,
+      scheduler,
+      runtimeContext: {
+        wsUrl,
+        handlers,
+        hasSessionContext,
+        onSocketFailure,
       },
       getState: () => stateRef.current,
       dispatchEvent,
     });
   }
   const lifecycleService = lifecycleServiceRef.current;
+
+  useEffect(() => {
+    lifecycleService.updateRuntimeContext({
+      wsUrl,
+      handlers,
+      hasSessionContext,
+      onSocketFailure,
+    });
+  }, [handlers, hasSessionContext, lifecycleService, onSocketFailure, wsUrl]);
 
   useEffect(
     () => () => {

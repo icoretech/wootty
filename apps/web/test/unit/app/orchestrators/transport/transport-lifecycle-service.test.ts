@@ -55,11 +55,13 @@ function createHarness({
       sockets.push(socket);
       return socket;
     },
-    getWsUrl: () => currentWsUrl,
-    getHandlers: () => handlers,
-    hasSessionContext: () => true,
     scheduler,
-    onSocketFailure,
+    runtimeContext: {
+      wsUrl: currentWsUrl,
+      handlers,
+      hasSessionContext: () => true,
+      onSocketFailure,
+    },
     getState: () => state,
     dispatchEvent: (event) => {
       events.push(event);
@@ -73,6 +75,12 @@ function createHarness({
     transportUrls,
     setWsUrl: (nextWsUrl: string | null) => {
       currentWsUrl = nextWsUrl;
+      service.updateRuntimeContext({
+        wsUrl: nextWsUrl,
+        handlers,
+        hasSessionContext: () => true,
+        onSocketFailure,
+      });
     },
     state: () => state,
     events,

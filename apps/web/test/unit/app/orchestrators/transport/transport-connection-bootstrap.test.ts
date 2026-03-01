@@ -15,10 +15,9 @@ describe("transport connection bootstrap", () => {
     });
     const bootstrap = new TransportConnectionBootstrap({
       createTransport,
-      getWsUrl: () => VALID_TERMINAL_WS_URL,
     });
 
-    const result = bootstrap.createSocket();
+    const result = bootstrap.createSocket(VALID_TERMINAL_WS_URL);
 
     expect(result).toEqual({ ok: true, socket });
     expect(createTransport).toHaveBeenCalledTimes(1);
@@ -33,18 +32,16 @@ describe("transport connection bootstrap", () => {
     });
     const unavailable = new TransportConnectionBootstrap({
       createTransport,
-      getWsUrl: () => null,
     });
     const unsupported = new TransportConnectionBootstrap({
       createTransport,
-      getWsUrl: () => UNSUPPORTED_TERMINAL_URL,
     });
 
-    expect(unavailable.createSocket()).toMatchObject({
+    expect(unavailable.createSocket(null)).toMatchObject({
       ok: false,
       reasonCode: "endpoint_unavailable",
     });
-    expect(unsupported.createSocket()).toMatchObject({
+    expect(unsupported.createSocket(UNSUPPORTED_TERMINAL_URL)).toMatchObject({
       ok: false,
       reasonCode: "endpoint_unsupported_protocol",
     });
@@ -57,10 +54,9 @@ describe("transport connection bootstrap", () => {
       createTransport: () => {
         throw boom;
       },
-      getWsUrl: () => VALID_TERMINAL_WS_URL,
     });
 
-    expect(bootstrap.createSocket()).toMatchObject({
+    expect(bootstrap.createSocket(VALID_TERMINAL_WS_URL)).toMatchObject({
       ok: false,
       reasonCode: "bootstrap_failed",
       debugDetail: "socket factory exploded",

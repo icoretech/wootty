@@ -13,15 +13,17 @@ export type SocketFailureSource = "error" | "close";
 type TransportFailureReporterDeps = {
   scheduler: Scheduler;
   dispatchSocketFailure: (context: string) => void;
-  onSocketFailure: (
-    source: SocketFailureSource,
-    code?: TerminalTransportFailureCode,
-    reasonCode?: TransportFailureReasonCode,
-    technicalDetail?: string,
-    cause?: unknown,
-    noticeMessage?: string,
-  ) => void;
+  onSocketFailure: TransportFailureSink;
 };
+
+type TransportFailureSink = (
+  source: SocketFailureSource,
+  code?: TerminalTransportFailureCode,
+  reasonCode?: TransportFailureReasonCode,
+  technicalDetail?: string,
+  cause?: unknown,
+  noticeMessage?: string,
+) => void;
 
 function socketFailureContext(
   source: SocketFailureSource,
@@ -45,13 +47,19 @@ function socketFailureContext(
 export class TransportFailureReporter {
   private readonly deps: TransportFailureReporterDeps;
   private socketFailureNotice: FailureNoticeState = null;
+  private onSocketFailure: TransportFailureSink;
 
   constructor(deps: TransportFailureReporterDeps) {
     this.deps = deps;
+    this.onSocketFailure = deps.onSocketFailure;
   }
 
   reset(): void {
     this.socketFailureNotice = null;
+  }
+
+  setOnSocketFailure(next: TransportFailureSink): void {
+    this.onSocketFailure = next;
   }
 
   report(
@@ -81,7 +89,7 @@ export class TransportFailureReporter {
       cooldownMs: SOCKET_FAILURE_NOTICE_COOLDOWN_MS,
       baseMessage: baseReason,
       notify: (message) => {
-        this.deps.onSocketFailure(
+        this.onSocketFailure(
           source,
           code,
           reasonCode,
