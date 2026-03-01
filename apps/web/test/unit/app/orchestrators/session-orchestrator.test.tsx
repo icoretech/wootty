@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import type { Scheduler } from "../../../../src/features/terminal/platform/scheduler";
@@ -35,6 +36,7 @@ function SessionProbe({
   sessionStorageRef,
   fetchSessions,
 }: SessionProbeProps) {
+  const [lastRefreshResult, setLastRefreshResult] = useState<string>("");
   const session = useSessionOrchestrator({
     fetchSessions,
     getLocalStorage: () => localStorageRef,
@@ -43,6 +45,20 @@ function SessionProbe({
     formatNotice: toUserNotice,
   });
 
+  const runRefresh = (trigger: "manual" | "poll" | "transport_event") => {
+    void session.actions
+      .refreshLiveSessions({
+        trigger,
+      })
+      .then((result) => {
+        if (result.ok) {
+          setLastRefreshResult("ok");
+          return;
+        }
+        setLastRefreshResult(result.failure.reason);
+      });
+  };
+
   return (
     <section>
       <output data-testid="session-id">{session.state.sessionId}</output>
@@ -50,6 +66,7 @@ function SessionProbe({
       <output data-testid="live-count">
         {session.state.liveSessions.length}
       </output>
+      <output data-testid="refresh-result">{lastRefreshResult}</output>
       <button
         type="button"
         data-testid="ready"
@@ -63,12 +80,28 @@ function SessionProbe({
         type="button"
         data-testid="refresh"
         onClick={() => {
-          void session.actions.refreshLiveSessions({
-            trigger: "manual",
-          });
+          runRefresh("manual");
         }}
       >
         refresh
+      </button>
+      <button
+        type="button"
+        data-testid="poll-refresh"
+        onClick={() => {
+          runRefresh("poll");
+        }}
+      >
+        poll-refresh
+      </button>
+      <button
+        type="button"
+        data-testid="transport-refresh"
+        onClick={() => {
+          runRefresh("transport_event");
+        }}
+      >
+        transport-refresh
       </button>
       <button
         type="button"
@@ -252,6 +285,47 @@ describe("session orchestrator", () => {
       expect(signals.length).toBe(2);
     });
     expect(signals[0]?.aborted).toBe(true);
+  });
+
+  it("does not abort in-flight poll refreshes when transport refresh is requested", async () => {
+    const localStorageRef = new StorageDouble();
+    const sessionStorageRef = new StorageDouble();
+    const signals: AbortSignal[] = [];
+    const fetchSessions = vi.fn(
+      async (options?: {
+        signal?: AbortSignal;
+      }): Promise<SessionsFetchResult> => {
+        const signal = options?.signal;
+        if (signal) {
+          signals.push(signal);
+        }
+        return new Promise<SessionsFetchResult>(() => {
+          // Keep poll in-flight to exercise arbitration path.
+        });
+      },
+    );
+
+    render(
+      <SessionProbe
+        localStorageRef={localStorageRef}
+        sessionStorageRef={sessionStorageRef}
+        fetchSessions={fetchSessions}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("poll-refresh"));
+    await waitFor(() => {
+      expect(signals.length).toBe(1);
+    });
+
+    fireEvent.click(screen.getByTestId("transport-refresh"));
+    expect(signals[0]?.aborted).toBe(false);
+    expect(fetchSessions).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.getByTestId("refresh-result").textContent).toBe(
+        "request_superseded",
+      );
+    });
   });
 
   it("can republish non-throttled refresh notices after clearing", async () => {

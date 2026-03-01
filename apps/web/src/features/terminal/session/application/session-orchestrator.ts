@@ -150,9 +150,16 @@ export function useSessionOrchestrator({
 
   const refreshLiveSessions = useCallback(
     async (request: SessionRefreshRequest): Promise<SessionRefreshResult> => {
+      const previousController = activeRefreshControllerRef.current;
+      if (previousController && request.trigger !== "manual") {
+        return {
+          ok: false,
+          failure: REQUEST_SUPERSEDED_FAILURE,
+        };
+      }
+
       latestRefreshRequestIdRef.current += 1;
       const requestId = latestRefreshRequestIdRef.current;
-      const previousController = activeRefreshControllerRef.current;
       previousController?.abort();
       const refreshController = new AbortController();
       activeRefreshControllerRef.current = refreshController;
