@@ -8,10 +8,6 @@ import type {
 } from "../../../contracts/transport";
 import { TRANSPORT_READY_STATE } from "../../../contracts/transport";
 import type { TransportFailureReasonCode } from "../../../contracts/transport-failure-reason";
-import {
-  type FailureNoticeState,
-  notifyWithFailureThrottle,
-} from "../../../notifications/failure-notice-throttle";
 import type {
   Scheduler,
   SchedulerTimerHandle,
@@ -20,10 +16,14 @@ import { createPingMessage } from "../../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
 import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
 import {
+  type SocketFailureSource,
+  TransportFailureReporter,
+} from "./transport-failure-reporter";
+import { TransportHeartbeatMonitor } from "./transport-heartbeat-monitor";
+import {
   isRecoverableTransportClose,
   reconnectDelayMs,
   TERMINAL_CLOSE_CODE,
-  TERMINAL_HEARTBEAT_MS,
   TERMINAL_RECONNECT_POLICY,
 } from "./transport-policy";
 import type {
@@ -31,10 +31,6 @@ import type {
   TransportEvent,
   TransportState,
 } from "./transport-state-machine";
-
-const SOCKET_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
-
-type SocketFailureSource = "error" | "close";
 
 type TransportHandlers = {
   onOpen: () => void;
@@ -70,25 +66,6 @@ type WsEndpointResolution =
       debugDetail: string;
     };
 
-function socketFailureContext(
-  source: SocketFailureSource,
-  reasonCode?: TransportFailureReasonCode,
-  code?: TerminalTransportFailureCode,
-  debugDetail?: string,
-): string {
-  const contextParts: string[] = [source];
-  if (reasonCode) {
-    contextParts.push(`reason=${reasonCode}`);
-  }
-  if (typeof code === "number" || typeof code === "string") {
-    contextParts.push(`code=${code}`);
-  }
-  if (typeof debugDetail === "string" && debugDetail.length > 0) {
-    contextParts.push(`detail=${debugDetail}`);
-  }
-  return contextParts.join(" ");
-}
-
 function resolveWsEndpoint(endpoint: string | null): WsEndpointResolution {
   const validation = validateWebsocketEndpoint(endpoint);
   if (validation.ok) {
@@ -123,18 +100,40 @@ function resolveWsEndpoint(endpoint: string | null): WsEndpointResolution {
 
 export class TransportLifecycleService {
   private readonly deps: TransportLifecycleServiceDeps;
+  private readonly heartbeatMonitor: TransportHeartbeatMonitor;
+  private readonly failureReporter: TransportFailureReporter;
   private ws: TerminalTransport | null = null;
   private reconnectTimer: TimerHandle = null;
-  private pingTimer: TimerHandle = null;
-  private pongTimeout: TimerHandle = null;
-  private pingSentAt: number | null = null;
   private closedByUser = false;
   private pendingFreshConnect = false;
-  private socketFailureNotice: FailureNoticeState = null;
   private socketErrorSinceConnect = false;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
+    this.heartbeatMonitor = new TransportHeartbeatMonitor({
+      scheduler: this.deps.scheduler,
+      onPing: () => {
+        this.sendPayload(createPingMessage());
+      },
+      onPongTimeout: () => {
+        if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
+          this.ws.close(TERMINAL_CLOSE_CODE.PONG_TIMEOUT, "pong timeout");
+        }
+      },
+      onLatency: (latencyMs) => {
+        this.deps.dispatchEvent({
+          type: "latency",
+          latencyMs,
+        });
+      },
+    });
+    this.failureReporter = new TransportFailureReporter({
+      scheduler: this.deps.scheduler,
+      dispatchSocketFailure: (context) => {
+        this.deps.dispatchEvent({ type: "socket-failure", context });
+      },
+      onSocketFailure: this.deps.onSocketFailure,
+    });
   }
 
   sendPayload = (payload: TerminalClientMessage): boolean => {
@@ -150,7 +149,7 @@ export class TransportLifecycleService {
         error instanceof Error && error.message.length > 0
           ? error.message
           : "transport send failed";
-      this.reportSocketFailure(
+      this.failureReporter.report(
         "error",
         undefined,
         "send_failed",
@@ -163,13 +162,7 @@ export class TransportLifecycleService {
   };
 
   markPong = (): void => {
-    if (this.pingSentAt !== null) {
-      this.deps.dispatchEvent({
-        type: "latency",
-        latencyMs: this.deps.scheduler.now() - this.pingSentAt,
-      });
-    }
-    this.clearTimer("pongTimeout");
+    this.heartbeatMonitor.markPong();
   };
 
   connect = (): void => {
@@ -209,22 +202,10 @@ export class TransportLifecycleService {
         return;
       }
       this.socketErrorSinceConnect = false;
-      this.socketFailureNotice = null;
+      this.failureReporter.reset();
       this.deps.dispatchEvent({ type: "connected" });
       this.deps.getHandlers().onOpen();
-
-      this.clearIntervalTimer("pingTimer");
-      this.pingTimer = this.deps.scheduler.setInterval(() => {
-        this.pingSentAt = this.deps.scheduler.now();
-        this.sendPayload(createPingMessage());
-
-        this.clearTimer("pongTimeout");
-        this.pongTimeout = this.deps.scheduler.setTimeout(() => {
-          if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
-            this.ws.close(TERMINAL_CLOSE_CODE.PONG_TIMEOUT, "pong timeout");
-          }
-        }, TERMINAL_HEARTBEAT_MS.PONG_TIMEOUT);
-      }, TERMINAL_HEARTBEAT_MS.INTERVAL);
+      this.heartbeatMonitor.start();
     });
 
     ws.addEventListener("message", (event) => {
@@ -314,7 +295,7 @@ export class TransportLifecycleService {
       return;
     }
     this.socketErrorSinceConnect = true;
-    this.reportSocketFailure(
+    this.failureReporter.report(
       "error",
       event.code,
       "socket_failure",
@@ -363,7 +344,7 @@ export class TransportLifecycleService {
     }
 
     if (shouldReportCloseFailure) {
-      this.reportSocketFailure(
+      this.failureReporter.report(
         "close",
         event.code,
         "socket_failure",
@@ -408,7 +389,7 @@ export class TransportLifecycleService {
     debugDetail: string,
     cause?: unknown,
   ): void {
-    this.reportSocketFailure(
+    this.failureReporter.report(
       "error",
       undefined,
       reasonCode,
@@ -418,53 +399,16 @@ export class TransportLifecycleService {
     this.deps.dispatchEvent({ type: "socket-error" });
   }
 
-  private reportSocketFailure(
-    source: SocketFailureSource,
-    code?: TerminalTransportFailureCode,
-    reasonCode?: TransportFailureReasonCode,
-    debugDetail?: string,
-    cause?: unknown,
-  ): void {
-    const context = socketFailureContext(source, reasonCode, code, debugDetail);
-    this.deps.dispatchEvent({ type: "socket-failure", context });
-
-    const noticeKey = `${source}|${String(code ?? "")}|${reasonCode ?? ""}|${debugDetail ?? ""}`;
-    const baseReason =
-      debugDetail && debugDetail.length > 0
-        ? debugDetail
-        : (reasonCode ?? "transport failure");
-    const nextNoticeState = notifyWithFailureThrottle({
-      current: this.socketFailureNotice,
-      key: noticeKey,
-      nowMs: this.deps.scheduler.now(),
-      cooldownMs: SOCKET_FAILURE_NOTICE_COOLDOWN_MS,
-      baseMessage: baseReason,
-      notify: (message) => {
-        this.deps.onSocketFailure(source, code, reasonCode, message, cause);
-      },
-    });
-    this.socketFailureNotice = nextNoticeState.next;
-  }
-
   private clearLifecycleTimers(): void {
-    this.clearIntervalTimer("pingTimer");
-    this.clearTimer("pongTimeout");
+    this.heartbeatMonitor.stop();
     this.clearTimer("reconnectTimer");
   }
 
-  private clearTimer(field: "pongTimeout" | "reconnectTimer"): void {
+  private clearTimer(field: "reconnectTimer"): void {
     if (this[field] === null) {
       return;
     }
     this.deps.scheduler.clearTimeout(this[field]);
-    this[field] = null;
-  }
-
-  private clearIntervalTimer(field: "pingTimer"): void {
-    if (this[field] === null) {
-      return;
-    }
-    this.deps.scheduler.clearInterval(this[field]);
     this[field] = null;
   }
 }
