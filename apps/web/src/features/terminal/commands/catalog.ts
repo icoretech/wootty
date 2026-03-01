@@ -1,53 +1,16 @@
-import { TERMINAL_RUNTIME_COMMAND } from "./runtime-commands";
-import type { ShortcutAction } from "./shortcut-actions";
-import { VIEWPORT_UI_COMMAND } from "./viewport-commands";
+import { COMMAND_MANIFEST } from "./definitions/command-manifest";
 
-type CommandHandler = "runtime" | "viewport";
+type CommandCatalogEntry = Pick<
+  (typeof COMMAND_MANIFEST)[number],
+  "id" | "handler" | "shortcutCode"
+>;
 
-type BaseCommandCatalogEntry = {
-  id: ShortcutAction;
-  handler: CommandHandler;
-  shortcutCode: string;
-};
-
-type CommandCatalogEntry = BaseCommandCatalogEntry & {
-  id: ShortcutAction;
-};
-
-export const COMMAND_CATALOG = [
-  {
-    id: TERMINAL_RUNTIME_COMMAND.RECONNECT,
-    handler: "runtime",
-    shortcutCode: "KeyR",
-  },
-  {
-    id: TERMINAL_RUNTIME_COMMAND.CLEAR,
-    handler: "runtime",
-    shortcutCode: "KeyK",
-  },
-  {
-    id: VIEWPORT_UI_COMMAND.DECREASE_FONT,
-    handler: "viewport",
-    shortcutCode: "Minus",
-  },
-  {
-    id: VIEWPORT_UI_COMMAND.INCREASE_FONT,
-    handler: "viewport",
-    shortcutCode: "Equal",
-  },
-  {
-    id: VIEWPORT_UI_COMMAND.RESET_FONT,
-    handler: "viewport",
-    shortcutCode: "Digit0",
-  },
-  {
-    id: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
-    handler: "viewport",
-    shortcutCode: "KeyF",
-  },
-  {
-    id: VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS,
-    handler: "viewport",
-    shortcutCode: "KeyB",
-  },
-] as const satisfies readonly CommandCatalogEntry[];
+export const COMMAND_CATALOG = Object.freeze(
+  COMMAND_MANIFEST.map((entry) => {
+    return {
+      id: entry.id,
+      handler: entry.handler,
+      shortcutCode: entry.shortcutCode,
+    };
+  }),
+) as readonly CommandCatalogEntry[];

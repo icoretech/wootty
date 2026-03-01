@@ -5,7 +5,7 @@ import { FloatingControls } from "../components/FloatingControls";
 import { SessionMenu } from "../components/SessionMenu";
 import { StatusBar } from "../components/StatusBar";
 import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
-import { useTerminalController } from "./use-terminal-controller";
+import { useTerminalController } from "./controller/use-terminal-controller";
 
 type TerminalAppProps = {
   environment?: TerminalAppEnvironment;
