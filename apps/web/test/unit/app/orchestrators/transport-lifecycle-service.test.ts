@@ -27,6 +27,8 @@ function createHarness({
 } = {}) {
   const scheduler = new FakeScheduler();
   const sockets: FakeTransport[] = [];
+  const transportUrls: string[] = [];
+  let currentWsUrl = wsUrl;
   let state: TransportState = initialTransportState;
   const events: TransportEvent[] = [];
   const onSocketFailure =
@@ -44,12 +46,13 @@ function createHarness({
   };
 
   const service = new TransportLifecycleService({
-    createTransport: () => {
+    createTransport: (url) => {
+      transportUrls.push(url);
       const socket = new FakeTransport();
       sockets.push(socket);
       return socket;
     },
-    getWsUrl: () => wsUrl,
+    getWsUrl: () => currentWsUrl,
     getHandlers: () => handlers,
     hasSessionContext: () => true,
     scheduler,
@@ -64,6 +67,10 @@ function createHarness({
   return {
     scheduler,
     sockets,
+    transportUrls,
+    setWsUrl: (nextWsUrl: string | null) => {
+      currentWsUrl = nextWsUrl;
+    },
     state: () => state,
     events,
     onSocketFailure,
@@ -128,5 +135,30 @@ describe("transport lifecycle service", () => {
     harness.service.markPong();
 
     expect(harness.state().latencyMs).toBe(50);
+  });
+
+  it("rebinds to the latest endpoint when websocket url changes mid-connection", () => {
+    const harness = createHarness({
+      wsUrl: "ws://localhost/api/terminal?token=one",
+    });
+
+    harness.service.connect();
+    expect(harness.transportUrls).toEqual([
+      "ws://localhost/api/terminal?token=one",
+    ]);
+    harness.sockets[0].emitOpen();
+
+    harness.setWsUrl("ws://localhost/api/terminal?token=two");
+    harness.service.reconnectWithEndpointChange();
+
+    expect(harness.transportUrls).toEqual([
+      "ws://localhost/api/terminal?token=one",
+      "ws://localhost/api/terminal?token=two",
+    ]);
+    expect(harness.sockets[0].closeCalls).toContainEqual({
+      code: TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+      reason: "endpoint changed",
+    });
+    expect(harness.sockets).toHaveLength(2);
   });
 });

@@ -152,4 +152,36 @@ describe("terminal platform composition", () => {
       expect(fetchSessionsPayload).not.toHaveBeenCalled();
     });
   });
+
+  it("recomputes backend resolution on rerender to keep websocket auth in sync", () => {
+    const fetchSessionsPayload = vi.fn(async () => {
+      return {
+        ok: true,
+        payload: {},
+      } as const;
+    });
+    let currentWsUrl = "ws://127.0.0.1/api/terminal?token=one";
+    const environment = createEnvironment(fetchSessionsPayload);
+    environment.platform.resolveBackendEndpoints = () => {
+      return {
+        ok: true,
+        endpoints: {
+          sessionsHttpUrl: "/api/sessions",
+          terminalWsUrl: currentWsUrl,
+        },
+      };
+    };
+
+    const rendered = render(<PlatformProbe environment={environment} />);
+    expect(screen.getByTestId("ws-url").textContent).toBe(
+      "ws://127.0.0.1/api/terminal?token=one",
+    );
+
+    currentWsUrl = "ws://127.0.0.1/api/terminal?token=two";
+    rendered.rerender(<PlatformProbe environment={environment} />);
+
+    expect(screen.getByTestId("ws-url").textContent).toBe(
+      "ws://127.0.0.1/api/terminal?token=two",
+    );
+  });
 });

@@ -211,6 +211,7 @@ export function useConnectionCoordinator({
     sendPayload,
     markPong,
     reconnectNow: reconnectTransportNow,
+    reconnectWithEndpointChange,
     scheduleFreshConnection: scheduleFreshTransportConnection,
     status: transportStatus,
     reconnectAttempt,
@@ -250,8 +251,13 @@ export function useConnectionCoordinator({
       return;
     }
     previousWsUrlRef.current = wsUrl;
-    reconnectNow();
-  }, [reconnectNow, runtimeBridge.terminalReady, transportEnabled, wsUrl]);
+    reconnectWithEndpointChange();
+  }, [
+    reconnectWithEndpointChange,
+    runtimeBridge.terminalReady,
+    transportEnabled,
+    wsUrl,
+  ]);
 
   useEffect(() => {
     if (shouldClearStatusOverride(statusFlag, transportStatus)) {

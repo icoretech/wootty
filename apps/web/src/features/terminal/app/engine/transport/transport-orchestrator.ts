@@ -39,6 +39,7 @@ type TransportOrchestrator = {
   markPong: () => void;
   connect: () => void;
   reconnectNow: () => void;
+  reconnectWithEndpointChange: () => void;
   scheduleFreshConnection: () => void;
   dispose: () => void;
 };
@@ -130,6 +131,10 @@ export function useTransportOrchestrator({
     () => lifecycleService.reconnectNow(),
     [lifecycleService],
   );
+  const reconnectWithEndpointChange = useCallback(
+    () => lifecycleService.reconnectWithEndpointChange(),
+    [lifecycleService],
+  );
   const scheduleFreshConnection = useCallback(
     () => lifecycleService.scheduleFreshConnection(),
     [lifecycleService],
@@ -148,6 +153,7 @@ export function useTransportOrchestrator({
     markPong,
     connect,
     reconnectNow,
+    reconnectWithEndpointChange,
     scheduleFreshConnection,
     dispose,
   };

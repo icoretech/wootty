@@ -15,15 +15,18 @@ import { FakeTransport } from "../../../support/harness/fake-transport";
 function useHarness(
   scheduler: Scheduler,
   sockets: FakeTransport[],
+  transportUrls: string[],
   onSocketFailure: ReturnType<typeof vi.fn>,
+  wsUrl = "ws://localhost/api/terminal",
 ) {
   return useTransportOrchestrator({
-    createTransport: () => {
+    createTransport: (url) => {
+      transportUrls.push(url);
       const socket = new FakeTransport();
       sockets.push(socket);
       return socket;
     },
-    wsUrl: "ws://localhost/api/terminal",
+    wsUrl,
     hasSessionContext: () => true,
     handlers: {
       onOpen: vi.fn(),
@@ -40,9 +43,10 @@ describe("transport orchestrator", () => {
   it("drives heartbeat timeout through an injectable scheduler", async () => {
     const scheduler = new FakeScheduler();
     const sockets: FakeTransport[] = [];
+    const transportUrls: string[] = [];
     const onSocketFailure = vi.fn();
     const { result } = renderHook(() =>
-      useHarness(scheduler, sockets, onSocketFailure),
+      useHarness(scheduler, sockets, transportUrls, onSocketFailure),
     );
 
     act(() => {
@@ -75,9 +79,10 @@ describe("transport orchestrator", () => {
   it("exhausts reconnect attempts deterministically with scheduler-driven backoff", async () => {
     const scheduler = new FakeScheduler();
     const sockets: FakeTransport[] = [];
+    const transportUrls: string[] = [];
     const onSocketFailure = vi.fn();
     const { result } = renderHook(() =>
-      useHarness(scheduler, sockets, onSocketFailure),
+      useHarness(scheduler, sockets, transportUrls, onSocketFailure),
     );
 
     act(() => {
@@ -116,9 +121,10 @@ describe("transport orchestrator", () => {
   it("throttles repeated socket-failure notices for the same error context", () => {
     const scheduler = new FakeScheduler();
     const sockets: FakeTransport[] = [];
+    const transportUrls: string[] = [];
     const onSocketFailure = vi.fn();
     const { result } = renderHook(() =>
-      useHarness(scheduler, sockets, onSocketFailure),
+      useHarness(scheduler, sockets, transportUrls, onSocketFailure),
     );
 
     act(() => {
@@ -146,5 +152,37 @@ describe("transport orchestrator", () => {
       undefined,
       "boom (repeated 3 times)",
     );
+  });
+
+  it("reconnects with the updated websocket endpoint on endpoint change", () => {
+    const scheduler = new FakeScheduler();
+    const sockets: FakeTransport[] = [];
+    const transportUrls: string[] = [];
+    const onSocketFailure = vi.fn();
+    let wsUrl = "ws://localhost/api/terminal?token=one";
+    const { result, rerender } = renderHook(() =>
+      useHarness(scheduler, sockets, transportUrls, onSocketFailure, wsUrl),
+    );
+
+    act(() => {
+      result.current.connect();
+      sockets[0].emitOpen();
+    });
+
+    wsUrl = "ws://localhost/api/terminal?token=two";
+    rerender();
+
+    act(() => {
+      result.current.reconnectWithEndpointChange();
+    });
+
+    expect(transportUrls).toEqual([
+      "ws://localhost/api/terminal?token=one",
+      "ws://localhost/api/terminal?token=two",
+    ]);
+    expect(sockets[0].closeCalls).toContainEqual({
+      code: TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
+      reason: "endpoint changed",
+    });
   });
 });
