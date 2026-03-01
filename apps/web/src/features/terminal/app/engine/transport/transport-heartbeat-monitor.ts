@@ -38,6 +38,7 @@ export class TransportHeartbeatMonitor {
   markPong(): void {
     if (this.pingSentAt !== null) {
       this.deps.onLatency(this.deps.scheduler.now() - this.pingSentAt);
+      this.pingSentAt = null;
     }
     this.clearPongTimeout();
   }

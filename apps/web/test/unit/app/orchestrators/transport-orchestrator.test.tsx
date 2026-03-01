@@ -191,4 +191,25 @@ describe("transport orchestrator", () => {
       reason: "endpoint changed",
     });
   });
+
+  it("does not dispose the active transport on non-transport rerenders", () => {
+    const scheduler = new FakeScheduler();
+    const sockets: FakeTransport[] = [];
+    const transportUrls: string[] = [];
+    const onSocketFailure = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useHarness(scheduler, sockets, transportUrls, onSocketFailure),
+    );
+
+    act(() => {
+      result.current.connect();
+      sockets[0].emitOpen();
+    });
+
+    const initialSocket = sockets[0];
+    rerender();
+
+    expect(sockets).toHaveLength(1);
+    expect(initialSocket.closeCalls).toEqual([]);
+  });
 });

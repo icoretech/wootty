@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { useTerminalPresentationModel } from "../../../../src/features/terminal/app/terminal-presentation";
+import { buildTerminalPresentationModel } from "../../../../src/features/terminal/app/terminal-presentation";
 
 describe("terminal presentation model", () => {
   it("projects view models and accessibility announcement from domain state", () => {
-    const presentation = useTerminalPresentationModel({
+    const presentation = buildTerminalPresentationModel({
       uiState: {
         controlsOpen: true,
         fontSize: 11,

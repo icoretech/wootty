@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "vitest/globals", "node"]
+  },
+  "include": [
+    "src/features/terminal/contracts/**/*.ts",
+    "src/features/terminal/notifications/contracts/**/*.ts",
+    "src/features/terminal/protocol/generated-wire-contract.ts",
+    "src/features/terminal/protocol/terminal-protocol.ts",
+    "test/support/harness/transport-contract-suite.ts",
+    "test/unit/contracts/**/*.ts",
+    "test/unit/protocol/sessions-contract.test.ts",
+    "test/unit/protocol/terminal-wire-contract.test.ts",
+    "test/unit/protocol/session-refresh-failure-contract.test.ts",
+    "test/unit/notifications/notice-contract.test.ts",
+    "test/unit/notifications/contracts/notice-contract-modules.test.ts"
+  ]
+}
