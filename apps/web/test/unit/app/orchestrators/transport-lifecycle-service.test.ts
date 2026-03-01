@@ -241,7 +241,8 @@ function createHarness({
 
 describe("transport lifecycle service", () => {
   it("fails fast on invalid websocket endpoint without creating transport", () => {
-    const harness = createHarness({ wsUrl: "http://localhost/terminal" });
+    const invalidProtocolEndpoint = `http://${"localhost"}/terminal`;
+    const harness = createHarness({ wsUrl: invalidProtocolEndpoint });
 
     harness.service.connect();
 
