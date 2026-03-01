@@ -1,4 +1,4 @@
-import type { StorageAccessFailure } from "../../session/persistence/session-storage";
+import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { StorageNotice } from "../contracts/session-notice";
 
 function describeStorageFailureReason(

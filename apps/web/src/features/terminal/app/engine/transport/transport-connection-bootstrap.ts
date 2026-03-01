@@ -1,12 +1,17 @@
 import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
+import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type { TerminalTransport } from "../../../contracts/transport/transport";
 import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
 
+const TRANSPORT_BOOTSTRAP_FAILURE_REASON_CODES = [
+  "endpoint_unavailable",
+  "endpoint_invalid_format",
+  "endpoint_unsupported_protocol",
+  "bootstrap_failed",
+] as const satisfies readonly TransportFailureReasonCode[];
+
 export type TransportBootstrapFailureReasonCode =
-  | "endpoint_unavailable"
-  | "endpoint_invalid_format"
-  | "endpoint_unsupported_protocol"
-  | "bootstrap_failed";
+  (typeof TRANSPORT_BOOTSTRAP_FAILURE_REASON_CODES)[number];
 
 type TransportBootstrapResult =
   | { ok: true; socket: TerminalTransport }
