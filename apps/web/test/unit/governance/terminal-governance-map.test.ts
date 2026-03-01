@@ -34,6 +34,20 @@ function extractBacktickPaths(value: string): string[] {
   return [...value.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
 }
 
+function isTraceabilityTestFile(linkedPath: string): boolean {
+  return (
+    /\.(test|spec)\.[jt]sx?$/.test(linkedPath) ||
+    linkedPath.endsWith("_test.go")
+  );
+}
+
+function hasExecutableTestPattern(linkedPath: string, source: string): boolean {
+  if (linkedPath.endsWith("_test.go")) {
+    return /\bfunc\s+Test[A-Za-z0-9_]+\s*\(/.test(source);
+  }
+  return /\b(it|test)\s*\(/.test(source);
+}
+
 async function readGovernanceMap(): Promise<GovernanceMap> {
   const source = await fs.readFile(governancePath, "utf8");
   return JSON.parse(source) as GovernanceMap;
@@ -60,6 +74,10 @@ describe("terminal governance map", () => {
       for (const linkedPath of linkedPaths) {
         const absolutePath = path.join(repoRoot, linkedPath);
         await expect(fs.access(absolutePath)).resolves.toBeUndefined();
+        if (isTraceabilityTestFile(linkedPath)) {
+          const source = await fs.readFile(absolutePath, "utf8");
+          expect(hasExecutableTestPattern(linkedPath, source)).toBe(true);
+        }
       }
     }
   });

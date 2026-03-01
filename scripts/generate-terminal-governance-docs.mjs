@@ -20,8 +20,22 @@ function extractBacktickPaths(value) {
   return [...value.matchAll(/`([^`]+)`/g)].map((match) => match[1]);
 }
 
+function isTraceabilityTestFile(linkedPath) {
+  return (
+    /\.(test|spec)\.[jt]sx?$/.test(linkedPath) || linkedPath.endsWith("_test.go")
+  );
+}
+
+function hasExecutableTestPattern(linkedPath, source) {
+  if (linkedPath.endsWith("_test.go")) {
+    return /\bfunc\s+Test[A-Za-z0-9_]+\s*\(/.test(source);
+  }
+  return /\b(it|test)\s*\(/.test(source);
+}
+
 async function assertGovernancePathsExist() {
   const missing = [];
+  const nonExecutableTests = [];
 
   for (const entry of governance.moduleOwnership) {
     const candidate = normalizeGovernancePath(entry.path);
@@ -43,6 +57,12 @@ async function assertGovernancePathsExist() {
       const absolutePath = path.join(repoRoot, linkedPath);
       try {
         await fs.access(absolutePath);
+        if (isTraceabilityTestFile(linkedPath)) {
+          const source = await fs.readFile(absolutePath, "utf8");
+          if (!hasExecutableTestPattern(linkedPath, source)) {
+            nonExecutableTests.push(linkedPath);
+          }
+        }
       } catch {
         missing.push(linkedPath);
       }
@@ -53,6 +73,16 @@ async function assertGovernancePathsExist() {
     const uniqueMissing = [...new Set(missing)].sort();
     for (const missingPath of uniqueMissing) {
       console.error(`Missing governance path: ${missingPath}`);
+    }
+    process.exit(1);
+  }
+
+  if (nonExecutableTests.length > 0) {
+    const uniqueNonExecutable = [...new Set(nonExecutableTests)].sort();
+    for (const testPath of uniqueNonExecutable) {
+      console.error(
+        `Governance traceability test has no executable test pattern: ${testPath}`,
+      );
     }
     process.exit(1);
   }
