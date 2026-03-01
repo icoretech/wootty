@@ -17,6 +17,7 @@ import { parseSessionsResponse } from "../../session/protocol/sessions-payload-p
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import { useSessionNoticeChannel } from "./session-notice-channel";
 import { useSessionPersistence } from "./session-persistence";
+import { SESSION_REFRESH_CALL_TIMEOUT_MS } from "./session-refresh-policy";
 import type {
   SessionRefreshRequest,
   SessionRefreshResult,
@@ -201,10 +202,35 @@ export function useSessionOrchestrator({
       const isStaleRequest = () => {
         return latestRefreshRequestIdRef.current !== requestId;
       };
+      let refreshTimeoutHandle: ReturnType<Scheduler["setTimeout"]> | null =
+        null;
+      const refreshTimeoutToken = Symbol("refresh_timeout");
       try {
-        const response = await fetchSessions({
-          signal: refreshController.signal,
-        });
+        const responseOrTimeout = await Promise.race<
+          SessionsFetchResult | typeof refreshTimeoutToken
+        >([
+          fetchSessions({
+            signal: refreshController.signal,
+          }),
+          new Promise<typeof refreshTimeoutToken>((resolve) => {
+            refreshTimeoutHandle = scheduler.setTimeout(() => {
+              refreshController.abort();
+              resolve(refreshTimeoutToken);
+            }, SESSION_REFRESH_CALL_TIMEOUT_MS);
+          }),
+        ]);
+        if (refreshTimeoutHandle !== null) {
+          scheduler.clearTimeout(refreshTimeoutHandle);
+        }
+        if (responseOrTimeout === refreshTimeoutToken) {
+          const timeoutFailure: SessionRefreshFailure = {
+            source: "lifecycle",
+            reason: "request_timeout",
+          };
+          publishRefreshFailure(timeoutFailure);
+          return { ok: false, failure: timeoutFailure };
+        }
+        const response = responseOrTimeout;
         if (isStaleRequest()) {
           return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
         }
@@ -250,6 +276,9 @@ export function useSessionOrchestrator({
         publishRefreshFailure(failure);
         return { ok: false, failure };
       } finally {
+        if (refreshTimeoutHandle !== null) {
+          scheduler.clearTimeout(refreshTimeoutHandle);
+        }
         if (request.signal) {
           request.signal.removeEventListener("abort", onOuterAbort);
         }
@@ -267,7 +296,7 @@ export function useSessionOrchestrator({
         }
       }
     },
-    [fetchSessions, publishNotice, publishRefreshFailure],
+    [fetchSessions, publishNotice, publishRefreshFailure, scheduler],
   );
 
   const setSessionMode = useCallback((mode: AttachMode) => {

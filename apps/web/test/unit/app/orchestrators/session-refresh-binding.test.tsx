@@ -57,9 +57,13 @@ describe("session refresh binding delay policy", () => {
     try {
       const onRefreshCircuitOpen = vi.fn();
       const refreshLiveSessions = vi.fn(async () => {
-        return new Promise<SessionRefreshResult>(() => {
-          // Keep request pending so timeout path drives the failure.
-        });
+        return {
+          ok: false,
+          failure: {
+            source: "lifecycle",
+            reason: "request_timeout",
+          },
+        } as const;
       });
 
       render(
@@ -71,7 +75,7 @@ describe("session refresh binding delay policy", () => {
 
       const failureLimit = 6;
       for (let failureCount = 1; failureCount <= failureLimit; failureCount++) {
-        await vi.advanceTimersByTimeAsync(15_001);
+        await vi.advanceTimersByTimeAsync(0);
         expect(refreshLiveSessions).toHaveBeenCalledTimes(failureCount);
         if (failureCount < failureLimit) {
           await vi.advanceTimersByTimeAsync(
