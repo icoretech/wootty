@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { TransportHeartbeatMonitor } from "../../../../../src/features/terminal/app/engine/transport/transport-heartbeat-monitor";
-import { TERMINAL_HEARTBEAT_MS } from "../../../../../src/features/terminal/app/engine/transport/transport-policy";
+import { TransportHeartbeatMonitor } from "../../../../../src/features/terminal/app/engine/transport/reliability/transport-heartbeat-monitor";
+import { TERMINAL_HEARTBEAT_MS } from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
 import type { Scheduler } from "../../../../../src/features/terminal/platform/scheduler";
 
 type FakeScheduler = Scheduler & {

@@ -17,9 +17,9 @@ import type {
   NoticeDetails,
   NoticePublisher,
 } from "../../notifications/notice-contract";
-import type { FailureNoticeState } from "../../notifications/notice-throttle";
 import type { Scheduler } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
+import type { FailureNoticeState } from "../../shared/reliability/failure-notice-throttle";
 import type { StorageAccessFailure } from "../persistence/session-storage";
 import { useSessionNoticeChannel } from "./session-notice-channel";
 import { useSessionPersistence } from "./session-persistence";

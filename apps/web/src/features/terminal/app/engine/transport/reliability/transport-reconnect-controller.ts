@@ -1,7 +1,7 @@
 import type {
   Scheduler,
   SchedulerTimerHandle,
-} from "../../../platform/scheduler";
+} from "../../../../platform/scheduler";
 
 type TimerHandle = SchedulerTimerHandle | null;
 

@@ -1,10 +1,10 @@
-import type { TerminalTransport } from "../../../contracts/transport/transport";
-import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
-import { TERMINAL_CLOSE_CODE } from "./transport-policy";
+import type { TerminalTransport } from "../../../../contracts/transport/transport";
+import { TRANSPORT_READY_STATE } from "../../../../contracts/transport/transport";
+import { TERMINAL_CLOSE_CODE } from "../state/transport-policy";
 import type {
   SocketCloseIntent,
   TransportEvent,
-} from "./transport-state-machine";
+} from "../state/transport-state-machine";
 
 type TransportCommandExecutorDeps = {
   dispatchEvent: (event: TransportEvent) => void;

@@ -11,7 +11,7 @@ import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema"
 import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
 import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
 import type { ConnectionStatusFlag } from "./protocol/connection-status-projector";
-import type { TransportFailureSink } from "./transport/transport-failure-contract";
+import type { TransportFailureSink } from "./transport/contracts/transport-failure-contract";
 import {
   type TransportOrchestrator,
   useTransportOrchestrator,

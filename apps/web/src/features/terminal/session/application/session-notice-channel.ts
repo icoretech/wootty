@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Scheduler, SchedulerTimerHandle } from "../../platform/scheduler";
 import {
   type FailureNoticeState,
   notifyWithFailureThrottle,
-} from "../../notifications/notice-throttle";
-import type { Scheduler, SchedulerTimerHandle } from "../../platform/scheduler";
+} from "../../shared/reliability/failure-notice-throttle";
 
 type UseSessionNoticeChannelArgs = {
   scheduler: Scheduler;

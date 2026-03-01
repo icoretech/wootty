@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { TransportReconnectController } from "../../../../../src/features/terminal/app/engine/transport/transport-reconnect-controller";
+import { TransportReconnectController } from "../../../../../src/features/terminal/app/engine/transport/reliability/transport-reconnect-controller";
 import { FakeScheduler } from "../../../../support/harness/fake-scheduler";
 
 describe("transport reconnect controller", () => {

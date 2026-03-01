@@ -1,8 +1,8 @@
 import type {
   Scheduler,
   SchedulerTimerHandle,
-} from "../../../platform/scheduler";
-import { TERMINAL_HEARTBEAT_MS } from "./transport-policy";
+} from "../../../../platform/scheduler";
+import { TERMINAL_HEARTBEAT_MS } from "../state/transport-policy";
 
 type TimerHandle = SchedulerTimerHandle | null;
 
