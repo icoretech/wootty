@@ -16,14 +16,17 @@ function createWindow(
 
 describe("socket url resolution", () => {
   it("converts http env urls to websocket urls", () => {
+    const backendHost = "api.example.test";
+    const backendPath = "/custom/terminal";
+    const httpsBackendUrl = `https://${backendHost}${backendPath}`;
     const resolution = resolveSocketUrl(
       createWindow("https:", "app.example.test"),
-      "https://api.example.test/custom/terminal",
+      httpsBackendUrl,
     );
 
     expect(resolution).toEqual({
       ok: true,
-      socketUrl: "wss://api.example.test/custom/terminal",
+      socketUrl: `wss://${backendHost}${backendPath}`,
     });
   });
 
@@ -40,17 +43,18 @@ describe("socket url resolution", () => {
   });
 
   it("returns unsupported protocol issue for invalid env protocol", () => {
+    const backendHost = "api.example.test";
+    const ftpSocketUrl = `ftp://${backendHost}/socket`;
     const resolution = resolveSocketUrl(
       createWindow("https:", "app.example.test"),
-      "ftp://api.example.test/socket",
+      ftpSocketUrl,
     );
 
     expect(resolution).toEqual({
       ok: false,
       issue: {
         code: "env_socket_url_unsupported_protocol",
-        details:
-          "VITE_WOOTTY_WS_URL uses an unsupported protocol: ftp://api.example.test/socket",
+        details: `VITE_WOOTTY_WS_URL uses an unsupported protocol: ${ftpSocketUrl}`,
       },
     });
   });
