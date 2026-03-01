@@ -1,11 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  buildE2eConfig,
-  buildE2eServerCommand,
-  buildE2eServerLaunch,
   DEFAULT_E2E_PORT,
-  resolveE2eBaseUrl,
   resolveE2ePort,
+  resolveE2eRuntime,
 } from "../../config/e2e/e2e-env";
 import staticPlaywrightConfig from "../../config/e2e/playwright.config";
 
@@ -13,7 +10,12 @@ type PlaywrightConfigModule = {
   default: {
     use: { baseURL: string };
     projects: Array<{ name: string }>;
-    webServer: { command: string; url: string };
+    webServer: {
+      command: string;
+      cwd: string;
+      env: Record<string, string>;
+      url: string;
+    };
   };
 };
 
@@ -44,7 +46,7 @@ describe("playwright config", () => {
     delete process.env.WOOTTY_E2E_CROSS;
 
     const config = await loadConfig();
-    const expected = buildE2eConfig(DEFAULT_E2E_PORT);
+    const expected = resolveE2eRuntime({});
 
     expect(config.use.baseURL).toBe(expected.baseURL);
     expect(config.projects.map((project) => project.name)).toEqual([
@@ -59,8 +61,10 @@ describe("playwright config", () => {
     process.env.WOOTTY_E2E_CROSS = "1";
 
     const config = await loadConfig();
-    const expected = buildE2eConfig(4999);
-    const launch = buildE2eServerLaunch(expected.port);
+    const expected = resolveE2eRuntime({
+      WOOTTY_E2E_PORT: "4999",
+      WOOTTY_E2E_CROSS: "1",
+    });
 
     expect(config.use.baseURL).toBe(expected.baseURL);
     expect(config.projects.map((project) => project.name)).toEqual([
@@ -69,16 +73,11 @@ describe("playwright config", () => {
       "firefox",
       "webkit",
     ]);
-    expect(config.webServer.command).toContain(`cd ${launch.cwd}`);
-    expect(config.webServer.command).toContain("WOOTTY_FAKE_PTY=1");
-    expect(config.webServer.command).toContain(
-      `WOOTTY_PORT=${launch.env.WOOTTY_PORT}`,
-    );
+    expect(config.webServer.cwd).toBe(expected.webServer.cwd);
+    expect(config.webServer.env.WOOTTY_FAKE_PTY).toBe("1");
+    expect(config.webServer.env.WOOTTY_PORT).toBe(String(expected.port));
     expect(config.webServer.command).toContain(`--port ${expected.port}`);
-    expect(config.webServer.command).toContain("WOOTTY_FAKE_PTY=1");
-    expect(buildE2eServerCommand(expected.port)).toContain(
-      launch.args.join(" "),
-    );
+    expect(config.webServer.command).toContain("go run ./cmd/woottyd run");
   });
 
   it("falls back to default port when env value is malformed", async () => {
@@ -86,9 +85,10 @@ describe("playwright config", () => {
     delete process.env.WOOTTY_E2E_CROSS;
 
     const config = await loadConfig();
+    const expected = resolveE2eRuntime({ WOOTTY_E2E_PORT: "not-a-port" });
 
     expect(resolveE2ePort("not-a-port")).toBe(DEFAULT_E2E_PORT);
-    expect(config.use.baseURL).toBe(resolveE2eBaseUrl(DEFAULT_E2E_PORT));
+    expect(config.use.baseURL).toBe(expected.baseURL);
   });
 
   it("falls back to default port when env value is out of range", async () => {
@@ -96,8 +96,9 @@ describe("playwright config", () => {
     delete process.env.WOOTTY_E2E_CROSS;
 
     const config = await loadConfig();
+    const expected = resolveE2eRuntime({ WOOTTY_E2E_PORT: "70000" });
 
     expect(resolveE2ePort("70000")).toBe(DEFAULT_E2E_PORT);
-    expect(config.use.baseURL).toBe(resolveE2eBaseUrl(DEFAULT_E2E_PORT));
+    expect(config.use.baseURL).toBe(expected.baseURL);
   });
 });

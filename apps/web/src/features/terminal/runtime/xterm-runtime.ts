@@ -1,33 +1,10 @@
 import type { FitAddon } from "@xterm/addon-fit";
 import type { WebLinksAddon } from "@xterm/addon-web-links";
 import type { Terminal } from "@xterm/xterm";
-
-export interface TerminalRuntimeDisposable {
-  dispose(): void;
-}
-
-export interface TerminalRuntimeTerminal {
-  cols: number;
-  rows: number;
-  options: { fontSize?: number };
-  loadAddon(addon: unknown): void;
-  open(element: unknown): void;
-  write(data: string): void;
-  writeln(data: string): void;
-  clear(): void;
-  dispose(): void;
-  onData(handler: (data: string) => void): TerminalRuntimeDisposable;
-}
-
-export interface TerminalRuntimeFitAddon {
-  fit(): void;
-}
-
-export interface TerminalRuntime {
-  Terminal: new (options?: Record<string, unknown>) => TerminalRuntimeTerminal;
-  FitAddon: new () => TerminalRuntimeFitAddon;
-  WebLinksAddon: new () => unknown;
-}
+import type {
+  TerminalRuntime,
+  XtermRuntimeProvider,
+} from "./xterm-runtime-contract";
 
 interface XtermRuntime extends TerminalRuntime {
   Terminal: typeof Terminal;
@@ -37,10 +14,15 @@ interface XtermRuntime extends TerminalRuntime {
 
 type XtermRuntimeLoader = () => Promise<XtermRuntime>;
 
-type XtermRuntimeProvider = {
-  load: () => Promise<XtermRuntime>;
-  reset: () => void;
-};
+function loadWithResetOnFailure(
+  loader: XtermRuntimeLoader,
+  resetPromise: () => void,
+): Promise<XtermRuntime> {
+  return loader().catch((error) => {
+    resetPromise();
+    throw error;
+  });
+}
 
 async function importXtermRuntime(): Promise<XtermRuntime> {
   const [xterm, fitAddon, webLinksAddon] = await Promise.all([
@@ -59,19 +41,22 @@ async function importXtermRuntime(): Promise<XtermRuntime> {
 
 export function createXtermRuntimeProvider(
   loader: XtermRuntimeLoader = importXtermRuntime,
-): XtermRuntimeProvider {
+): XtermRuntimeProvider<XtermRuntime> {
   let runtimePromise: Promise<XtermRuntime> | null = null;
+  const reset = () => {
+    runtimePromise = null;
+  };
+
+  const load = () => {
+    if (!runtimePromise) {
+      runtimePromise = loadWithResetOnFailure(loader, reset);
+    }
+    return runtimePromise;
+  };
 
   return {
-    load: () => {
-      if (!runtimePromise) {
-        runtimePromise = loader();
-      }
-      return runtimePromise;
-    },
-    reset: () => {
-      runtimePromise = null;
-    },
+    load,
+    reset,
   };
 }
 

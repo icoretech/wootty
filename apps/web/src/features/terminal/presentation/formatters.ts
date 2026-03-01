@@ -1,4 +1,5 @@
-import type { ConnectionStatus } from "../../contracts/connection";
+import type { ConnectionStatus } from "../contracts/connection";
+import { assertNever } from "../lib/assert-never";
 
 type LatencyTone = "neutral" | "good" | "warn" | "bad";
 
@@ -15,7 +16,7 @@ export function statusLabel(status: ConnectionStatus): string {
     case "error":
       return "Error";
     default:
-      return "Unknown";
+      return assertNever(status);
   }
 }
 

@@ -1,57 +1,165 @@
 import {
-  ACTIVE_SESSION_STORAGE_KEY,
-  LAST_SESSION_STORAGE_KEY,
   SESSION_HISTORY_STORAGE_KEY,
+  type SessionStorageKey,
 } from "./storage-keys";
-export { ACTIVE_SESSION_STORAGE_KEY, LAST_SESSION_STORAGE_KEY };
 
-export function readStoredSessionId(
+export type StorageAccessFailure = {
+  operation: "read" | "write" | "remove" | "parse";
+  key: string;
+  reason?: "schema_mismatch" | "invalid_value";
+  cause?: unknown;
+};
+
+type StorageReadSessionIdResult = {
+  sessionId: string | null;
+  error: StorageAccessFailure | null;
+};
+
+type StorageReadSessionHistoryResult = {
+  sessions: string[];
+  error: StorageAccessFailure | null;
+};
+
+type StorageMutationResult = {
+  error: StorageAccessFailure | null;
+};
+
+export function readStoredSessionIdResult(
   storage: Storage,
-  key: string,
-): string | undefined {
-  const sessionId = storage.getItem(key);
-  if (!sessionId || sessionId.length === 0) {
-    return undefined;
+  key: SessionStorageKey,
+): StorageReadSessionIdResult {
+  try {
+    const sessionId = storage.getItem(key);
+    if (!sessionId || sessionId.length === 0) {
+      return {
+        sessionId: null,
+        error: null,
+      };
+    }
+    return {
+      sessionId,
+      error: null,
+    };
+  } catch (cause) {
+    return {
+      sessionId: null,
+      error: {
+        operation: "read",
+        key,
+        cause,
+      },
+    };
   }
-  return sessionId;
 }
 
-export function storeSessionId(
+export function storeSessionIdResult(
   storage: Storage,
-  key: string,
+  key: SessionStorageKey,
   sessionId: string,
-): void {
-  storage.setItem(key, sessionId);
+): StorageMutationResult {
+  try {
+    storage.setItem(key, sessionId);
+    return { error: null };
+  } catch (cause) {
+    return {
+      error: {
+        operation: "write",
+        key,
+        cause,
+      },
+    };
+  }
 }
 
-export function clearStoredSessionId(storage: Storage, key: string): void {
-  storage.removeItem(key);
+export function clearStoredSessionIdResult(
+  storage: Storage,
+  key: SessionStorageKey,
+): StorageMutationResult {
+  try {
+    storage.removeItem(key);
+    return { error: null };
+  } catch (cause) {
+    return {
+      error: {
+        operation: "remove",
+        key,
+        cause,
+      },
+    };
+  }
 }
 
-export function readSessionHistory(storage: Storage): string[] {
-  const raw = storage.getItem(SESSION_HISTORY_STORAGE_KEY);
+export function readSessionHistoryResult(
+  storage: Storage,
+): StorageReadSessionHistoryResult {
+  let raw: string | null = null;
+  try {
+    raw = storage.getItem(SESSION_HISTORY_STORAGE_KEY);
+  } catch (cause) {
+    return {
+      sessions: [],
+      error: {
+        operation: "read",
+        key: SESSION_HISTORY_STORAGE_KEY,
+        cause,
+      },
+    };
+  }
   if (!raw) {
-    return [];
+    return {
+      sessions: [],
+      error: null,
+    };
   }
 
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) {
-      return [];
+      return {
+        sessions: [],
+        error: {
+          operation: "parse",
+          key: SESSION_HISTORY_STORAGE_KEY,
+          reason: "schema_mismatch",
+          cause: parsed,
+        },
+      };
     }
-    return parsed
-      .filter((value): value is string => typeof value === "string")
-      .filter((value) => value.length > 0);
-  } catch {
-    return [];
+    return {
+      sessions: parsed
+        .filter((value): value is string => typeof value === "string")
+        .filter((value) => value.length > 0),
+      error: null,
+    };
+  } catch (cause) {
+    return {
+      sessions: [],
+      error: {
+        operation: "parse",
+        key: SESSION_HISTORY_STORAGE_KEY,
+        reason: "invalid_value",
+        cause,
+      },
+    };
   }
 }
 
-export function writeSessionHistory(
+export function writeSessionHistoryResult(
   storage: Storage,
   sessions: string[],
-): void {
-  storage.setItem(SESSION_HISTORY_STORAGE_KEY, JSON.stringify(sessions));
+): StorageMutationResult {
+  try {
+    storage.setItem(SESSION_HISTORY_STORAGE_KEY, JSON.stringify(sessions));
+    return { error: null };
+  } catch (cause) {
+    return {
+      error: {
+        operation: "write",
+        key: SESSION_HISTORY_STORAGE_KEY,
+        cause,
+      },
+    };
+  }
 }
 
 export function pushSessionHistory(

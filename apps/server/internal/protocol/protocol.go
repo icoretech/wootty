@@ -5,9 +5,9 @@ import (
 	"errors"
 )
 
-const (
-	minDimension = 1
-	maxDimension = 2000
+var (
+	ErrInvalidMessage         = errors.New("invalid message")
+	ErrUnsupportedWireVersion = errors.New("unsupported wire contract version")
 )
 
 type ClientMessage interface {
@@ -21,27 +21,28 @@ type AttachMessage struct {
 	Watch     bool
 }
 
-func (AttachMessage) Type() string { return "attach" }
+func (AttachMessage) Type() string { return ClientMessageTypeAttach }
 
 type InputMessage struct {
 	Data string
 }
 
-func (InputMessage) Type() string { return "input" }
+func (InputMessage) Type() string { return ClientMessageTypeInput }
 
 type ResizeMessage struct {
 	Cols int
 	Rows int
 }
 
-func (ResizeMessage) Type() string { return "resize" }
+func (ResizeMessage) Type() string { return ClientMessageTypeResize }
 
 type PingMessage struct{}
 
-func (PingMessage) Type() string { return "ping" }
+func (PingMessage) Type() string { return ClientMessageTypePing }
 
 type envelope struct {
 	Type      string  `json:"type"`
+	Version   *int    `json:"version,omitempty"`
 	SessionID string  `json:"sessionId,omitempty"`
 	Cols      *int    `json:"cols,omitempty"`
 	Rows      *int    `json:"rows,omitempty"`
@@ -52,16 +53,19 @@ type envelope struct {
 func ParseClientMessage(raw []byte) (ClientMessage, error) {
 	var msg envelope
 	if err := json.Unmarshal(raw, &msg); err != nil {
-		return nil, errors.New("Invalid message")
+		return nil, ErrInvalidMessage
 	}
 
 	switch msg.Type {
-	case "attach":
+	case ClientMessageTypeAttach:
 		if msg.Cols == nil || msg.Rows == nil {
-			return nil, errors.New("Invalid message")
+			return nil, ErrInvalidMessage
 		}
 		if !validDimension(*msg.Cols) || !validDimension(*msg.Rows) {
-			return nil, errors.New("Invalid message")
+			return nil, ErrInvalidMessage
+		}
+		if msg.Version == nil || *msg.Version != WireContractVersion {
+			return nil, ErrUnsupportedWireVersion
 		}
 		watch := false
 		if msg.Watch != nil {
@@ -73,26 +77,26 @@ func ParseClientMessage(raw []byte) (ClientMessage, error) {
 			Rows:      *msg.Rows,
 			Watch:     watch,
 		}, nil
-	case "input":
+	case ClientMessageTypeInput:
 		if msg.Data == nil {
-			return nil, errors.New("Invalid message")
+			return nil, ErrInvalidMessage
 		}
 		return InputMessage{Data: *msg.Data}, nil
-	case "resize":
+	case ClientMessageTypeResize:
 		if msg.Cols == nil || msg.Rows == nil {
-			return nil, errors.New("Invalid message")
+			return nil, ErrInvalidMessage
 		}
 		if !validDimension(*msg.Cols) || !validDimension(*msg.Rows) {
-			return nil, errors.New("Invalid message")
+			return nil, ErrInvalidMessage
 		}
 		return ResizeMessage{Cols: *msg.Cols, Rows: *msg.Rows}, nil
-	case "ping":
+	case ClientMessageTypePing:
 		return PingMessage{}, nil
 	default:
-		return nil, errors.New("Invalid message")
+		return nil, ErrInvalidMessage
 	}
 }
 
 func validDimension(value int) bool {
-	return value >= minDimension && value <= maxDimension
+	return value >= MinDimension && value <= MaxDimension
 }

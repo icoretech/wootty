@@ -138,8 +138,11 @@ func TestWebsocketProtocolFlow(t *testing.T) {
 	if !strings.Contains(stringField(attachFirstMessage, "message"), "Attach first") {
 		t.Fatalf("expected attach first error, got %#v", attachFirstMessage)
 	}
+	if stringField(attachFirstMessage, "code") != "attach_required" {
+		t.Fatalf("expected attach_required code, got %#v", attachFirstMessage)
+	}
 
-	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "cols": 120, "rows": 40}); err != nil {
+	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "version": 1, "cols": 120, "rows": 40}); err != nil {
 		t.Fatalf("failed writing attach payload: %v", err)
 	}
 	readyMessage := waitForWSMessageType(t, wsConn, "ready", 2*time.Second)
@@ -178,7 +181,7 @@ func TestSessionsAPIListsActiveSessions(t *testing.T) {
 	wsConn := dialTerminalWebsocket(t, httpServer.URL)
 	defer wsConn.Close()
 
-	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "cols": 120, "rows": 40}); err != nil {
+	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "version": 1, "cols": 120, "rows": 40}); err != nil {
 		t.Fatalf("failed writing attach payload: %v", err)
 	}
 	readyMessage := waitForWSMessageType(t, wsConn, "ready", 2*time.Second)
@@ -197,6 +200,7 @@ func TestSessionsAPIListsActiveSessions(t *testing.T) {
 		Sessions []struct {
 			ID            string `json:"id"`
 			HasController bool   `json:"hasController"`
+			CanControl    bool   `json:"canControl"`
 		} `json:"sessions"`
 	}
 	if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
@@ -212,6 +216,167 @@ func TestSessionsAPIListsActiveSessions(t *testing.T) {
 	if !payload.Sessions[0].HasController {
 		t.Fatalf("expected active session to report controller: %#v", payload.Sessions[0])
 	}
+	if payload.Sessions[0].CanControl {
+		t.Fatalf("expected active session to reject control while occupied: %#v", payload.Sessions[0])
+	}
+}
+
+func TestSessionsAPIRequiresTokenWhenConfigured(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	cfg.AuthToken = "secret-token"
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	unauthorizedReq, err := http.NewRequest(http.MethodGet, httpServer.URL+"/api/sessions", nil)
+	if err != nil {
+		t.Fatalf("failed building sessions request: %v", err)
+	}
+	unauthorizedResp, err := http.DefaultClient.Do(unauthorizedReq)
+	if err != nil {
+		t.Fatalf("unauthorized sessions request failed: %v", err)
+	}
+	defer unauthorizedResp.Body.Close()
+	if unauthorizedResp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthorized sessions request, got %d", unauthorizedResp.StatusCode)
+	}
+
+	authorizedReq, err := http.NewRequest(http.MethodGet, httpServer.URL+"/api/sessions", nil)
+	if err != nil {
+		t.Fatalf("failed building authorized sessions request: %v", err)
+	}
+	authorizedReq.Header.Set("Authorization", "Bearer secret-token")
+	authorizedResp, err := http.DefaultClient.Do(authorizedReq)
+	if err != nil {
+		t.Fatalf("authorized sessions request failed: %v", err)
+	}
+	defer authorizedResp.Body.Close()
+	if authorizedResp.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for authorized sessions request, got %d", authorizedResp.StatusCode)
+	}
+}
+
+func TestStaticRoutesRequireTokenWhenConfigured(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	cfg.AuthToken = "secret-token"
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	unauthorizedResponse, err := http.Get(httpServer.URL + "/")
+	if err != nil {
+		t.Fatalf("unauthorized static request failed: %v", err)
+	}
+	defer unauthorizedResponse.Body.Close()
+	if unauthorizedResponse.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthorized static request, got %d", unauthorizedResponse.StatusCode)
+	}
+
+	authorizedByQuery, err := http.Get(httpServer.URL + "/?token=secret-token")
+	if err != nil {
+		t.Fatalf("authorized static request failed: %v", err)
+	}
+	defer authorizedByQuery.Body.Close()
+	if authorizedByQuery.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for authorized static request, got %d", authorizedByQuery.StatusCode)
+	}
+	issuedCookie := authorizedByQuery.Cookies()
+	if len(issuedCookie) == 0 || issuedCookie[0].Name != "wootty_auth" {
+		t.Fatalf("expected auth cookie to be issued from request token, got %#v", issuedCookie)
+	}
+	if issuedCookie[0].Value != "secret-token" {
+		t.Fatalf("expected auth cookie to mirror provided token, got %q", issuedCookie[0].Value)
+	}
+}
+
+func TestTerminalWebsocketRequiresTokenWhenConfigured(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	cfg.AuthToken = "secret-token"
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	unauthorizedConn, unauthorizedResponse, err := websocket.DefaultDialer.Dial(
+		websocketURL(httpServer.URL),
+		nil,
+	)
+	if unauthorizedConn != nil {
+		unauthorizedConn.Close()
+	}
+	if err == nil {
+		t.Fatal("expected websocket dial to fail without auth token")
+	}
+	if unauthorizedResponse == nil || unauthorizedResponse.StatusCode != http.StatusUnauthorized {
+		t.Fatalf(
+			"expected 401 for unauthorized websocket upgrade, got response=%#v err=%v",
+			unauthorizedResponse,
+			err,
+		)
+	}
+
+	authorizedConn := dialTerminalWebsocketWithHeaders(t, httpServer.URL, http.Header{
+		"Authorization": []string{"Bearer secret-token"},
+	})
+	defer authorizedConn.Close()
+
+	if err := authorizedConn.WriteJSON(map[string]any{
+		"type":    "attach",
+		"version": 1,
+		"cols":    80,
+		"rows":    24,
+	}); err != nil {
+		t.Fatalf("failed writing attach payload with auth token: %v", err)
+	}
+	_ = waitForWSMessageType(t, authorizedConn, "ready", 2*time.Second)
+}
+
+func TestTerminalWebsocketRejectsDisallowedOrigin(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	cfg.AllowedOrigins = []string{"https://allowed.example"}
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	disallowedConn, disallowedResponse, err := websocket.DefaultDialer.Dial(
+		websocketURL(httpServer.URL),
+		http.Header{"Origin": []string{"https://blocked.example"}},
+	)
+	if disallowedConn != nil {
+		disallowedConn.Close()
+	}
+	if err == nil {
+		t.Fatal("expected websocket dial to fail for disallowed origin")
+	}
+	if disallowedResponse == nil || disallowedResponse.StatusCode != http.StatusForbidden {
+		t.Fatalf(
+			"expected 403 for disallowed origin websocket upgrade, got response=%#v err=%v",
+			disallowedResponse,
+			err,
+		)
+	}
+
+	allowedConn := dialTerminalWebsocketWithHeaders(t, httpServer.URL, http.Header{
+		"Origin": []string{"https://allowed.example"},
+	})
+	defer allowedConn.Close()
+
+	if err := allowedConn.WriteJSON(map[string]any{
+		"type":    "attach",
+		"version": 1,
+		"cols":    80,
+		"rows":    24,
+	}); err != nil {
+		t.Fatalf("failed writing attach payload for allowed origin: %v", err)
+	}
+	_ = waitForWSMessageType(t, allowedConn, "ready", 2*time.Second)
 }
 
 func TestWatchModeIsReadOnly(t *testing.T) {
@@ -225,7 +390,7 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 	controllerConn := dialTerminalWebsocket(t, httpServer.URL)
 	defer controllerConn.Close()
 
-	if err := controllerConn.WriteJSON(map[string]any{"type": "attach", "cols": 80, "rows": 24}); err != nil {
+	if err := controllerConn.WriteJSON(map[string]any{"type": "attach", "version": 1, "cols": 80, "rows": 24}); err != nil {
 		t.Fatalf("failed writing controller attach payload: %v", err)
 	}
 	controllerReady := waitForWSMessageType(t, controllerConn, "ready", 2*time.Second)
@@ -239,6 +404,7 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 
 	if err := watchConn.WriteJSON(map[string]any{
 		"type":      "attach",
+		"version":   1,
 		"sessionId": sessionID,
 		"cols":      80,
 		"rows":      24,
@@ -260,6 +426,20 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 	if !strings.Contains(stringField(errMessage, "message"), "read-only") {
 		t.Fatalf("expected read-only error payload, got %#v", errMessage)
 	}
+	if stringField(errMessage, "code") != "read_only_forbidden" {
+		t.Fatalf("expected read_only_forbidden code for watch input, got %#v", errMessage)
+	}
+
+	if err := watchConn.WriteJSON(map[string]any{"type": "resize", "cols": 120, "rows": 40}); err != nil {
+		t.Fatalf("failed writing watch resize payload: %v", err)
+	}
+	resizeErrorMessage := waitForWSMessageType(t, watchConn, "error", 2*time.Second)
+	if !strings.Contains(stringField(resizeErrorMessage, "message"), "read-only") {
+		t.Fatalf("expected read-only resize error payload, got %#v", resizeErrorMessage)
+	}
+	if stringField(resizeErrorMessage, "code") != "read_only_forbidden" {
+		t.Fatalf("expected read_only_forbidden code for watch resize, got %#v", resizeErrorMessage)
+	}
 }
 
 func TestAttachMissingSessionReturnsSessionNotFoundCode(t *testing.T) {
@@ -271,7 +451,7 @@ func TestAttachMissingSessionReturnsSessionNotFoundCode(t *testing.T) {
 	defer httpServer.Close()
 
 	wsConnA := dialTerminalWebsocket(t, httpServer.URL)
-	if err := wsConnA.WriteJSON(map[string]any{"type": "attach", "cols": 80, "rows": 24}); err != nil {
+	if err := wsConnA.WriteJSON(map[string]any{"type": "attach", "version": 1, "cols": 80, "rows": 24}); err != nil {
 		t.Fatalf("failed writing initial attach payload: %v", err)
 	}
 	readyMessage := waitForWSMessageType(t, wsConnA, "ready", 2*time.Second)
@@ -287,6 +467,7 @@ func TestAttachMissingSessionReturnsSessionNotFoundCode(t *testing.T) {
 	defer wsConnB.Close()
 	if err := wsConnB.WriteJSON(map[string]any{
 		"type":      "attach",
+		"version":   1,
 		"sessionId": sessionID,
 		"cols":      80,
 		"rows":      24,
@@ -311,13 +492,39 @@ func TestWebsocketAttachFailureSurfacesError(t *testing.T) {
 	wsConn := dialTerminalWebsocket(t, httpServer.URL)
 	defer wsConn.Close()
 
-	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "cols": 80, "rows": 24}); err != nil {
+	if err := wsConn.WriteJSON(map[string]any{"type": "attach", "version": 1, "cols": 80, "rows": 24}); err != nil {
 		t.Fatalf("failed writing attach payload: %v", err)
 	}
 
 	errorMessage := waitForWSMessageType(t, wsConn, "error", 2*time.Second)
 	if !strings.Contains(stringField(errorMessage, "message"), "Terminal attach failed") {
 		t.Fatalf("expected terminal attach failure message, got %#v", errorMessage)
+	}
+}
+
+func TestAttachRejectsIncompatibleWireVersion(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	wsConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer wsConn.Close()
+
+	if err := wsConn.WriteJSON(map[string]any{
+		"type":    "attach",
+		"version": 999,
+		"cols":    80,
+		"rows":    24,
+	}); err != nil {
+		t.Fatalf("failed writing incompatible attach payload: %v", err)
+	}
+
+	errorMessage := waitForWSMessageType(t, wsConn, "error", 2*time.Second)
+	if stringField(errorMessage, "code") != "incompatible_version" {
+		t.Fatalf("expected incompatible_version code, got %#v", errorMessage)
 	}
 }
 
@@ -350,9 +557,20 @@ func testRuntimeConfig(t *testing.T, fakePTY bool, command string, staticDir str
 
 func dialTerminalWebsocket(t *testing.T, httpURL string) *websocket.Conn {
 	t.Helper()
+	return dialTerminalWebsocketWithHeaders(t, httpURL, nil)
+}
 
-	wsURL := "ws" + strings.TrimPrefix(httpURL, "http") + "/api/terminal"
-	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
+func websocketURL(httpURL string) string {
+	return "ws" + strings.TrimPrefix(httpURL, "http") + "/api/terminal"
+}
+
+func dialTerminalWebsocketWithHeaders(
+	t *testing.T,
+	httpURL string,
+	headers http.Header,
+) *websocket.Conn {
+	t.Helper()
+	conn, _, err := websocket.DefaultDialer.Dial(websocketURL(httpURL), headers)
 	if err != nil {
 		t.Fatalf("failed to dial terminal websocket: %v", err)
 	}

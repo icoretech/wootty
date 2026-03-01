@@ -181,15 +181,22 @@ flowchart LR
 Frontend module ownership:
 
 - `apps/web/src/App.tsx`: composition entrypoint that mounts the terminal feature app.
-- `apps/web/src/features/terminal/app/TerminalApp.tsx`: terminal orchestration (transport/session/runtime wiring).
+- `apps/web/src/features/terminal/app/TerminalApp.tsx`: terminal app entrypoint and top-level composition shell.
+- `apps/web/src/features/terminal/app/composition/*`: app-level composition boundaries (`platform`, `domain`, and controller wiring) that join environment adapters with feature hooks.
+- `apps/web/src/features/terminal/app/engine/*`: transport lifecycle, runtime boot/IO bridge, and connection state projection.
+- `apps/web/src/features/terminal/app/bindings/*`: browser/document/window/session bindings (shortcuts, refresh cadence wiring, resize/fullscreen wiring, title updates).
+- `apps/web/src/features/terminal/environment/*`: environment contracts shared by app bootstrap and controller layers.
+- `apps/web/src/features/terminal/commands/*`: terminal command contract + registry ownership (UI actions and shortcut mapping).
 - `apps/web/src/features/terminal/contracts/*`: shared terminal contracts (session + transport types and ready-state constants).
+- `apps/web/src/features/terminal/platform/*`: platform-facing utilities shared by app/engine bindings (for example scheduler abstractions).
 - `apps/web/src/features/terminal/components/*`: presentational controls, status bar, and session menu UI.
-- `apps/web/src/features/terminal/components/presenters/*`: UI-facing presentation mapping for menu/session copy.
+- `apps/web/src/features/terminal/view/*`: UI-facing formatting and presenter mapping for menu/session copy.
+- `apps/web/src/features/terminal/presentation/command-ui/*`: floating-control UI metadata and descriptor assembly.
 - `apps/web/src/features/terminal/notifications/*`: user-facing terminal notice mapping.
 - `apps/web/src/features/terminal/session/domain/*`: session payload parsing and candidate derivation.
 - `apps/web/src/features/terminal/session/persistence/*`: storage adapters and storage key ownership.
 - `apps/web/src/features/terminal/lib/*`: terminal-only utility helpers (formatting, outbox buffering).
-- `apps/web/src/features/terminal/protocol/*` and `apps/web/src/features/terminal/runtime/*`: protocol parsing and xterm runtime loading owned by the terminal feature.
+- `apps/web/src/features/terminal/protocol/*`, `apps/web/src/features/terminal/orchestration/*`, and `apps/web/src/features/terminal/runtime/*`: protocol parsing, transport orchestration adapters, and xterm runtime loading owned by the terminal feature.
 
 ### Client Protocol Contract
 
@@ -197,7 +204,7 @@ Frontend module ownership:
 
 - Supported inbound message `type` values: `ready`, `output`, `exit`, `error`, `pong`.
 - Required fields:
-  - `ready`: `sessionId` (string), optional `readOnly` (boolean)
+  - `ready`: `sessionId` (string), `readOnly` (boolean)
   - `output`: `data` (string)
   - `exit`: `code` (number), `signal` (number)
   - `error`: `message` (string), optional `code` (string)
@@ -213,6 +220,7 @@ Transport responsibilities are split by contract:
 
 - `apps/web/src/features/terminal/contracts/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
 - `apps/web/src/features/terminal/contracts/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
+- `apps/web/src/features/terminal/orchestration/transport-event-normalizer.ts` adapts browser runtime events into typed contract payloads.
 
 - Canonical ready states:
   - `TRANSPORT_READY_STATE.CONNECTING` (`0`)

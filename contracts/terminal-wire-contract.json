@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "dimension": {
+    "min": 1,
+    "max": 2000
+  },
+  "client_messages": {
+    "types": ["attach", "input", "resize", "ping"],
+    "schemas": {
+      "attach": {
+        "required": ["type", "version", "cols", "rows"],
+        "optional": ["sessionId", "watch"]
+      },
+      "input": {
+        "required": ["type", "data"],
+        "optional": []
+      },
+      "resize": {
+        "required": ["type", "cols", "rows"],
+        "optional": []
+      },
+      "ping": {
+        "required": ["type"],
+        "optional": []
+      }
+    }
+  },
+  "server_messages": {
+    "types": ["ready", "output", "exit", "error", "pong"],
+    "schemas": {
+      "ready": {
+        "required": ["type", "sessionId", "readOnly", "version"],
+        "optional": []
+      },
+      "output": {
+        "required": ["type", "data"],
+        "optional": []
+      },
+      "exit": {
+        "required": ["type", "code", "signal"],
+        "optional": []
+      },
+      "error": {
+        "required": ["type", "message"],
+        "optional": ["code", "rawCode"]
+      },
+      "pong": {
+        "required": ["type"],
+        "optional": []
+      }
+    }
+  },
+  "server_errors": {
+    "known_codes": [
+      "session_not_found",
+      "attach_forbidden",
+      "incompatible_version",
+      "attach_required",
+      "read_only_forbidden",
+      "session_not_writable",
+      "session_not_resizable"
+    ],
+    "unknown_code_policy": "preserve_raw_code"
+  }
+}

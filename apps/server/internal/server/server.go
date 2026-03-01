@@ -1,6 +1,7 @@
 package server
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"errors"
 	"io/fs"
@@ -57,8 +58,8 @@ func New(cfg config.RuntimeConfig) *Server {
 	}
 
 	mux.HandleFunc("/api/health", s.handleHealth)
-	mux.HandleFunc("/api/sessions", s.handleSessions)
-	mux.HandleFunc("/api/terminal", s.handleTerminal)
+	mux.HandleFunc(protocol.SessionsHTTPRoute, s.handleSessions)
+	mux.HandleFunc(protocol.TerminalWSRoute, s.handleTerminal)
 	s.registerStaticRoutes(mux)
 
 	return s
@@ -86,17 +87,25 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+	if !s.isAuthorizedRequest(r) {
+		writeUnauthorized(w)
+		return
+	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"sessions": s.sessions.ListSessions(),
+		protocol.SessionsEnvelopeField: s.sessions.ListSessions(),
 	})
 }
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(_ *http.Request) bool { return true },
-}
+var baseUpgrader = websocket.Upgrader{}
 
 func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
+	if !s.isAuthorizedRequest(r) {
+		writeUnauthorized(w)
+		return
+	}
+	upgrader := baseUpgrader
+	upgrader.CheckOrigin = s.isAllowedOrigin
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		s.log.Error("failed to upgrade websocket", "err", err)
@@ -123,10 +132,15 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 
 		msg, err := protocol.ParseClientMessage(raw)
 		if err != nil {
-			send(map[string]string{
-				"type":    "error",
+			payload := map[string]string{
+				"type":    protocol.ServerMessageTypeError,
 				"message": "Invalid message",
-			})
+			}
+			if errors.Is(err, protocol.ErrUnsupportedWireVersion) {
+				payload["message"] = "Incompatible wire contract version"
+				payload["code"] = protocol.ServerErrorCodeIncompatibleVersion
+			}
+			send(payload)
 			continue
 		}
 
@@ -140,19 +154,22 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 				message.Watch,
 			)
 			if attachErr != nil {
-				errorCode := "attach_failed"
+				errorCode := ""
 				switch {
 				case errors.Is(attachErr, session.ErrSessionNotFound):
-					errorCode = "session_not_found"
+					errorCode = protocol.ServerErrorCodeSessionNotFound
 				case errors.Is(attachErr, session.ErrSessionAlreadyAttached):
-					errorCode = "session_busy"
+					errorCode = protocol.ServerErrorCodeAttachForbidden
 				}
 				s.log.Error("failed to attach terminal session", "err", attachErr)
-				send(map[string]string{
-					"code":    errorCode,
-					"type":    "error",
+				payload := map[string]string{
+					"type":    protocol.ServerMessageTypeError,
 					"message": "Terminal attach failed: " + attachErr.Error(),
-				})
+				}
+				if errorCode != "" {
+					payload["code"] = errorCode
+				}
+				send(payload)
 				continue
 			}
 
@@ -160,20 +177,21 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 			activeReadOnly = result.ReadOnly
 
 			_ = s.sessions.SendJSON(activeSessionID, conn, map[string]any{
-				"type":      "ready",
+				"type":      protocol.ServerMessageTypeReady,
 				"sessionId": result.SessionID,
 				"readOnly":  result.ReadOnly,
+				"version":   protocol.WireContractVersion,
 			})
 
 			if result.History != "" {
 				_ = s.sessions.SendJSON(activeSessionID, conn, map[string]string{
-					"type": "output",
+					"type": protocol.ServerMessageTypeOutput,
 					"data": result.History,
 				})
 			}
 			if result.ExitInfo != nil {
 				_ = s.sessions.SendJSON(activeSessionID, conn, map[string]any{
-					"type":   "exit",
+					"type":   protocol.ServerMessageTypeExit,
 					"code":   result.ExitInfo.Code,
 					"signal": result.ExitInfo.Signal,
 				})
@@ -182,46 +200,56 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 		case protocol.InputMessage:
 			if activeSessionID == "" {
 				send(map[string]string{
-					"type":    "error",
+					"type":    protocol.ServerMessageTypeError,
 					"message": "Attach first",
+					"code":    protocol.ServerErrorCodeAttachRequired,
 				})
 				continue
 			}
 			if activeReadOnly {
 				send(map[string]string{
-					"type":    "error",
+					"type":    protocol.ServerMessageTypeError,
 					"message": "Session is read-only",
+					"code":    protocol.ServerErrorCodeReadOnlyForbidden,
 				})
 				continue
 			}
 			if ok := s.sessions.Write(activeSessionID, message.Data); !ok {
 				send(map[string]string{
-					"type":    "error",
+					"type":    protocol.ServerMessageTypeError,
 					"message": "Session is not writable",
+					"code":    protocol.ServerErrorCodeSessionNotWritable,
 				})
 			}
 
 		case protocol.ResizeMessage:
 			if activeSessionID == "" {
 				send(map[string]string{
-					"type":    "error",
+					"type":    protocol.ServerMessageTypeError,
 					"message": "Attach first",
+					"code":    protocol.ServerErrorCodeAttachRequired,
 				})
 				continue
 			}
 			if activeReadOnly {
+				send(map[string]string{
+					"type":    protocol.ServerMessageTypeError,
+					"message": "Session is read-only",
+					"code":    protocol.ServerErrorCodeReadOnlyForbidden,
+				})
 				continue
 			}
 			if ok := s.sessions.Resize(activeSessionID, message.Cols, message.Rows); !ok {
 				send(map[string]string{
-					"type":    "error",
+					"type":    protocol.ServerMessageTypeError,
 					"message": "Session is not resizable",
+					"code":    protocol.ServerErrorCodeSessionNotResizable,
 				})
 			}
 
 		case protocol.PingMessage:
 			send(map[string]string{
-				"type": "pong",
+				"type": protocol.ServerMessageTypePong,
 			})
 		}
 	}
@@ -236,21 +264,77 @@ func (s *Server) registerStaticRoutes(mux *http.ServeMux) {
 	if staticDir != "" {
 		info, err := os.Stat(staticDir)
 		if err == nil && info.IsDir() {
-			registerDirectoryRoutes(mux, staticDir)
+			s.registerDirectoryRoutes(mux, staticDir)
 			return
 		}
 	}
 
 	if embeddedAssets, ok := webassets.EmbeddedFS(); ok {
-		registerEmbeddedRoutes(mux, embeddedAssets)
+		s.registerEmbeddedRoutes(mux, embeddedAssets)
 		return
 	}
 
-	registerFallbackRoute(mux)
+	s.registerFallbackRoute(mux)
 }
 
-func registerFallbackRoute(mux *http.ServeMux) {
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) isAuthorizedRequest(r *http.Request) bool {
+	if strings.TrimSpace(s.cfg.AuthToken) == "" {
+		return true
+	}
+	token := readAuthorizationToken(r)
+	if token == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AuthToken)) == 1
+}
+
+func (s *Server) isAllowedOrigin(r *http.Request) bool {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return true
+	}
+
+	if len(s.cfg.AllowedOrigins) > 0 {
+		for _, allowedOrigin := range s.cfg.AllowedOrigins {
+			if origin == allowedOrigin {
+				return true
+			}
+		}
+		return false
+	}
+
+	expectedHost := strings.TrimSpace(r.Host)
+	if expectedHost == "" {
+		return false
+	}
+	return origin == "http://"+expectedHost || origin == "https://"+expectedHost
+}
+
+func readAuthorizationToken(r *http.Request) string {
+	authorizationHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if strings.HasPrefix(strings.ToLower(authorizationHeader), "bearer ") {
+		token := strings.TrimSpace(authorizationHeader[len("Bearer "):])
+		if token != "" {
+			return token
+		}
+	}
+	if token := strings.TrimSpace(r.Header.Get("X-Wootty-Token")); token != "" {
+		return token
+	}
+	if cookie, err := r.Cookie("wootty_auth"); err == nil {
+		if token := strings.TrimSpace(cookie.Value); token != "" {
+			return token
+		}
+	}
+	return strings.TrimSpace(r.URL.Query().Get("token"))
+}
+
+func (s *Server) registerFallbackRoute(mux *http.ServeMux) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if !s.authorizeStaticRequest(w, r) {
+			return
+		}
+		setAuthCookieFromRequest(w, r)
 		writeJSON(w, http.StatusOK, map[string]string{
 			"service": "wootty-server",
 			"message": "Web app is not built yet. Run `pnpm --filter @icoretech/wootty-web build`.",
@@ -258,7 +342,7 @@ func registerFallbackRoute(mux *http.ServeMux) {
 	})
 }
 
-func registerDirectoryRoutes(mux *http.ServeMux, staticDir string) {
+func (s *Server) registerDirectoryRoutes(mux *http.ServeMux, staticDir string) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			http.NotFound(w, r)
@@ -268,6 +352,10 @@ func registerDirectoryRoutes(mux *http.ServeMux, staticDir string) {
 			http.NotFound(w, r)
 			return
 		}
+		if !s.authorizeStaticRequest(w, r) {
+			return
+		}
+		setAuthCookieFromRequest(w, r)
 
 		if path := cleanPath(staticDir, r.URL.Path); path != "" {
 			if fileInfo, statErr := os.Stat(path); statErr == nil && !fileInfo.IsDir() {
@@ -280,7 +368,7 @@ func registerDirectoryRoutes(mux *http.ServeMux, staticDir string) {
 	})
 }
 
-func registerEmbeddedRoutes(mux *http.ServeMux, assets fs.FS) {
+func (s *Server) registerEmbeddedRoutes(mux *http.ServeMux, assets fs.FS) {
 	fileServer := http.FileServer(http.FS(assets))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -292,6 +380,10 @@ func registerEmbeddedRoutes(mux *http.ServeMux, assets fs.FS) {
 			http.NotFound(w, r)
 			return
 		}
+		if !s.authorizeStaticRequest(w, r) {
+			return
+		}
+		setAuthCookieFromRequest(w, r)
 
 		if assetPath := cleanEmbeddedPath(r.URL.Path); assetPath != "" && embeddedAssetExists(assets, assetPath) {
 			clone := cloneRequestWithPath(r, "/"+assetPath)
@@ -376,4 +468,38 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeUnauthorized(w http.ResponseWriter) {
+	writeJSON(w, http.StatusUnauthorized, map[string]string{
+		"error": "Unauthorized",
+	})
+}
+
+func (s *Server) authorizeStaticRequest(w http.ResponseWriter, r *http.Request) bool {
+	if !s.isAuthorizedRequest(r) {
+		writeUnauthorized(w)
+		return false
+	}
+	return true
+}
+
+func setAuthCookieFromRequest(w http.ResponseWriter, r *http.Request) {
+	token := strings.TrimSpace(readAuthorizationToken(r))
+	if token == "" {
+		return
+	}
+	if existingCookie, err := r.Cookie("wootty_auth"); err == nil {
+		if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(existingCookie.Value)), []byte(token)) == 1 {
+			return
+		}
+	}
+	http.SetCookie(w, &http.Cookie{
+		Name:     "wootty_auth",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   r.TLS != nil,
+		SameSite: http.SameSiteLaxMode,
+	})
 }

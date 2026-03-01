@@ -1,4 +1,8 @@
-import type { TerminalRuntime } from "../../../../src/features/terminal/runtime/xterm-runtime";
+import type {
+  TerminalRuntime,
+  TerminalRuntimeAddon,
+  TerminalRuntimeMountElement,
+} from "../../../../src/features/terminal/runtime/xterm-runtime-contract";
 import type { TerminalRuntimeBoundary } from "../../../support/harness/terminal-boundary";
 
 type RuntimeTerminalOptions = {
@@ -33,11 +37,11 @@ class FakeTerminal {
     this.options = { fontSize: options.fontSize ?? 11 };
   }
 
-  loadAddon(_addon: unknown): void {
+  loadAddon(_addon: TerminalRuntimeAddon): void {
     // no-op for tests
   }
 
-  open(_element: unknown): void {
+  open(_element: TerminalRuntimeMountElement): void {
     // no-op for tests
   }
 

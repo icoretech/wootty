@@ -36,6 +36,7 @@ type AttachResult struct {
 type SessionInfo struct {
 	ID             string `json:"id"`
 	HasController  bool   `json:"hasController"`
+	CanControl     bool   `json:"canControl"`
 	Watchers       int    `json:"watchers"`
 	CreatedAtMs    int64  `json:"createdAtMs"`
 	LastActivityMs int64  `json:"lastActivityMs"`
@@ -303,6 +304,7 @@ func (m *Manager) ListSessions() []SessionInfo {
 		result = append(result, SessionInfo{
 			ID:             current.id,
 			HasController:  current.controller != nil,
+			CanControl:     current.controller == nil,
 			Watchers:       len(current.watchers),
 			CreatedAtMs:    current.createdAt.UnixMilli(),
 			LastActivityMs: current.lastActivity.UnixMilli(),

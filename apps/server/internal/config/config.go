@@ -14,6 +14,7 @@ const (
 	DefaultHistoryBytes     = 5 * 1024 * 1024
 	DefaultReconnectGraceMS = 0
 	DefaultDetachedTTLMS    = 86_400_000
+	DefaultHost             = "127.0.0.1"
 )
 
 type RuntimeConfig struct {
@@ -28,6 +29,8 @@ type RuntimeConfig struct {
 	Cwd              string
 	Env              map[string]string
 	StaticDir        string
+	AuthToken        string
+	AllowedOrigins   []string
 }
 
 func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeConfig, error) {
@@ -36,7 +39,7 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		args = args[1:]
 	}
 
-	host := getOrDefault(env["WOOTTY_HOST"], "0.0.0.0")
+	host := getOrDefault(env["WOOTTY_HOST"], DefaultHost)
 	port := parsePositiveInt(env["WOOTTY_PORT"], DefaultPort)
 	reconnectGraceMS := parseNonNegativeInt(env["WOOTTY_RECONNECT_GRACE_MS"], DefaultReconnectGraceMS)
 	detachedTTLMS := parseNonNegativeInt(env["WOOTTY_DETACHED_TTL_MS"], DefaultDetachedTTLMS)
@@ -116,6 +119,11 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		staticDir = detectStaticDir(cwd)
 	}
 
+	authToken := strings.TrimSpace(env["WOOTTY_AUTH_TOKEN"])
+	if authToken == "" && !isLoopbackHost(host) {
+		return RuntimeConfig{}, errors.New("WOOTTY_AUTH_TOKEN is required when binding to non-loopback hosts")
+	}
+
 	return RuntimeConfig{
 		Host:             host,
 		Port:             port,
@@ -128,6 +136,8 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		Cwd:              getOrDefault(env["WOOTTY_CWD"], cwd),
 		Env:              execEnv,
 		StaticDir:        staticDir,
+		AuthToken:        authToken,
+		AllowedOrigins:   parseCSVList(env["WOOTTY_ALLOWED_ORIGINS"]),
 	}, nil
 }
 
@@ -209,6 +219,36 @@ func getOrDefault(value string, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func parseCSVList(value string) []string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return nil
+	}
+	parts := strings.Split(trimmed, ",")
+	items := make([]string, 0, len(parts))
+	for _, part := range parts {
+		item := strings.TrimSpace(part)
+		if item == "" {
+			continue
+		}
+		items = append(items, item)
+	}
+	if len(items) == 0 {
+		return nil
+	}
+	return items
+}
+
+func isLoopbackHost(host string) bool {
+	normalized := strings.TrimSpace(strings.ToLower(host))
+	switch normalized {
+	case "127.0.0.1", "localhost", "::1":
+		return true
+	default:
+		return false
+	}
 }
 
 func detectStaticDir(cwd string) string {

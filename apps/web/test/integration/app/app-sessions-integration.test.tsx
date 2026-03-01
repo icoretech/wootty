@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { TERMINAL_SERVER_ERROR_CODE } from "../../../src/features/terminal/contracts/session";
+import { TERMINAL_SERVER_ERROR_CODE } from "../../../src/features/terminal/protocol/server-error-codes";
+import { TERMINAL_WIRE_CONTRACT_VERSION } from "../../../src/features/terminal/protocol/terminal-wire-schema";
 import { setupAppTestEnvironment } from "./harness/app-harness";
 
 let harness: ReturnType<typeof setupAppTestEnvironment>;
@@ -133,6 +134,7 @@ describe("App integration - session menu", () => {
         {
           id: "session-watch",
           hasController: true,
+          canControl: false,
           watchers: 0,
           createdAtMs: Date.now() - 10_000,
           lastActivityMs: Date.now() - 3_000,
@@ -167,6 +169,7 @@ describe("App integration - session menu", () => {
     await act(async () => {
       ws2.triggerMessage({
         type: "ready",
+        version: TERMINAL_WIRE_CONTRACT_VERSION,
         sessionId: "session-watch",
         readOnly: true,
       });

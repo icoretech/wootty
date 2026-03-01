@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconnectDelayMs } from "../../../src/features/terminal/contracts/transport-policy";
+import { reconnectDelayMs } from "../../../src/features/terminal/app/engine/transport-policy";
 import {
   formatBytes,
   formatLatency,
@@ -10,32 +10,39 @@ import {
   flushOutbox,
 } from "../../../src/features/terminal/lib/terminal-outbox";
 import { parseServerMessageWithReason } from "../../../src/features/terminal/protocol/terminal-protocol";
+import { TERMINAL_WIRE_CONTRACT_VERSION } from "../../../src/features/terminal/protocol/terminal-wire-schema";
+import {
+  clearStoredSessionIdResult,
+  readStoredSessionIdResult,
+  storeSessionIdResult,
+} from "../../../src/features/terminal/session/persistence/session-storage";
 import {
   ACTIVE_SESSION_STORAGE_KEY,
-  clearStoredSessionId,
   LAST_SESSION_STORAGE_KEY,
-  readStoredSessionId,
-  storeSessionId,
-} from "../../../src/features/terminal/session/persistence/session-storage";
+} from "../../../src/features/terminal/session/persistence/storage-keys";
 
 describe("terminal-session helpers", () => {
   it("parses valid server messages and rejects invalid payloads", () => {
     expect(
-      parseServerMessageWithReason('{"type":"ready","sessionId":"abc"}'),
+      parseServerMessageWithReason(
+        `{"type":"ready","version":${TERMINAL_WIRE_CONTRACT_VERSION},"sessionId":"abc","readOnly":false}`,
+      ),
     ).toEqual({
       message: {
         type: "ready",
+        version: TERMINAL_WIRE_CONTRACT_VERSION,
         sessionId: "abc",
         readOnly: false,
       },
     });
     expect(
       parseServerMessageWithReason(
-        '{"type":"ready","sessionId":"abc","readOnly":true}',
+        `{"type":"ready","version":${TERMINAL_WIRE_CONTRACT_VERSION},"sessionId":"abc","readOnly":true}`,
       ),
     ).toEqual({
       message: {
         type: "ready",
+        version: TERMINAL_WIRE_CONTRACT_VERSION,
         sessionId: "abc",
         readOnly: true,
       },
@@ -54,11 +61,49 @@ describe("terminal-session helpers", () => {
         signal: 15,
       },
     });
+    expect(
+      parseServerMessageWithReason('{"type":"exit","code":"NaN","signal":15}'),
+    ).toEqual({
+      reason: "malformed_payload",
+    });
+    expect(
+      parseServerMessageWithReason('{"type":"exit","code":1e309,"signal":15}'),
+    ).toEqual({
+      reason: "malformed_payload",
+    });
     expect(parseServerMessageWithReason('{"type":"pong"}')).toEqual({
       message: { type: "pong" },
     });
     expect(parseServerMessageWithReason('{"type":"ready"}')).toEqual({
       reason: "malformed_payload",
+    });
+    expect(
+      parseServerMessageWithReason(
+        '{"type":"ready","version":999,"sessionId":"abc"}',
+      ),
+    ).toEqual({
+      reason: "malformed_payload",
+    });
+    expect(
+      parseServerMessageWithReason(
+        `{"type":"ready","version":${TERMINAL_WIRE_CONTRACT_VERSION},"sessionId":"abc"}`,
+      ),
+    ).toEqual({
+      reason: "malformed_payload",
+    });
+    expect(
+      parseServerMessageWithReason(
+        `{"type":"ready","version":${TERMINAL_WIRE_CONTRACT_VERSION},"sessionId":"abc","readOnly":"nope"}`,
+      ),
+    ).toEqual({
+      reason: "malformed_payload",
+    });
+    expect(
+      parseServerMessageWithReason(
+        '{"type":"ready","version":999,"sessionId":"abc","readOnly":false}',
+      ),
+    ).toEqual({
+      reason: "incompatible_version",
     });
     expect(
       parseServerMessageWithReason('{"type":"future","value":"x"}'),
@@ -108,8 +153,14 @@ describe("terminal-session helpers", () => {
     });
 
     expect(sentBytes).toBeGreaterThan(0);
-    expect(outbox.chunks).toEqual(["second\n"]);
-    expect(outbox.bytes).toBeGreaterThan(0);
+    const retrySent: string[] = [];
+    const retriedBytes = flushOutbox(outbox, (chunk) => {
+      retrySent.push(chunk);
+      return true;
+    });
+    expect(retrySent).toEqual(["second\n"]);
+    expect(retriedBytes).toBeGreaterThan(0);
+    expect(outbox.bytes).toBe(0);
   });
 
   it("stores and clears session id in storage", () => {
@@ -135,24 +186,60 @@ describe("terminal-session helpers", () => {
       },
     };
 
-    clearStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY);
+    clearStoredSessionIdResult(storage, ACTIVE_SESSION_STORAGE_KEY);
     expect(
-      readStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY),
-    ).toBeUndefined();
+      readStoredSessionIdResult(storage, ACTIVE_SESSION_STORAGE_KEY).sessionId,
+    ).toBeNull();
 
-    storeSessionId(storage, ACTIVE_SESSION_STORAGE_KEY, "session-1");
-    storeSessionId(storage, LAST_SESSION_STORAGE_KEY, "session-2");
-    expect(readStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY)).toBe(
-      "session-1",
-    );
-    expect(readStoredSessionId(storage, LAST_SESSION_STORAGE_KEY)).toBe(
-      "session-2",
-    );
-
-    clearStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY);
+    storeSessionIdResult(storage, ACTIVE_SESSION_STORAGE_KEY, "session-1");
+    storeSessionIdResult(storage, LAST_SESSION_STORAGE_KEY, "session-2");
     expect(
-      readStoredSessionId(storage, ACTIVE_SESSION_STORAGE_KEY),
-    ).toBeUndefined();
+      readStoredSessionIdResult(storage, ACTIVE_SESSION_STORAGE_KEY).sessionId,
+    ).toBe("session-1");
+    expect(
+      readStoredSessionIdResult(storage, LAST_SESSION_STORAGE_KEY).sessionId,
+    ).toBe("session-2");
+
+    clearStoredSessionIdResult(storage, ACTIVE_SESSION_STORAGE_KEY);
+    expect(
+      readStoredSessionIdResult(storage, ACTIVE_SESSION_STORAGE_KEY).sessionId,
+    ).toBeNull();
+  });
+
+  it("gracefully handles storage backends that throw", () => {
+    const explodingStorage: Storage = {
+      get length(): number {
+        return 0;
+      },
+      clear(): void {
+        throw new Error("quota");
+      },
+      getItem(): string | null {
+        throw new Error("quota");
+      },
+      key(): string | null {
+        return null;
+      },
+      removeItem(): void {
+        throw new Error("quota");
+      },
+      setItem(): void {
+        throw new Error("quota");
+      },
+    };
+
+    expect(
+      readStoredSessionIdResult(explodingStorage, ACTIVE_SESSION_STORAGE_KEY)
+        .sessionId,
+    ).toBeNull();
+    expect(() => {
+      storeSessionIdResult(
+        explodingStorage,
+        ACTIVE_SESSION_STORAGE_KEY,
+        "session-1",
+      );
+      clearStoredSessionIdResult(explodingStorage, ACTIVE_SESSION_STORAGE_KEY);
+    }).not.toThrow();
   });
 
   it("formats latency for UI", () => {

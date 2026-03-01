@@ -12,22 +12,31 @@ type FetchHarness = {
   setFetchError: (error: Error) => void;
 };
 
+function createSessionsFetchResponse(init: SessionsResponseInit): {
+  ok: boolean;
+  status: number;
+  json: () => Promise<{ sessions: unknown[] }>;
+  text: () => Promise<string>;
+} {
+  const payload = { sessions: init.sessions ?? [] };
+  return {
+    ok: init.ok ?? true,
+    status: init.status ?? 200,
+    json: () => Promise.resolve(payload),
+    text: () => Promise.resolve(JSON.stringify(payload)),
+  };
+}
+
 export function createFetchHarness(): FetchHarness {
-  const fetchMock = vi.fn(async () => ({
-    ok: true,
-    status: 200,
-    json: async () => ({ sessions: [] }),
-  }));
+  const fetchMock = vi.fn(() =>
+    Promise.resolve(createSessionsFetchResponse({})),
+  );
   vi.stubGlobal("fetch", fetchMock);
 
   return {
     fetchMock,
     setFetchResponse: (init) => {
-      fetchMock.mockResolvedValue({
-        ok: init.ok ?? true,
-        status: init.status ?? 200,
-        json: async () => ({ sessions: init.sessions ?? [] }),
-      });
+      fetchMock.mockResolvedValue(createSessionsFetchResponse(init));
     },
     setFetchError: (error) => {
       fetchMock.mockRejectedValue(error);

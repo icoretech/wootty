@@ -1,0 +1,4 @@
+{
+  "sessions_http": "/api/sessions",
+  "terminal_ws": "/api/terminal"
+}

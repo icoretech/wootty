@@ -11,6 +11,8 @@ Implemented behavior:
 - conflict-safe attach: active sessions cannot be silently hijacked by a second connection
 - live session listing endpoint: `GET /api/sessions`
 - optional deterministic fake PTY mode (`WOOTTY_FAKE_PTY=1`) for e2e tests
+- optional bearer auth for sessions/websocket (`WOOTTY_AUTH_TOKEN`), required automatically when binding on non-loopback hosts
+- optional explicit websocket origin allowlist via `WOOTTY_ALLOWED_ORIGINS`
 - `/api/health` and static web serving fallback
 
 ## Run
