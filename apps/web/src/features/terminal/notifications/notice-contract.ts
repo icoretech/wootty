@@ -1,4 +1,5 @@
 import type { BackendResolutionIssueCode } from "../contracts/backend-resolution";
+import type { TerminalServerErrorCode } from "../protocol/server-error-codes";
 import type { TerminalProtocolFailureDetail } from "../protocol/terminal-protocol";
 
 export type SessionsRefreshNotice =
@@ -59,13 +60,7 @@ export type TransportNotice = {
 };
 
 export type ServerNotice =
-  | { context: "server"; reason: "session_not_found" }
-  | { context: "server"; reason: "attach_forbidden" }
-  | { context: "server"; reason: "incompatible_version" }
-  | { context: "server"; reason: "attach_required" }
-  | { context: "server"; reason: "read_only_forbidden" }
-  | { context: "server"; reason: "session_not_writable" }
-  | { context: "server"; reason: "session_not_resizable" }
+  | { context: "server"; reason: TerminalServerErrorCode }
   | { context: "server"; reason: "missing_code" }
   | { context: "server"; reason: "raw_code"; code: string };
 

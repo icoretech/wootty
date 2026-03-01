@@ -102,29 +102,34 @@ function toRuntimeNotice(details: RuntimeNotice): string {
     : "Unable to start terminal runtime.";
 }
 
+type KnownServerNoticeReason = Exclude<
+  ServerNotice["reason"],
+  "missing_code" | "raw_code"
+>;
+
+const SERVER_NOTICE_MESSAGES: Record<KnownServerNoticeReason, string> = {
+  session_not_found:
+    "Selected session is no longer running on the server. Start a new session.",
+  attach_forbidden:
+    "Server denied control attach. Switched to watch mode for safety.",
+  incompatible_version:
+    "Client/server protocol versions are incompatible. Refresh the page and retry.",
+  attach_required:
+    "Server requires an active session attach before sending terminal input or resize events.",
+  read_only_forbidden:
+    "Server denied the action because this session is read-only.",
+  session_not_writable: "Server reported the active session is not writable.",
+  session_not_resizable: "Server reported the active session is not resizable.",
+};
+
 function toServerNotice(details: ServerNotice): string {
-  switch (details.reason) {
-    case "session_not_found":
-      return "Selected session is no longer running on the server. Start a new session.";
-    case "attach_forbidden":
-      return "Server denied control attach. Switched to watch mode for safety.";
-    case "incompatible_version":
-      return "Client/server protocol versions are incompatible. Refresh the page and retry.";
-    case "attach_required":
-      return "Server requires an active session attach before sending terminal input or resize events.";
-    case "read_only_forbidden":
-      return "Server denied the action because this session is read-only.";
-    case "session_not_writable":
-      return "Server reported the active session is not writable.";
-    case "session_not_resizable":
-      return "Server reported the active session is not resizable.";
-    case "missing_code":
-      return "Server rejected request without an error code. Check server logs for details.";
-    case "raw_code":
-      return `Server rejected request with code '${details.code}'. Check server logs for details.`;
-    default:
-      return assertNever(details);
+  if (details.reason === "missing_code") {
+    return "Server rejected request without an error code. Check server logs for details.";
   }
+  if (details.reason === "raw_code") {
+    return `Server rejected request with code '${details.code}'. Check server logs for details.`;
+  }
+  return SERVER_NOTICE_MESSAGES[details.reason];
 }
 
 function toBootstrapNotice(details: BootstrapNotice): string {
@@ -166,24 +171,5 @@ function formatNoticeByContext<Context extends NoticeDetails["context"]>(
 }
 
 export function toUserNotice(details: NoticeDetails): string {
-  switch (details.context) {
-    case "sessions_refresh":
-      return formatNoticeByContext(details);
-    case "fullscreen":
-      return formatNoticeByContext(details);
-    case "runtime":
-      return formatNoticeByContext(details);
-    case "protocol":
-      return formatNoticeByContext(details);
-    case "transport":
-      return formatNoticeByContext(details);
-    case "server":
-      return formatNoticeByContext(details);
-    case "bootstrap":
-      return formatNoticeByContext(details);
-    case "storage":
-      return formatNoticeByContext(details);
-    default:
-      return assertNever(details);
-  }
+  return formatNoticeByContext(details);
 }

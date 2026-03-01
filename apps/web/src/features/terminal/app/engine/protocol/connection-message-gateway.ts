@@ -30,19 +30,6 @@ type ConnectionMessageGateway = {
   handleSocketMessage: (rawData: string) => void;
 };
 
-function toConnectionStatusFlag(
-  next:
-    | "session_not_found"
-    | "attach_forbidden"
-    | "protocol_incompatible"
-    | undefined,
-): ConnectionStatusFlag | null {
-  if (!next) {
-    return null;
-  }
-  return next;
-}
-
 export function useConnectionMessageGateway({
   publishNotice,
   setStatusFlag,
@@ -74,7 +61,7 @@ export function useConnectionMessageGateway({
       if (policy.nextAttachMode) {
         setSessionMode(policy.nextAttachMode);
       }
-      const statusFlag = toConnectionStatusFlag(policy.statusFlag);
+      const statusFlag: ConnectionStatusFlag | null = policy.statusFlag ?? null;
       if (statusFlag) {
         setStatusFlag(statusFlag);
       }

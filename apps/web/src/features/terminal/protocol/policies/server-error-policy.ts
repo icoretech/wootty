@@ -1,18 +1,13 @@
 import type { TerminalServerErrorCode } from "../server-error-codes";
 
-type ServerErrorStatusFlag =
+export type ServerErrorStatusFlag =
   | "session_not_found"
   | "attach_forbidden"
   | "protocol_incompatible";
 
+type KnownServerErrorNoticePayload = { reason: TerminalServerErrorCode };
 export type ServerErrorNoticePayload =
-  | { reason: "session_not_found" }
-  | { reason: "attach_forbidden" }
-  | { reason: "incompatible_version" }
-  | { reason: "attach_required" }
-  | { reason: "read_only_forbidden" }
-  | { reason: "session_not_writable" }
-  | { reason: "session_not_resizable" }
+  | KnownServerErrorNoticePayload
   | { reason: "missing_code" }
   | { reason: "raw_code"; code: string };
 
@@ -24,55 +19,33 @@ type ServerErrorPolicyOutcome = {
   refreshSessions?: boolean;
 };
 
+type ServerErrorSideEffects = Omit<ServerErrorPolicyOutcome, "notice">;
+
+const SERVER_ERROR_SIDE_EFFECTS: Partial<
+  Record<TerminalServerErrorCode, ServerErrorSideEffects>
+> = {
+  session_not_found: {
+    statusFlag: "session_not_found",
+    clearMissingSession: true,
+    refreshSessions: true,
+  },
+  attach_forbidden: {
+    statusFlag: "attach_forbidden",
+    nextAttachMode: "watch",
+  },
+  incompatible_version: {
+    statusFlag: "protocol_incompatible",
+  },
+};
+
 export function resolveServerErrorPolicy(args: {
   code?: TerminalServerErrorCode;
   rawCode?: string;
 }): ServerErrorPolicyOutcome {
-  if (args.code === "session_not_found") {
+  if (args.code) {
     return {
-      notice: { reason: "session_not_found" },
-      statusFlag: "session_not_found",
-      clearMissingSession: true,
-      refreshSessions: true,
-    };
-  }
-
-  if (args.code === "attach_forbidden") {
-    return {
-      notice: { reason: "attach_forbidden" },
-      statusFlag: "attach_forbidden",
-      nextAttachMode: "watch",
-    };
-  }
-
-  if (args.code === "incompatible_version") {
-    return {
-      notice: { reason: "incompatible_version" },
-      statusFlag: "protocol_incompatible",
-    };
-  }
-
-  if (args.code === "attach_required") {
-    return {
-      notice: { reason: "attach_required" },
-    };
-  }
-
-  if (args.code === "read_only_forbidden") {
-    return {
-      notice: { reason: "read_only_forbidden" },
-    };
-  }
-
-  if (args.code === "session_not_writable") {
-    return {
-      notice: { reason: "session_not_writable" },
-    };
-  }
-
-  if (args.code === "session_not_resizable") {
-    return {
-      notice: { reason: "session_not_resizable" },
+      notice: { reason: args.code },
+      ...SERVER_ERROR_SIDE_EFFECTS[args.code],
     };
   }
 

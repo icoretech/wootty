@@ -112,7 +112,7 @@ export class TransportLifecycleService {
     this.deps = deps;
   }
 
-  sendPayload(payload: TerminalClientMessage): boolean {
+  sendPayload = (payload: TerminalClientMessage): boolean => {
     if (!this.ws || this.ws.readyState !== TRANSPORT_READY_STATE.OPEN) {
       return false;
     }
@@ -129,9 +129,9 @@ export class TransportLifecycleService {
       this.deps.dispatchEvent({ type: "socket-error" });
       return false;
     }
-  }
+  };
 
-  markPong(): void {
+  markPong = (): void => {
     if (this.pingSentAt !== null) {
       this.deps.dispatchEvent({
         type: "latency",
@@ -139,9 +139,9 @@ export class TransportLifecycleService {
       });
     }
     this.clearTimer("pongTimeout");
-  }
+  };
 
-  connect(): void {
+  connect = (): void => {
     if (this.ws && this.ws.readyState <= TRANSPORT_READY_STATE.OPEN) {
       return;
     }
@@ -206,9 +206,9 @@ export class TransportLifecycleService {
     ws.addEventListener("error", (event) => {
       this.onSocketError(ws, event);
     });
-  }
+  };
 
-  reconnectNow(): void {
+  reconnectNow = (): void => {
     this.closedByUser = false;
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.setCloseIntent("manual");
@@ -218,9 +218,9 @@ export class TransportLifecycleService {
       return;
     }
     this.connect();
-  }
+  };
 
-  reconnectWithEndpointChange(): void {
+  reconnectWithEndpointChange = (): void => {
     this.closedByUser = false;
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.clearLifecycleTimers();
@@ -241,9 +241,9 @@ export class TransportLifecycleService {
     }
 
     this.connect();
-  }
+  };
 
-  scheduleFreshConnection(): void {
+  scheduleFreshConnection = (): void => {
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.setCloseIntent("fresh");
     this.clearLifecycleTimers();
@@ -259,9 +259,9 @@ export class TransportLifecycleService {
 
     this.pendingFreshConnect = false;
     this.connect();
-  }
+  };
 
-  dispose(): void {
+  dispose = (): void => {
     this.closedByUser = true;
     this.pendingFreshConnect = false;
     this.setCloseIntent("normal");
@@ -269,7 +269,7 @@ export class TransportLifecycleService {
     if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
       this.ws.close(1000, "component unmount");
     }
-  }
+  };
 
   private onSocketError(
     socket: TerminalTransport,
