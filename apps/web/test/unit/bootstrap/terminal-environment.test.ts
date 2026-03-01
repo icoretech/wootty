@@ -59,7 +59,7 @@ describe("terminal environment backend endpoint resolution", () => {
     ).toContain("redacted");
   });
 
-  it("injects auth token into websocket endpoint query when configured", () => {
+  it("does not inject auth token into websocket endpoint query by default", () => {
     const resolved = resolveTerminalBackendEndpoints(
       createWindowLikeRef(`${HTTPS_PROTOCOL}//${APP_HOST}`),
       `${WSS_PROTOCOL}//${WS_HOST}/api/terminal`,
@@ -69,13 +69,13 @@ describe("terminal environment backend endpoint resolution", () => {
     expect(resolved).toEqual({
       ok: true,
       endpoints: {
-        terminalWsUrl: `${WSS_PROTOCOL}//${WS_HOST}/api/terminal?token=secret-token`,
+        terminalWsUrl: `${WSS_PROTOCOL}//${WS_HOST}/api/terminal`,
         sessionsHttpUrl: `${HTTPS_PROTOCOL}//${WS_HOST}/api/sessions`,
       },
     });
   });
 
-  it("returns typed issue when auth token injection receives malformed websocket URL", () => {
+  it("returns typed issue when websocket URL is malformed", () => {
     const resolved = resolveTerminalBackendEndpoints(
       createWindowLikeRef(`${HTTPS_PROTOCOL}//${APP_HOST}`),
       "ws://[::1",
