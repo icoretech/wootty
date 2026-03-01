@@ -3,26 +3,18 @@ import type { FloatingControlsAction } from "../../commands/floating-controls/ac
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
-import { useSessionAttachmentController } from "./session-domain-adapter";
+import { useConnectionCoordinator } from "../engine/connection-coordinator";
 import type { TerminalPlatformContext } from "./terminal-platform-composition";
 import type { ControllerUiState } from "./terminal-session-domain";
-import { useTransportRuntimeBridge } from "./transport-runtime-adapter";
+import { useTerminalSessionDomain } from "./terminal-session-domain";
 import { useUiBindingsController } from "./ui-command-adapter";
 
 type TerminalDomainController = {
   uiState: ControllerUiState;
-  sessionState: ReturnType<
-    typeof useSessionAttachmentController
-  >["sessionState"];
-  connectionRuntime: ReturnType<
-    typeof useTransportRuntimeBridge
-  >["connectionRuntime"];
-  connectionTransport: ReturnType<
-    typeof useTransportRuntimeBridge
-  >["connectionTransport"];
-  connectionTelemetry: ReturnType<
-    typeof useTransportRuntimeBridge
-  >["connectionTelemetry"];
+  sessionState: ReturnType<typeof useTerminalSessionDomain>["sessionState"];
+  connectionRuntime: ReturnType<typeof useConnectionCoordinator>["runtime"];
+  connectionTransport: ReturnType<typeof useConnectionCoordinator>["transport"];
+  connectionTelemetry: ReturnType<typeof useConnectionCoordinator>["telemetry"];
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
   dispatchSessionMenu: (action: SessionMenuAction) => void;
   dispatchStatusBar: (action: StatusBarAction) => void;
@@ -41,14 +33,26 @@ export function useTerminalDomainController({
   sessionMenuRef: RefObject<HTMLDivElement | null>;
   sessionButtonRef: RefObject<HTMLDivElement | null>;
 }): TerminalDomainController {
-  const session = useSessionAttachmentController({
+  const session = useTerminalSessionDomain({
     environment,
     platform,
   });
-  const bridge = useTransportRuntimeBridge({
-    environment,
-    platform,
-    session,
+  const connection = useConnectionCoordinator({
+    createTransport: environment.createTransport,
+    loadRuntime: environment.loadRuntime,
+    wsUrl: session.wsUrl,
+    documentRef: platform.documentRef,
+    initialFontSize: session.uiState.initialFontSize,
+    sessionId: session.sessionState.sessionId,
+    attachMode: session.sessionState.attachMode,
+    hasActiveSession: session.sessionState.hasActiveSession,
+    transportEnabled: platform.backendResolution.ok,
+    publishNotice: session.publishNotice,
+    setSessionMode: session.sessionActions.setSessionMode,
+    applyReadySession: session.sessionActions.applyReadySession,
+    clearMissingSession: session.sessionActions.clearMissingSession,
+    refreshLiveSessions: session.sessionActions.refreshLiveSessions,
+    scheduler: platform.scheduler,
   });
   const commands = useUiBindingsController({
     appViewportRef,
@@ -56,15 +60,15 @@ export function useTerminalDomainController({
     sessionButtonRef,
     platform,
     session,
-    bridge,
+    connection,
   });
 
   return {
     uiState: session.uiState,
     sessionState: session.sessionState,
-    connectionRuntime: bridge.connectionRuntime,
-    connectionTransport: bridge.connectionTransport,
-    connectionTelemetry: bridge.connectionTelemetry,
+    connectionRuntime: connection.runtime,
+    connectionTransport: connection.transport,
+    connectionTelemetry: connection.telemetry,
     dispatchFloatingControls: commands.dispatchFloatingControls,
     dispatchSessionMenu: commands.dispatchSessionMenu,
     dispatchStatusBar: commands.dispatchStatusBar,

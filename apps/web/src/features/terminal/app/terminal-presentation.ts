@@ -1,5 +1,5 @@
 import type { ConnectionStatus } from "../contracts/connection";
-import type { AttachMode, SessionSnapshot } from "../contracts/session";
+import type { AttachMode, SessionSnapshot } from "../contracts/session/session";
 import {
   buildStatusAnnouncement,
   buildTerminalViewModels,

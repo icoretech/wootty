@@ -1,5 +1,5 @@
 import type { ConnectionStatus } from "../contracts/connection";
-import type { AttachMode } from "../contracts/session";
+import type { AttachMode } from "../contracts/session/session";
 import { shortSessionId, statusLabel } from "./formatters";
 
 export function buildDocumentTitle({

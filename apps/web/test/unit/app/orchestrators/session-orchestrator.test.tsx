@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
+import type { SessionsFetchResult } from "../../../../src/features/terminal/contracts/session/sessions-fetch";
 import { toUserNotice } from "../../../../src/features/terminal/notifications/user-notice";
 import type { Scheduler } from "../../../../src/features/terminal/platform/scheduler";
 import { useSessionOrchestrator } from "../../../../src/features/terminal/session/application/session-orchestrator";
@@ -8,7 +9,6 @@ import {
   LAST_SESSION_STORAGE_KEY,
   SESSION_HISTORY_STORAGE_KEY,
 } from "../../../../src/features/terminal/session/persistence/storage-keys";
-import type { SessionsFetchResult } from "../../../../src/features/terminal/session/protocol/sessions-fetch-contract";
 import { StorageDouble } from "../../../support/harness/storage-double";
 
 type SessionProbeProps = {

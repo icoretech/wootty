@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import type { AttachMode } from "../../../contracts/session";
+import type { AttachMode } from "../../../contracts/session/session";
 import { toProtocolFailureNotice } from "../../../notifications/mappers/protocol-failure-notice";
 import { toServerPolicyNotice } from "../../../notifications/mappers/server-error-policy-notice";
 import type { ProtocolNoticePublisher } from "../../../notifications/notice-contract";

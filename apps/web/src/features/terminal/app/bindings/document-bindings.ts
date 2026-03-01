@@ -1,6 +1,6 @@
 import { type RefObject, useEffect } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
-import type { AttachMode } from "../../contracts/session";
+import type { AttachMode } from "../../contracts/session/session";
 import { buildDocumentTitle } from "../../presentation/document-title";
 
 type SessionMenuDismissBindingArgs = {

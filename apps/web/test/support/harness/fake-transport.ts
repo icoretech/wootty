@@ -7,7 +7,7 @@ import {
   type TerminalTransportListener,
   type TerminalTransportMessageEvent,
   TRANSPORT_READY_STATE,
-} from "../../../src/features/terminal/contracts/transport";
+} from "../../../src/features/terminal/contracts/transport/transport";
 
 export class FakeTransport implements TerminalTransport {
   readyState = TRANSPORT_READY_STATE.CONNECTING;

@@ -1,4 +1,4 @@
-import type { SessionCandidate } from "../contracts/session";
+import type { SessionCandidate } from "../contracts/session/session";
 
 type SessionMenuRow = {
   readonly id: string;

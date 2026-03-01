@@ -6,6 +6,35 @@ import type { TerminalPlatformContext } from "../../../src/features/terminal/app
 import type { TerminalAppEnvironment } from "../../../src/features/terminal/environment/terminal-environment-contract";
 import { browserScheduler } from "../../../src/features/terminal/platform/scheduler";
 
+vi.mock(
+  "../../../src/features/terminal/app/engine/connection-coordinator",
+  () => ({
+    useConnectionCoordinator: () => ({
+      runtime: {
+        terminalElementRef: { current: null },
+        terminalReady: false,
+        clearTerminal: vi.fn(),
+        updateFontSize: vi.fn(),
+        fitAndSyncSize: vi.fn(),
+        resetRuntimeBuffers: vi.fn(),
+      },
+      transport: {
+        status: "connecting",
+        reconnectAttempt: 0,
+        latencyMs: null,
+        lastSocketFailure: "",
+        reconnectNow: vi.fn(),
+        scheduleFreshConnection: vi.fn(),
+      },
+      telemetry: {
+        outputBytes: 0,
+        queuedInputBytes: 0,
+        droppedInputBytes: 0,
+      },
+    }),
+  }),
+);
+
 function createEnvironment(): TerminalAppEnvironment {
   const storage = new Map<string, string>();
   const asStorage = {

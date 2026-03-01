@@ -1,4 +1,4 @@
-import type { TerminalTransportEventType } from "../../../src/features/terminal/contracts/transport";
+import type { TerminalTransportEventType } from "../../../src/features/terminal/contracts/transport/transport";
 
 type BrowserSocketEvent = Event | Record<string, unknown>;
 type Listener = (event: BrowserSocketEvent) => void;

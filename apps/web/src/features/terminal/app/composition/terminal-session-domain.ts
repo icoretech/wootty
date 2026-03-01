@@ -115,7 +115,7 @@ function useBackendResolutionNotice(
   }, [backendResolution, publishNotice]);
 }
 
-type TerminalSessionDomain = {
+export type TerminalSessionDomain = {
   uiState: ControllerUiState;
   sessionState: ReturnType<typeof useSessionOrchestrator>["state"];
   sessionActions: ReturnType<typeof useSessionOrchestrator>["actions"];

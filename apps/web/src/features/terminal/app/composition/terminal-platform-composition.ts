@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from "react";
 import type { TerminalBackendResolution } from "../../contracts/backend-resolution";
-import type { SessionsFetchResult } from "../../contracts/sessions-fetch";
+import type { SessionsFetchResult } from "../../contracts/session/sessions-fetch";
 import type { TerminalPlatformEnvironment } from "../../environment/terminal-environment-contract";
 import type { Scheduler } from "../../platform/scheduler";
 
@@ -8,35 +8,24 @@ function useFetchSessions(
   environment: TerminalPlatformEnvironment,
   backendResolution: TerminalBackendResolution,
 ): (options?: { signal?: AbortSignal }) => Promise<SessionsFetchResult> {
-  const sessionsHttpUrl = backendResolution.ok
-    ? backendResolution.endpoints.sessionsHttpUrl
-    : null;
-  const bootstrapIssue = backendResolution.ok ? null : backendResolution.issue;
   return useCallback(
     (options?: { signal?: AbortSignal }) => {
-      if (bootstrapIssue) {
+      if (!backendResolution.ok) {
         return Promise.resolve({
           ok: false,
           failure: {
             source: "fetch",
             reason: "bootstrap_error",
-            issue: bootstrapIssue,
+            issue: backendResolution.issue,
           },
         });
       }
-      if (!sessionsHttpUrl) {
-        return Promise.resolve({
-          ok: false,
-          failure: {
-            source: "fetch",
-            reason: "network_error",
-            cause: new Error("sessions endpoint unavailable"),
-          },
-        });
-      }
-      return environment.fetchSessionsPayload(sessionsHttpUrl, options);
+      return environment.fetchSessionsPayload(
+        backendResolution.endpoints.sessionsHttpUrl,
+        options,
+      );
     },
-    [bootstrapIssue, environment.fetchSessionsPayload, sessionsHttpUrl],
+    [backendResolution, environment.fetchSessionsPayload],
   );
 }
 

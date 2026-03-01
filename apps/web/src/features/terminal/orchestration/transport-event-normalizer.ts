@@ -4,7 +4,7 @@ import type {
   TerminalTransportFailureCode,
   TerminalTransportMessageEvent,
   TerminalTransportOpenEvent,
-} from "../contracts/transport";
+} from "../contracts/transport/transport";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;

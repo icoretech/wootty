@@ -1,4 +1,4 @@
-import { TRANSPORT_FAILURE_REASON_CODES } from "../../contracts/transport-failure-reason";
+import { TRANSPORT_FAILURE_REASON_CODES } from "../../contracts/transport/failure-reason";
 
 const TRANSPORT_NOTICE_REASON_CODES = [
   "attach_handshake_send_failed",

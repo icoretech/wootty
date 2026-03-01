@@ -15,7 +15,7 @@ import {
   type TransportEvent,
   type TransportState,
 } from "../../../../src/features/terminal/app/engine/transport/transport-state-machine";
-import type { TerminalTransportFailureCode } from "../../../../src/features/terminal/contracts/transport";
+import type { TerminalTransportFailureCode } from "../../../../src/features/terminal/contracts/transport/transport";
 import { createPingMessage } from "../../../../src/features/terminal/protocol/terminal-client-messages";
 import { FakeScheduler } from "../../../support/harness/fake-scheduler";
 import { FakeTransport } from "../../../support/harness/fake-transport";

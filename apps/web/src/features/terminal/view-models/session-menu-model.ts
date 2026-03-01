@@ -1,4 +1,4 @@
-import type { AttachMode } from "../contracts/session";
+import type { AttachMode } from "../contracts/session/session";
 
 export type SessionMenuModel = {
   sessionMenuOpen: boolean;

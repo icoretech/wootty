@@ -1,4 +1,4 @@
-import type { TerminalTransport } from "../../../src/features/terminal/contracts/transport";
+import type { TerminalTransport } from "../../../src/features/terminal/contracts/transport/transport";
 import { createBrowserTransport } from "../../../src/features/terminal/orchestration/browser-transport";
 import {
   type BrowserSocketMock,

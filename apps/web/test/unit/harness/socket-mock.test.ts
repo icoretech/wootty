@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TRANSPORT_READY_STATE } from "../../../src/features/terminal/contracts/transport";
+import { TRANSPORT_READY_STATE } from "../../../src/features/terminal/contracts/transport/transport";
 import { createWebSocketMockHarness } from "../../support/harness/socket-mock";
 import { runTransportContractSuite } from "../../support/harness/transport-contract-suite";
 

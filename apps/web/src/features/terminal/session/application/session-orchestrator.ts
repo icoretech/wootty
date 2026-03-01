@@ -6,8 +6,11 @@ import {
   useState,
 } from "react";
 import type { FailureNoticeState } from "../../app/engine/notice-throttle";
-import type { AttachMode, SessionSnapshot } from "../../contracts/session";
-import type { SessionsFetchResult } from "../../contracts/sessions-fetch";
+import type {
+  AttachMode,
+  SessionSnapshot,
+} from "../../contracts/session/session";
+import type { SessionsFetchResult } from "../../contracts/session/sessions-fetch";
 import type { TerminalStorageAccessResult } from "../../environment/terminal-environment-contract";
 import { toSessionRefreshFailureNotice } from "../../notifications/mappers/session-refresh-failure-notice";
 import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";

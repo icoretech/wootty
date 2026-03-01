@@ -1,4 +1,4 @@
-import type { SessionSnapshot } from "../../contracts/session";
+import type { SessionSnapshot } from "../../contracts/session/session";
 import {
   SESSION_SNAPSHOT_REQUIRED_FIELDS,
   SESSIONS_ENVELOPE_FIELD,

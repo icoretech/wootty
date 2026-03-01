@@ -4,7 +4,6 @@ export type ConnectionStatusFlag =
   | "runtime_error"
   | "protocol_incompatible"
   | "session_not_found"
-  | "attach_forbidden"
   | "remote_exit";
 
 type ConnectionStatusState = {
@@ -36,10 +35,6 @@ function projectStatus(
     statusFlag === "protocol_incompatible"
   ) {
     return "error";
-  }
-
-  if (statusFlag === "attach_forbidden") {
-    return transportStatus === "connected" ? "connected" : transportStatus;
   }
 
   if (statusFlag === "session_not_found" || statusFlag === "remote_exit") {

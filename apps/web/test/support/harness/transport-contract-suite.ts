@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { TerminalTransport } from "../../../src/features/terminal/contracts/transport";
-import { TRANSPORT_READY_STATE } from "../../../src/features/terminal/contracts/transport";
+import type { TerminalTransport } from "../../../src/features/terminal/contracts/transport/transport";
+import { TRANSPORT_READY_STATE } from "../../../src/features/terminal/contracts/transport/transport";
 import { TERMINAL_WIRE_CONTRACT_VERSION } from "../../../src/features/terminal/protocol/terminal-wire-schema";
 
 type TransportContractHarness = {
