@@ -3,7 +3,6 @@ import {
   type SetStateAction,
   useCallback,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -62,10 +61,12 @@ function useControllerUiState(
   getLocalStorage: TerminalDomainEnvironment["getLocalStorage"],
   onStorageFailure?: (failure: StorageAccessFailure) => void,
 ): ControllerUiState {
+  const initialFontSizeStateRef = useRef<InitialFontSizeState | null>(null);
+  if (initialFontSizeStateRef.current === null) {
+    initialFontSizeStateRef.current = readInitialFontSizeState(getLocalStorage);
+  }
   const { initialFontSize, bootstrapStorageFailures } =
-    useMemo<InitialFontSizeState>(() => {
-      return readInitialFontSizeState(getLocalStorage);
-    }, [getLocalStorage]);
+    initialFontSizeStateRef.current;
 
   useEffect(() => {
     if (!onStorageFailure) {
