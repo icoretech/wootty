@@ -10,7 +10,6 @@ import {
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
-import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
@@ -138,16 +137,9 @@ export function useTerminalSessionDomain({
   const sessionState = session.state;
   const sessionActions = session.actions;
   const publishNotice = sessionActions.publishNotice;
-
-  const reportStorageFailure = useCallback(
-    (failure: StorageAccessFailure) => {
-      publishNotice(toStorageFailureNoticeDetails(failure));
-    },
-    [publishNotice],
-  );
   const uiState = useControllerUiState(
     environment.getLocalStorage,
-    reportStorageFailure,
+    sessionActions.reportStorageFailure,
   );
 
   useBackendResolutionNotice(platform.backendResolution, publishNotice);
