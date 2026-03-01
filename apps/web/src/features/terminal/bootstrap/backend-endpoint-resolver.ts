@@ -4,27 +4,12 @@ import type {
 } from "../contracts/backend-resolution";
 import { TERMINAL_BACKEND_ROUTE } from "../protocol/generated-wire-contract";
 import { TERMINAL_AUTH_POLICY } from "./auth-policy";
+import {
+  createBackendResolutionIssue,
+  isBackendResolutionIssue,
+} from "./url/backend-resolution-issue";
 import { redactTokenInUrlForNotice } from "./url/redact-token-in-url";
 import { resolveSocketUrl } from "./url/socket-url-resolution";
-
-function toIssue(
-  code: TerminalBackendResolutionIssue["code"],
-  details: string,
-): TerminalBackendResolutionIssue {
-  return {
-    code,
-    details,
-  };
-}
-
-function isBackendResolutionIssue(
-  value: unknown,
-): value is TerminalBackendResolutionIssue {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-  return "code" in value && "details" in value;
-}
 
 function resolveSessionUrlFromSocket(
   socketUrl: string,
@@ -39,7 +24,7 @@ function resolveSessionUrlFromSocket(
     ) {
       return {
         ok: false,
-        issue: toIssue(
+        issue: createBackendResolutionIssue(
           "socket_url_unsupported_protocol",
           `unsupported websocket protocol (${parsedSocketUrl.protocol})`,
         ),
@@ -55,7 +40,7 @@ function resolveSessionUrlFromSocket(
   } catch {
     return {
       ok: false,
-      issue: toIssue(
+      issue: createBackendResolutionIssue(
         "socket_url_invalid_format",
         "invalid websocket URL format",
       ),
@@ -86,7 +71,7 @@ function withAuthQueryParam(socketUrl: string, authToken?: string): string {
     parsed.searchParams.set("token", normalized);
     return parsed.toString();
   } catch {
-    throw toIssue(
+    throw createBackendResolutionIssue(
       "socket_url_invalid_format",
       `unable to apply auth token query param to websocket URL (${redactTokenInUrlForNotice(socketUrl)})`,
     );
@@ -114,7 +99,7 @@ export function resolveTerminalBackendEndpoints(
       ok: false,
       issue: isBackendResolutionIssue(issue)
         ? issue
-        : toIssue(
+        : createBackendResolutionIssue(
             "socket_url_invalid_format",
             "unable to apply websocket auth token",
           ),
@@ -124,7 +109,7 @@ export function resolveTerminalBackendEndpoints(
   if (!sessionsResolution.ok) {
     return {
       ok: false,
-      issue: toIssue(
+      issue: createBackendResolutionIssue(
         sessionsResolution.issue.code,
         `Derived websocket endpoint is invalid: ${redactTokenInUrlForNotice(terminalWsUrl)} (${sessionsResolution.issue.details})`,
       ),

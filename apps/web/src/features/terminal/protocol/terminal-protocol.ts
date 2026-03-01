@@ -1,3 +1,4 @@
+import { parseNonNegativeInteger } from "../contracts/non-negative-integer";
 import {
   TERMINAL_SERVER_ERROR_CODES,
   type TerminalServerErrorCode,
@@ -118,18 +119,6 @@ function parseExitMessage(
     code,
     signal,
   };
-}
-
-function parseNonNegativeInteger(value: unknown): number | null {
-  if (
-    typeof value !== "number" ||
-    !Number.isFinite(value) ||
-    !Number.isInteger(value) ||
-    value < 0
-  ) {
-    return null;
-  }
-  return value;
 }
 
 function parseErrorMessage(
