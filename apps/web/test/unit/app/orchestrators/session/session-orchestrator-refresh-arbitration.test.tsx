@@ -54,6 +54,15 @@ function SessionProbe({
         setLastRefreshResult(result.failure.reason);
       });
   };
+  const runTransportGatewayRefresh = () => {
+    void session.actions.requestTransportRefresh().then((result) => {
+      if (result.ok) {
+        setLastRefreshResult("ok");
+        return;
+      }
+      setLastRefreshResult(result.failure.reason);
+    });
+  };
 
   return (
     <section>
@@ -98,6 +107,15 @@ function SessionProbe({
         }}
       >
         transport-refresh
+      </button>
+      <button
+        type="button"
+        data-testid="transport-gateway-refresh"
+        onClick={() => {
+          runTransportGatewayRefresh();
+        }}
+      >
+        transport-gateway-refresh
       </button>
       <button
         type="button"
@@ -287,6 +305,48 @@ describe("session orchestrator", () => {
       vi.useRealTimers();
     }
   }, 20_000);
+
+  it("replays throttled transport-gateway refresh events after the minimum interval", async () => {
+    vi.useFakeTimers();
+    try {
+      const localStorageRef = new StorageDouble();
+      const sessionStorageRef = new StorageDouble();
+      const fetchSessions = vi.fn(async () => {
+        return {
+          ok: true,
+          payload: {
+            sessions: [],
+          },
+        } as const;
+      });
+
+      render(
+        <SessionProbe
+          localStorageRef={localStorageRef}
+          sessionStorageRef={sessionStorageRef}
+          fetchSessions={fetchSessions}
+        />,
+      );
+
+      fireEvent.click(screen.getByTestId("transport-gateway-refresh"));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetchSessions).toHaveBeenCalledTimes(1);
+
+      fireEvent.click(screen.getByTestId("transport-gateway-refresh"));
+      await vi.advanceTimersByTimeAsync(0);
+      expect(screen.getByTestId("refresh-result").textContent).toBe(
+        "request_superseded",
+      );
+
+      await vi.advanceTimersByTimeAsync(749);
+      expect(fetchSessions).toHaveBeenCalledTimes(1);
+      await vi.advanceTimersByTimeAsync(1);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(fetchSessions).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
   it("can republish non-throttled refresh notices after clearing", async () => {
     const localStorageRef = new StorageDouble();

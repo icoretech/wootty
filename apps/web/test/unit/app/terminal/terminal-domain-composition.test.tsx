@@ -22,7 +22,7 @@ vi.mock(
         status: "connecting",
         reconnectAttempt: 0,
         latencyMs: null,
-        lastSocketFailure: "",
+        lastSocketFailure: null,
         reconnectNow: vi.fn(),
         scheduleFreshConnection: vi.fn(),
       },

@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { useCallback } from "react";
 import { describe, expect, it, vi } from "vitest";
 import {
   reconnectDelayMs,
@@ -19,13 +20,18 @@ function useHarness(
   onSocketFailure: ReturnType<typeof vi.fn>,
   wsUrl = "ws://localhost/api/terminal",
 ) {
-  return useTransportOrchestrator({
-    createTransport: (url) => {
+  const createTransport = useCallback(
+    (url: string) => {
       transportUrls.push(url);
       const socket = new FakeTransport();
       sockets.push(socket);
       return socket;
     },
+    [sockets, transportUrls],
+  );
+
+  return useTransportOrchestrator({
+    createTransport,
     wsUrl,
     hasSessionContext: () => true,
     handlers: {
@@ -116,7 +122,11 @@ describe("transport orchestrator", () => {
     await waitFor(() => {
       expect(result.current.status).toBe("error");
     });
-    expect(result.current.lastSocketFailure).toContain("reconnect exhausted");
+    expect(result.current.lastSocketFailure).toMatchObject({
+      source: "close",
+      reasonCode: "socket_failure",
+      technicalDetail: expect.stringContaining("reconnect exhausted"),
+    });
     expect(onSocketFailure).toHaveBeenCalled();
   });
 
@@ -209,5 +219,35 @@ describe("transport orchestrator", () => {
 
     expect(sockets).toHaveLength(1);
     expect(initialSocket.closeCalls).toEqual([]);
+  });
+
+  it("recreates the lifecycle service when scheduler dependencies change", () => {
+    let scheduler: Scheduler = new FakeScheduler();
+    const sockets: FakeTransport[] = [];
+    const transportUrls: string[] = [];
+    const onSocketFailure = vi.fn();
+    const { result, rerender } = renderHook(() =>
+      useHarness(scheduler, sockets, transportUrls, onSocketFailure),
+    );
+
+    act(() => {
+      result.current.connect();
+      sockets[0].emitOpen();
+    });
+
+    const initialSocket = sockets[0];
+    scheduler = new FakeScheduler();
+    rerender();
+
+    expect(initialSocket.closeCalls).toContainEqual({
+      code: 1000,
+      reason: "component unmount",
+    });
+
+    act(() => {
+      result.current.connect();
+    });
+
+    expect(sockets).toHaveLength(2);
   });
 });

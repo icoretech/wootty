@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TerminalTransport } from "../../../contracts/transport/transport";
 import type { Scheduler } from "../../../platform/scheduler";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
@@ -11,6 +11,7 @@ import {
   initialTransportState,
   reduceTransportState,
   type TransportEvent,
+  type TransportFailureContext,
   type TransportState,
 } from "./state/transport-state-machine";
 
@@ -27,7 +28,7 @@ export type TransportOrchestrator = {
   status: TransportState["status"];
   reconnectAttempt: number;
   latencyMs: number | null;
-  lastSocketFailure: string;
+  lastSocketFailure: TransportFailureContext | null;
   sendPayload: (payload: TerminalClientMessage) => boolean;
   markPong: () => void;
   connect: () => void;
@@ -47,7 +48,18 @@ export function useTransportOrchestrator({
 }: UseTransportOrchestratorArgs): TransportOrchestrator {
   const [state, setState] = useState(initialTransportState);
   const stateRef = useRef(initialTransportState);
-  const lifecycleServiceRef = useRef<TransportLifecycleService | null>(null);
+  const runtimeContextRef = useRef({
+    wsUrl,
+    handlers,
+    hasSessionContext,
+    onSocketFailure,
+  });
+  runtimeContextRef.current = {
+    wsUrl,
+    handlers,
+    hasSessionContext,
+    onSocketFailure,
+  };
 
   const dispatchEvent = useCallback((event: TransportEvent) => {
     const nextState = reduceTransportState(stateRef.current, event);
@@ -55,21 +67,15 @@ export function useTransportOrchestrator({
     setState(nextState);
   }, []);
 
-  if (lifecycleServiceRef.current === null) {
-    lifecycleServiceRef.current = new TransportLifecycleService({
+  const lifecycleService = useMemo(() => {
+    return new TransportLifecycleService({
       createTransport,
       scheduler,
-      runtimeContext: {
-        wsUrl,
-        handlers,
-        hasSessionContext,
-        onSocketFailure,
-      },
+      runtimeContext: runtimeContextRef.current,
       getState: () => stateRef.current,
       dispatchEvent,
     });
-  }
-  const lifecycleService = lifecycleServiceRef.current;
+  }, [createTransport, dispatchEvent, scheduler]);
 
   useEffect(() => {
     lifecycleService.updateRuntimeContext({
@@ -83,7 +89,6 @@ export function useTransportOrchestrator({
   useEffect(
     () => () => {
       lifecycleService.dispose();
-      lifecycleServiceRef.current = null;
     },
     [lifecycleService],
   );

@@ -3,11 +3,18 @@ import { assertNever } from "../../../../lib/assert-never";
 
 export type SocketCloseIntent = "normal" | "fresh" | "manual" | "dispose";
 
+export type TransportFailureContext = {
+  source: "error" | "close";
+  reasonCode?: string;
+  code?: string | number;
+  technicalDetail?: string;
+};
+
 export type TransportState = {
   status: ConnectionStatus;
   reconnectAttempt: number;
   latencyMs: number | null;
-  lastSocketFailure: string;
+  lastSocketFailure: TransportFailureContext | null;
   closeIntent: SocketCloseIntent;
 };
 
@@ -15,7 +22,7 @@ export const initialTransportState: TransportState = {
   status: "connecting",
   reconnectAttempt: 0,
   latencyMs: null,
-  lastSocketFailure: "",
+  lastSocketFailure: null,
   closeIntent: "normal",
 };
 
@@ -26,7 +33,7 @@ export type TransportEvent =
   | { type: "socket-closed" }
   | { type: "socket-error" }
   | { type: "latency"; latencyMs: number }
-  | { type: "socket-failure"; context: string }
+  | { type: "socket-failure"; context: TransportFailureContext }
   | { type: "schedule-reconnect"; attempt: number }
   | { type: "clear-reconnect-attempts" };
 
@@ -52,7 +59,7 @@ export function reduceTransportState(
         status: "connected",
         reconnectAttempt: 0,
         latencyMs: null,
-        lastSocketFailure: "",
+        lastSocketFailure: null,
         closeIntent: "normal",
       };
     case "socket-closed":

@@ -86,7 +86,7 @@ function createConnectionState(): ConnectionCoordinatorState {
       status: "connecting",
       reconnectAttempt: 0,
       latencyMs: null,
-      lastSocketFailure: "",
+      lastSocketFailure: null,
       reconnectNow: vi.fn(),
       scheduleFreshConnection: vi.fn(),
     },
@@ -125,12 +125,6 @@ describe("ui command adapter", () => {
     };
     const session = createSessionDomain();
     const connection = createConnectionState();
-    const sessionPort = {
-      publishNoticeDetails: session.sessionActions.publishNoticeDetails,
-      setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
-      transitionSessionContext: session.sessionActions.transitionSessionContext,
-      requestSessionRefresh: session.sessionActions.requestSessionRefresh,
-    };
 
     const { result } = renderHook(() => {
       return useUiBindingsController({
@@ -139,7 +133,6 @@ describe("ui command adapter", () => {
         sessionButtonRef: createRef<HTMLDivElement>(),
         platform,
         session,
-        sessionPort,
         connection,
       });
     });

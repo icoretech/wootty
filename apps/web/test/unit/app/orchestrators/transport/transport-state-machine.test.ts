@@ -25,10 +25,18 @@ describe("transport state machine", () => {
     });
     const failed = reduceTransportState(withIntent, {
       type: "socket-failure",
-      context: "close code=4100 reason=reset",
+      context: {
+        source: "close",
+        code: 4100,
+        reasonCode: "socket_failure",
+        technicalDetail: "reset",
+      },
     });
 
     expect(failed.closeIntent).toBe("manual");
-    expect(failed.lastSocketFailure).toContain("code=4100");
+    expect(failed.lastSocketFailure).toMatchObject({
+      source: "close",
+      code: 4100,
+    });
   });
 });

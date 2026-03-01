@@ -2,6 +2,7 @@ import {
   type Dispatch,
   type SetStateAction,
   useCallback,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -17,7 +18,7 @@ import type {
   NoticeDetails,
   NoticePublisher,
 } from "../../notifications/notice-contract";
-import type { Scheduler } from "../../platform/scheduler";
+import type { Scheduler, SchedulerTimerHandle } from "../../platform/scheduler";
 import type { SessionRefreshFailure } from "../../session/protocol/session-refresh-failure-contract";
 import type { FailureNoticeState } from "../../shared/reliability/failure-notice-throttle";
 import type { StorageAccessFailure } from "../persistence/session-storage";
@@ -83,6 +84,9 @@ export function useSessionOrchestrator({
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
   const storageFailureNoticeRef = useRef<FailureNoticeState>(null);
   const lastTransportRefreshAtRef = useRef<number>(Number.NEGATIVE_INFINITY);
+  const pendingTransportRefreshTimerRef = useRef<SchedulerTimerHandle | null>(
+    null,
+  );
   const [liveSessions, setLiveSessions] = useState<SessionSnapshot[]>([]);
   const [attachMode, setAttachMode] = useState<AttachMode>("control");
   const [sessionMenuOpen, setSessionMenuOpenState] = useState<boolean>(false);
@@ -168,12 +172,40 @@ export function useSessionOrchestrator({
     },
   });
 
+  useEffect(() => {
+    return () => {
+      if (pendingTransportRefreshTimerRef.current !== null) {
+        scheduler.clearTimeout(pendingTransportRefreshTimerRef.current);
+        pendingTransportRefreshTimerRef.current = null;
+      }
+    };
+  }, [scheduler]);
+
+  const scheduleTrailingTransportRefresh = useCallback(
+    (now: number) => {
+      if (pendingTransportRefreshTimerRef.current !== null) {
+        return;
+      }
+      const elapsed = now - lastTransportRefreshAtRef.current;
+      const delayMs = Math.max(0, TRANSPORT_REFRESH_MIN_INTERVAL_MS - elapsed);
+      pendingTransportRefreshTimerRef.current = scheduler.setTimeout(() => {
+        pendingTransportRefreshTimerRef.current = null;
+        lastTransportRefreshAtRef.current = scheduler.now();
+        void requestSessionRefresh({
+          trigger: "transport_event",
+        });
+      }, delayMs);
+    },
+    [requestSessionRefresh, scheduler],
+  );
+
   const requestTransportRefresh = useCallback(() => {
     const now = scheduler.now();
     if (
       now - lastTransportRefreshAtRef.current <
       TRANSPORT_REFRESH_MIN_INTERVAL_MS
     ) {
+      scheduleTrailingTransportRefresh(now);
       return Promise.resolve({
         ok: false,
         failure: {
@@ -186,7 +218,7 @@ export function useSessionOrchestrator({
     return requestSessionRefresh({
       trigger: "transport_event",
     });
-  }, [requestSessionRefresh, scheduler]);
+  }, [requestSessionRefresh, scheduleTrailingTransportRefresh, scheduler]);
 
   const publishNoticeDetails = useCallback<NoticePublisher>(
     (details) => {

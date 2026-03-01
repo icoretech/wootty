@@ -7,30 +7,23 @@ import type {
   TransportFailure,
   TransportFailureSink,
 } from "../contracts/transport-failure-contract";
+import type { TransportFailureContext } from "../state/transport-state-machine";
 
 const SOCKET_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
 
 type TransportFailureReporterDeps = {
   scheduler: Scheduler;
-  dispatchSocketFailure: (context: string) => void;
+  dispatchSocketFailure: (context: TransportFailureContext) => void;
   onSocketFailure: TransportFailureSink;
 };
 
-function socketFailureContext(failure: TransportFailure): string {
-  const contextParts: string[] = [failure.source];
-  if (failure.reasonCode) {
-    contextParts.push(`reason=${failure.reasonCode}`);
-  }
-  if (typeof failure.code === "number" || typeof failure.code === "string") {
-    contextParts.push(`code=${failure.code}`);
-  }
-  if (
-    typeof failure.technicalDetail === "string" &&
-    failure.technicalDetail.length > 0
-  ) {
-    contextParts.push(`detail=${failure.technicalDetail}`);
-  }
-  return contextParts.join(" ");
+function toFailureContext(failure: TransportFailure): TransportFailureContext {
+  return {
+    source: failure.source,
+    reasonCode: failure.reasonCode,
+    code: failure.code,
+    technicalDetail: failure.technicalDetail,
+  };
 }
 
 function stableFailureCode(code: TransportFailure["code"]): string {
@@ -62,8 +55,7 @@ export class TransportFailureReporter {
   }
 
   report(failure: Omit<TransportFailure, "noticeMessage">): void {
-    const context = socketFailureContext(failure);
-    this.deps.dispatchSocketFailure(context);
+    this.deps.dispatchSocketFailure(toFailureContext(failure));
 
     const noticeKey = [
       failure.source,
