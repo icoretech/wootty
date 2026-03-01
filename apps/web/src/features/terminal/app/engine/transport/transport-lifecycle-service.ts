@@ -1,4 +1,3 @@
-import { redactTokenInUrlForNotice } from "../../../bootstrap/url/redact-token-in-url";
 import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type {
   TerminalTransport,
@@ -8,13 +7,13 @@ import type {
   TerminalTransportMessageEvent,
 } from "../../../contracts/transport/transport";
 import { TRANSPORT_READY_STATE } from "../../../contracts/transport/transport";
-import type {
-  Scheduler,
-  SchedulerTimerHandle,
-} from "../../../platform/scheduler";
+import type { Scheduler } from "../../../platform/scheduler";
 import { createPingMessage } from "../../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../../protocol/terminal-wire-schema";
-import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
+import {
+  type TransportBootstrapFailureReasonCode,
+  TransportConnectionBootstrap,
+} from "./transport-connection-bootstrap";
 import {
   type SocketFailureSource,
   TransportFailureReporter,
@@ -26,13 +25,15 @@ import {
   TERMINAL_CLOSE_CODE,
   TERMINAL_RECONNECT_POLICY,
 } from "./transport-policy";
+import { TransportReconnectController } from "./transport-reconnect-controller";
+import { TransportSocketEventBridge } from "./transport-socket-event-bridge";
 import type {
   SocketCloseIntent,
   TransportEvent,
   TransportState,
 } from "./transport-state-machine";
 
-type TransportHandlers = {
+export type TransportHandlers = {
   onOpen: () => void;
   onMessage: (event: TerminalTransportMessageEvent) => void;
 };
@@ -54,59 +55,14 @@ type TransportLifecycleServiceDeps = {
   dispatchEvent: (event: TransportEvent) => void;
 };
 
-type TimerHandle = SchedulerTimerHandle | null;
-type WsEndpointResolution =
-  | { ok: true; wsUrl: string }
-  | {
-      ok: false;
-      reasonCode:
-        | "endpoint_unavailable"
-        | "endpoint_invalid_format"
-        | "endpoint_unsupported_protocol";
-      debugDetail: string;
-    };
-
-function resolveWsEndpoint(endpoint: string | null): WsEndpointResolution {
-  const validation = validateWebsocketEndpoint(endpoint);
-  if (validation.ok) {
-    return {
-      ok: true,
-      wsUrl: validation.endpoint,
-    };
-  }
-  if (validation.reason === "unavailable") {
-    return {
-      ok: false,
-      reasonCode: "endpoint_unavailable",
-      debugDetail: "websocket endpoint unavailable",
-    };
-  }
-  if (validation.reason === "unsupported_protocol") {
-    return {
-      ok: false,
-      reasonCode: "endpoint_unsupported_protocol",
-      debugDetail: `invalid websocket endpoint protocol '${validation.protocol}'`,
-    };
-  }
-  return {
-    ok: false,
-    reasonCode: "endpoint_invalid_format",
-    debugDetail:
-      typeof endpoint === "string" && endpoint.length > 0
-        ? `invalid websocket endpoint '${redactTokenInUrlForNotice(endpoint)}'`
-        : "invalid websocket endpoint format",
-  };
-}
-
 export class TransportLifecycleService {
   private readonly deps: TransportLifecycleServiceDeps;
   private readonly heartbeatMonitor: TransportHeartbeatMonitor;
   private readonly failureReporter: TransportFailureReporter;
+  private readonly connectionBootstrap: TransportConnectionBootstrap;
+  private readonly reconnectController: TransportReconnectController;
+  private readonly socketEventBridge: TransportSocketEventBridge;
   private ws: TerminalTransport | null = null;
-  private reconnectTimer: TimerHandle = null;
-  private closedByUser = false;
-  private pendingFreshConnect = false;
-  private socketErrorSinceConnect = false;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
@@ -134,6 +90,14 @@ export class TransportLifecycleService {
       },
       onSocketFailure: this.deps.onSocketFailure,
     });
+    this.connectionBootstrap = new TransportConnectionBootstrap({
+      createTransport: this.deps.createTransport,
+      getWsUrl: this.deps.getWsUrl,
+    });
+    this.reconnectController = new TransportReconnectController({
+      scheduler: this.deps.scheduler,
+    });
+    this.socketEventBridge = new TransportSocketEventBridge();
   }
 
   sendPayload = (payload: TerminalClientMessage): boolean => {
@@ -175,57 +139,47 @@ export class TransportLifecycleService {
       reconnecting: this.deps.hasSessionContext(),
     });
 
-    const endpointResolution = resolveWsEndpoint(this.deps.getWsUrl());
-    if (!endpointResolution.ok) {
+    const bootstrapResult = this.connectionBootstrap.createSocket();
+    if (!bootstrapResult.ok) {
       this.failConnectionBootstrap(
-        endpointResolution.reasonCode,
-        endpointResolution.debugDetail,
+        bootstrapResult.reasonCode,
+        bootstrapResult.debugDetail,
+        bootstrapResult.cause,
       );
       return;
     }
 
-    let ws: TerminalTransport;
-    try {
-      ws = this.deps.createTransport(endpointResolution.wsUrl);
-    } catch (error) {
-      const reason =
-        error instanceof Error && error.message.length > 0
-          ? error.message
-          : "transport bootstrap failed";
-      this.failConnectionBootstrap("bootstrap_failed", reason, error);
-      return;
-    }
+    const ws = bootstrapResult.socket;
     this.ws = ws;
 
-    ws.addEventListener("open", () => {
-      if (this.ws !== ws) {
-        return;
-      }
-      this.socketErrorSinceConnect = false;
-      this.failureReporter.reset();
-      this.deps.dispatchEvent({ type: "connected" });
-      this.deps.getHandlers().onOpen();
-      this.heartbeatMonitor.start();
-    });
-
-    ws.addEventListener("message", (event) => {
-      if (this.ws !== ws) {
-        return;
-      }
-      this.deps.getHandlers().onMessage(event);
-    });
-
-    ws.addEventListener("close", (event) => {
-      this.onSocketClose(ws, event);
-    });
-
-    ws.addEventListener("error", (event) => {
-      this.onSocketError(ws, event);
+    this.socketEventBridge.bind(ws, {
+      onOpen: () => {
+        if (this.ws !== ws) {
+          return;
+        }
+        this.reconnectController.markSocketOpened();
+        this.failureReporter.reset();
+        this.deps.dispatchEvent({ type: "connected" });
+        this.deps.getHandlers().onOpen();
+        this.heartbeatMonitor.start();
+      },
+      onMessage: (event) => {
+        if (this.ws !== ws) {
+          return;
+        }
+        this.deps.getHandlers().onMessage(event);
+      },
+      onClose: (event) => {
+        this.onSocketClose(ws, event);
+      },
+      onError: (event) => {
+        this.onSocketError(ws, event);
+      },
     });
   };
 
   reconnectNow = (): void => {
-    this.closedByUser = false;
+    this.reconnectController.beginManualReconnect();
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.setCloseIntent("manual");
     this.clearLifecycleTimers();
@@ -237,7 +191,7 @@ export class TransportLifecycleService {
   };
 
   reconnectWithEndpointChange = (): void => {
-    this.closedByUser = false;
+    this.reconnectController.beginEndpointReconnect();
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
     this.clearLifecycleTimers();
 
@@ -261,9 +215,9 @@ export class TransportLifecycleService {
 
   scheduleFreshConnection = (): void => {
     this.deps.dispatchEvent({ type: "clear-reconnect-attempts" });
+    this.reconnectController.beginFreshConnect();
     this.setCloseIntent("fresh");
     this.clearLifecycleTimers();
-    this.pendingFreshConnect = true;
 
     if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
       this.ws.close(
@@ -273,13 +227,13 @@ export class TransportLifecycleService {
       return;
     }
 
-    this.pendingFreshConnect = false;
-    this.connect();
+    if (this.reconnectController.consumePendingFreshConnect()) {
+      this.connect();
+    }
   };
 
   dispose = (): void => {
-    this.closedByUser = true;
-    this.pendingFreshConnect = false;
+    this.reconnectController.beginDispose();
     this.setCloseIntent("normal");
     this.clearLifecycleTimers();
     if (this.ws && this.ws.readyState < TRANSPORT_READY_STATE.CLOSING) {
@@ -294,7 +248,7 @@ export class TransportLifecycleService {
     if (this.ws !== socket) {
       return;
     }
-    this.socketErrorSinceConnect = true;
+    this.reconnectController.markSocketError();
     this.failureReporter.report(
       "error",
       event.code,
@@ -317,21 +271,21 @@ export class TransportLifecycleService {
     }
 
     this.clearLifecycleTimers();
-    const shouldReportCloseFailure = !this.socketErrorSinceConnect;
-    this.socketErrorSinceConnect = false;
-    if (this.closedByUser) {
+    if (this.reconnectController.isClosedByUser()) {
+      this.reconnectController.clearUserCloseMarker();
       this.setCloseIntent("normal");
       this.deps.dispatchEvent({ type: "socket-closed" });
       return;
     }
 
+    const shouldReportCloseFailure =
+      this.reconnectController.consumeShouldReportCloseFailure();
     const closeIntent = this.deps.getState().closeIntent;
     this.setCloseIntent("normal");
 
     if (closeIntent === "fresh") {
       this.deps.dispatchEvent({ type: "set-connecting", reconnecting: false });
-      if (this.pendingFreshConnect) {
-        this.pendingFreshConnect = false;
+      if (this.reconnectController.consumePendingFreshConnect()) {
         this.connect();
       }
       return;
@@ -371,9 +325,12 @@ export class TransportLifecycleService {
       type: "schedule-reconnect",
       attempt: nextAttempt,
     });
-    this.reconnectTimer = this.deps.scheduler.setTimeout(() => {
-      this.connect();
-    }, reconnectDelayMs(attempt));
+    this.reconnectController.scheduleReconnect(
+      reconnectDelayMs(attempt),
+      () => {
+        this.connect();
+      },
+    );
   }
 
   private setCloseIntent(intent: SocketCloseIntent): void {
@@ -381,11 +338,7 @@ export class TransportLifecycleService {
   }
 
   private failConnectionBootstrap(
-    reasonCode:
-      | "endpoint_unavailable"
-      | "endpoint_invalid_format"
-      | "endpoint_unsupported_protocol"
-      | "bootstrap_failed",
+    reasonCode: TransportBootstrapFailureReasonCode,
     debugDetail: string,
     cause?: unknown,
   ): void {
@@ -401,16 +354,8 @@ export class TransportLifecycleService {
 
   private clearLifecycleTimers(): void {
     this.heartbeatMonitor.stop();
-    this.clearTimer("reconnectTimer");
-  }
-
-  private clearTimer(field: "reconnectTimer"): void {
-    if (this[field] === null) {
-      return;
-    }
-    this.deps.scheduler.clearTimeout(this[field]);
-    this[field] = null;
+    this.reconnectController.clearReconnectTimer();
   }
 }
 
-export type { SocketFailureSource, TransportHandlers };
+export type { SocketFailureSource };
