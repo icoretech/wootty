@@ -1,5 +1,5 @@
 import { type Dispatch, type SetStateAction, useCallback } from "react";
-import { COMMAND_CATALOG } from "../commands/catalog";
+import { isRuntimeCommand } from "../commands/command-registry";
 import type { FloatingControlsAction } from "../commands/floating-controls/actions";
 import {
   TERMINAL_RUNTIME_COMMAND,
@@ -15,26 +15,6 @@ import {
 import type { AttachMode } from "../contracts/session/session";
 import { assertNever } from "../lib/assert-never";
 import { DEFAULT_FONT_SIZE } from "./preferences/font-size-preferences";
-
-type ShortcutHandler = (typeof COMMAND_CATALOG)[number]["handler"];
-
-const COMMAND_HANDLER_BY_ID = new Map<ShortcutAction, ShortcutHandler>(
-  COMMAND_CATALOG.map((entry) => [entry.id, entry.handler] as const),
-);
-
-function resolveShortcutHandler(action: ShortcutAction): ShortcutHandler {
-  const handler = COMMAND_HANDLER_BY_ID.get(action);
-  if (handler) {
-    return handler;
-  }
-  throw new Error(`Unknown shortcut action '${action}'.`);
-}
-
-function isRuntimeShortcutAction(
-  action: ShortcutAction,
-): action is TerminalRuntimeCommand {
-  return resolveShortcutHandler(action) === "runtime";
-}
 
 type UseSessionMenuActionsArgs = {
   lastSessionId: string | null;
@@ -165,7 +145,7 @@ export function useTerminalCommandActions({
 
   const dispatchFloatingControls = useCallback(
     (action: FloatingControlsAction) => {
-      if (isRuntimeShortcutAction(action.type)) {
+      if (isRuntimeCommand(action.type)) {
         runRuntimeCommand(action.type);
         return;
       }
@@ -176,7 +156,7 @@ export function useTerminalCommandActions({
 
   const dispatchShortcutAction = useCallback(
     (action: ShortcutAction) => {
-      if (isRuntimeShortcutAction(action)) {
+      if (isRuntimeCommand(action)) {
         runRuntimeCommand(action);
         return;
       }

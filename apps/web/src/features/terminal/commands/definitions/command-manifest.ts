@@ -1,8 +1,11 @@
-import { TERMINAL_RUNTIME_COMMAND } from "../runtime-commands";
-import type { ShortcutAction } from "../shortcut-actions";
-import { VIEWPORT_UI_COMMAND } from "../viewport-commands";
-
-type CommandHandler = "runtime" | "viewport";
+import {
+  TERMINAL_RUNTIME_COMMAND,
+  type TerminalRuntimeCommand,
+} from "../runtime-commands";
+import {
+  VIEWPORT_UI_COMMAND,
+  type ViewportUiCommand,
+} from "../viewport-commands";
 
 type FloatingControlBinding = {
   testId: string;
@@ -15,12 +18,23 @@ type FloatingControlBinding = {
     | "fullscreen";
 };
 
-type CommandManifestEntry = {
-  id: ShortcutAction;
-  handler: CommandHandler;
+type RuntimeCommandManifestEntry = {
+  id: TerminalRuntimeCommand;
+  handler: "runtime";
   shortcutCode: string;
   floatingControl?: FloatingControlBinding;
 };
+
+type ViewportCommandManifestEntry = {
+  id: ViewportUiCommand;
+  handler: "viewport";
+  shortcutCode: string;
+  floatingControl?: FloatingControlBinding;
+};
+
+type CommandManifestEntry =
+  | RuntimeCommandManifestEntry
+  | ViewportCommandManifestEntry;
 
 export const COMMAND_MANIFEST = [
   {

@@ -4,12 +4,12 @@ import type { ShortcutAction } from "./shortcut-actions";
 
 type CommandRegistry = {
   commandByShortcutCode: Map<string, ShortcutAction>;
-  runtimeCommands: Set<TerminalRuntimeCommand>;
+  runtimeCommands: Set<ShortcutAction>;
 };
 
 function buildCommandRegistry(): CommandRegistry {
   const commandByShortcutCode = new Map<string, ShortcutAction>();
-  const runtimeCommands = new Set<TerminalRuntimeCommand>();
+  const runtimeCommands = new Set<ShortcutAction>();
 
   for (const command of COMMAND_CATALOG) {
     if (commandByShortcutCode.has(command.shortcutCode)) {
@@ -19,7 +19,7 @@ function buildCommandRegistry(): CommandRegistry {
     }
     commandByShortcutCode.set(command.shortcutCode, command.id);
     if (command.handler === "runtime") {
-      runtimeCommands.add(command.id as TerminalRuntimeCommand);
+      runtimeCommands.add(command.id);
     }
   }
 
@@ -40,7 +40,5 @@ export function resolveCommandFromShortcutCode(
 export function isRuntimeCommand(
   command: ShortcutAction,
 ): command is TerminalRuntimeCommand {
-  return COMMAND_REGISTRY.runtimeCommands.has(
-    command as TerminalRuntimeCommand,
-  );
+  return COMMAND_REGISTRY.runtimeCommands.has(command);
 }
