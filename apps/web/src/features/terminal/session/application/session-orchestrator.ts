@@ -83,6 +83,7 @@ type SessionOrchestratorState = {
     publishNotice: (details: NoticeDetails) => void;
     publishSessionNotice: (message: string) => void;
     clearSessionNotice: () => void;
+    reportStorageFailure: (failure: StorageAccessFailure) => void;
     setSessionMode: (mode: AttachMode) => void;
     refreshLiveSessions: (
       request: SessionRefreshRequest,
@@ -401,6 +402,7 @@ export function useSessionOrchestrator({
       publishNotice,
       publishSessionNotice,
       clearSessionNotice,
+      reportStorageFailure,
       setSessionMode,
       refreshLiveSessions,
       applyReadySession,
