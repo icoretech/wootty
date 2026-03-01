@@ -2,6 +2,7 @@ package protocol
 
 import "testing"
 
+// @trace FR-1 protocol-parse-attach
 func TestParseAttach(t *testing.T) {
 	msg, err := ParseClientMessage([]byte(`{"type":"attach","version":1,"sessionId":"abc","cols":120,"rows":40}`))
 	if err != nil {

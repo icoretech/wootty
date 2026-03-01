@@ -2,6 +2,7 @@ package session
 
 import "testing"
 
+// @trace FR-5 history-trims-old-chunks
 func TestHistoryBufferTrimsOldChunks(t *testing.T) {
 	history := NewHistoryBuffer(5)
 	history.Append("abc")

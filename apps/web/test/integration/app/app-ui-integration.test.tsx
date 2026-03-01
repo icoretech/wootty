@@ -13,6 +13,7 @@ describe("App integration - UI behavior", () => {
     harness.cleanup();
   });
 
+  // @trace FR-7 ui-font-preference
   it("updates font size controls and persists preference", async () => {
     await harness.bootConnected("session-a");
 
@@ -34,6 +35,7 @@ describe("App integration - UI behavior", () => {
     expect(harness.runtime.terminals[0]?.options.fontSize).toBe(11);
   });
 
+  // @trace FR-8 ui-reconnect-a11y
   it("announces reconnect status changes for assistive tech", async () => {
     const ws = await harness.bootConnected("session-a");
 

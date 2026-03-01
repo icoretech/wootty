@@ -2,6 +2,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useConnectionCoordinator } from "../../../../../src/features/terminal/app/engine/connection-coordinator";
 import { browserScheduler } from "../../../../../src/features/terminal/platform/scheduler";
+import { FakeScheduler } from "../../../../support/harness/fake-scheduler";
 import { FakeTransport } from "../../../../support/harness/fake-transport";
 
 let runtimeBridgeMock: {
@@ -165,5 +166,51 @@ describe("connection coordinator lifecycle", () => {
         reason: "component unmount",
       },
     ]);
+  });
+
+  it("cancels scheduled reconnect work when coordinator unmounts", async () => {
+    const scheduler = new FakeScheduler();
+    const sockets: FakeTransport[] = [];
+    const createTransport = vi.fn((_url: string) => {
+      const socket = new FakeTransport();
+      sockets.push(socket);
+      return socket;
+    });
+
+    const { unmount } = renderHook(() => {
+      return useConnectionCoordinator({
+        createTransport,
+        loadRuntime: vi.fn(async () => {
+          throw new Error("loadRuntime should not run in lifecycle mock");
+        }),
+        wsUrl: "ws://localhost/api/terminal",
+        documentRef: null,
+        initialFontSize: 12,
+        sessionId: null,
+        attachMode: "control",
+        hasActiveSession: false,
+        transportEnabled: true,
+        bootstrapFailure: false,
+        publishNotice: vi.fn(),
+        setSessionMode: vi.fn(),
+        applyReadySession: vi.fn(),
+        clearMissingSession: vi.fn(),
+        requestTransportRefresh: async () => ({ ok: true }),
+        scheduler,
+      });
+    });
+
+    expect(sockets).toHaveLength(1);
+    sockets[0]?.emitOpen();
+    sockets[0]?.emitClose(1006, "network drop");
+
+    await waitFor(() => {
+      expect(createTransport).toHaveBeenCalledTimes(1);
+    });
+
+    unmount();
+    scheduler.advanceBy(10_000);
+
+    expect(createTransport).toHaveBeenCalledTimes(1);
   });
 });

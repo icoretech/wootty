@@ -140,6 +140,14 @@ async function assertGovernancePathsExist() {
     const coveredLanes = new Set();
     for (const assertion of requirement.assertions) {
       coveredLanes.add(assertion.lane);
+      const traceId =
+        typeof assertion.traceId === "string" ? assertion.traceId : null;
+      if (!traceId || traceId.trim().length === 0) {
+        semanticTraceabilityFailures.push(
+          `${requirement.id}: assertion is missing a stable traceId in ${assertion.path}`,
+        );
+        continue;
+      }
       const absolutePath = path.join(repoRoot, assertion.path);
       try {
         await fs.access(absolutePath);
@@ -162,9 +170,9 @@ async function assertGovernancePathsExist() {
           `${requirement.id}: assertion path has no executable tests ${assertion.path}`,
         );
       }
-      if (!source.includes(assertion.contains)) {
+      if (!source.includes(traceId)) {
         semanticTraceabilityFailures.push(
-          `${requirement.id}: assertion text not found in ${assertion.path}: ${assertion.contains}`,
+          `${requirement.id}: traceId not found in ${assertion.path}: ${traceId}`,
         );
       }
     }

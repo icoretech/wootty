@@ -82,6 +82,7 @@ function loadHttpRoutesContract(): HttpRoutesContract {
 }
 
 describe("terminal wire contract parity", () => {
+  // @trace FR-1 wire-contract-kinds
   it("keeps client/server message kinds aligned with the contract file", () => {
     const contract = loadWireContract();
     expect(contract.client_messages.types).toEqual(
