@@ -49,9 +49,9 @@ function createPlatformEnvironment(
   };
 }
 
-export function createTerminalAppEnvironment(
+export const createTerminalAppEnvironment = (
   options: TerminalEnvironmentOptions = {},
-): TerminalAppEnvironment {
+): TerminalAppEnvironment => {
   const envSocketUrl = resolveConfiguredSocketUrl(options);
   const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
   const platform = envSocketUrl
@@ -69,4 +69,4 @@ export function createTerminalAppEnvironment(
     domain,
   };
   return environment;
-}
+};
