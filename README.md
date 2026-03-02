@@ -116,6 +116,35 @@ docker compose --profile retention up --build wootty-retention
 docker compose --profile test up --build wootty-fake-pty
 ```
 
+Build your own image with custom binaries:
+
+```dockerfile
+# Dockerfile.custom
+FROM ghcr.io/icoretech/wootty:latest
+
+# Install additional runtime tools your command needs.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    rsync \
+    openssh-client \
+  && rm -rf /var/lib/apt/lists/*
+
+# Optional: add your own binary/script
+# COPY ./bin/my-tool /usr/local/bin/my-tool
+# RUN chmod +x /usr/local/bin/my-tool
+```
+
+```bash
+docker build -f Dockerfile.custom -t wootty:custom .
+docker run --rm -it -p 8080:8080 \
+  -e WOOTTY_COMMAND=/usr/bin/ssh \
+  -e WOOTTY_COMMAND_ARGS="user@example.com" \
+  wootty:custom
+```
+
+Use this pattern whenever `WOOTTY_COMMAND` depends on binaries not present in the default image.
+
 The container serves:
 
 - backend API/websocket on `/api/*`
@@ -163,7 +192,7 @@ Session controls:
 | `WOOTTY_DETACHED_TTL_MS` | `86400000` | Hard TTL for running detached sessions (24h). `0` disables this TTL |
 | `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
 | `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command in the `woottyd` runtime environment (host or container) |
-| `WOOTTY_COMMAND_ARGS` | _empty_ | Space-separated command args |
+| `WOOTTY_COMMAND_ARGS` | _empty_ | Shell-like command args string (supports quotes and escapes) |
 | `WOOTTY_CWD` | current directory | Process working directory |
 | `WOOTTY_STATIC_DIR` | auto-detected | Directory with built web assets |
 | `WOOTTY_AUTH_TOKEN` | _empty_ | Optional bearer token required by `/api/sessions` and `/api/terminal` when set |

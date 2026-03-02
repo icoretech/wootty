@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -126,5 +127,46 @@ func TestParseRunConfigUsesEnvCommandArgsAndFakePTY(t *testing.T) {
 	}
 	if cfg.DetachedTTLMS != 0 {
 		t.Fatalf("expected detached ttl from env 0, got %d", cfg.DetachedTTLMS)
+	}
+}
+
+func TestParseRunConfigParsesQuotedEnvCommandArgs(t *testing.T) {
+	cfg, err := ParseRunConfig(
+		[]string{"run"},
+		map[string]string{
+			"WOOTTY_COMMAND":      "/bin/bash",
+			"WOOTTY_COMMAND_ARGS": `-lc "echo hello world" --flag='value with spaces' ""`,
+		},
+		"/tmp/wootty/apps/server",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if cfg.Command != "/bin/bash" {
+		t.Fatalf("unexpected command: %q", cfg.Command)
+	}
+	if len(cfg.Args) != 4 {
+		t.Fatalf("expected four command args, got %d", len(cfg.Args))
+	}
+	if cfg.Args[0] != "-lc" || cfg.Args[1] != "echo hello world" || cfg.Args[2] != "--flag=value with spaces" || cfg.Args[3] != "" {
+		t.Fatalf("unexpected parsed command args: %#v", cfg.Args)
+	}
+}
+
+func TestParseRunConfigErrorsOnInvalidEnvCommandArgs(t *testing.T) {
+	_, err := ParseRunConfig(
+		[]string{"run"},
+		map[string]string{
+			"WOOTTY_COMMAND":      "/bin/bash",
+			"WOOTTY_COMMAND_ARGS": `"unterminated`,
+		},
+		"/tmp/wootty/apps/server",
+	)
+	if err == nil {
+		t.Fatal("expected parse error for invalid WOOTTY_COMMAND_ARGS")
+	}
+	if !strings.Contains(err.Error(), "Invalid WOOTTY_COMMAND_ARGS") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
