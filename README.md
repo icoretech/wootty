@@ -9,7 +9,7 @@
 
 WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome: a terminal experience that stays reliable under real pressure (resize storms, reconnects, long output, and unstable networks).
 
-![WooTTY UI screenshot](docs/assets/wootty-ui.png)
+![WooTTY UI screenshot](docs/assets/wootty-ui-demo.gif)
 
 ## Why WooTTY
 
@@ -59,6 +59,22 @@ Run dev with SSH alias target:
 
 ```bash
 WOOTTY_COMMAND=/usr/bin/ssh WOOTTY_COMMAND_ARGS="my-ssh-host-alias" pnpm dev
+```
+
+Run WooTTY against `codex exec` (non-interactive Codex task in the terminal session):
+
+```bash
+cd apps/server
+go run ./cmd/woottyd run --port 8080 \
+  codex exec --skip-git-repo-check --ephemeral "Reply with exactly: hello-from-codex"
+```
+
+Same flow using environment variables:
+
+```bash
+WOOTTY_COMMAND=codex \
+WOOTTY_COMMAND_ARGS='exec --skip-git-repo-check --ephemeral "Reply with exactly: hello-from-codex"' \
+pnpm dev
 ```
 
 - Web: `http://localhost:5173`
