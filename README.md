@@ -47,6 +47,11 @@ docker run --rm -it -p 8080:8080 ghcr.io/icoretech/wootty:latest
 
 Then open `http://127.0.0.1:8080`.
 
+Image flavors:
+
+- `ghcr.io/icoretech/wootty:latest` (or `:vX.Y.Z`): minimal runtime (`bash` + `ca-certificates`).
+- `ghcr.io/icoretech/wootty:latest-openssh` (or `:vX.Y.Z-openssh`): minimal runtime + `openssh-client`.
+
 Pin by version:
 
 ```bash
@@ -62,12 +67,21 @@ docker run --rm -it -p 8080:8080 \
   ghcr.io/icoretech/wootty:latest
 ```
 
+Run with SSH command support (OpenSSH flavor):
+
+```bash
+docker run --rm -it -p 8080:8080 \
+  -e WOOTTY_COMMAND=/usr/bin/ssh \
+  -e WOOTTY_COMMAND_ARGS="user@example.com" \
+  ghcr.io/icoretech/wootty:latest-openssh
+```
+
 Runtime scope note:
 
 - `WOOTTY_COMMAND` is executed by `woottyd` in its own runtime environment.
 - If `woottyd` runs on your host, it can run host binaries.
 - If `woottyd` runs in Docker, it can only run binaries available inside the image/container filesystem.
-- For uncommon commands, build/use a custom image that includes the required binary.
+- Use `-openssh` flavor for SSH use cases; for other uncommon commands, build/use a custom image that includes required binaries.
 
 ### Run from Source
 
@@ -115,6 +129,8 @@ docker compose --profile retention up --build wootty-retention
 # deterministic fake PTY mode for tests/e2e
 docker compose --profile test up --build wootty-fake-pty
 ```
+
+The `wootty-ssh` profile builds the `final-openssh` target so `/usr/bin/ssh` is available in that container.
 
 Build your own image with custom binaries:
 

@@ -33,6 +33,10 @@ services:
     image: wootty:local-ssh
     container_name: wootty-ssh
     profiles: ["ssh"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: final-openssh
     ports:
       - "8082:8080"
     environment:
