@@ -1,4 +1,4 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { createServer } from "node:net";
 
 const DEFAULT_PORT = 8080;
@@ -12,24 +12,32 @@ if (!Number.isInteger(requestedPort) || requestedPort < 1 || requestedPort > MAX
 }
 
 async function isPortAvailable(port) {
-  const lsof = spawnSync("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN"], {
-    encoding: "utf8",
-  });
-  if (lsof.status === 0) {
-    return false;
-  }
-  if (lsof.error && lsof.error.code !== "ENOENT") {
-    return false;
+  const hosts = ["0.0.0.0", "::"];
+  for (const host of hosts) {
+    // Probe both IPv4 and IPv6 wildcard binds to avoid false "free port" results.
+    // eslint-disable-next-line no-await-in-loop
+    const hostAvailable = await new Promise((resolve) => {
+      const server = createServer();
+      server.unref();
+      server.on("error", (error) => {
+        const code = error?.code;
+        if (code === "EAFNOSUPPORT" || code === "EADDRNOTAVAIL") {
+          resolve(true);
+          return;
+        }
+        resolve(false);
+      });
+      server.listen({ host, port }, () => {
+        server.close(() => resolve(true));
+      });
+    });
+
+    if (!hostAvailable) {
+      return false;
+    }
   }
 
-  return new Promise((resolve) => {
-    const server = createServer();
-    server.unref();
-    server.on("error", () => resolve(false));
-    server.listen(port, "0.0.0.0", () => {
-      server.close(() => resolve(true));
-    });
-  });
+  return true;
 }
 
 async function findAvailablePort(startPort) {
