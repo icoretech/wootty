@@ -87,6 +87,11 @@ docker run --rm -it -p 8080:8080 \
 docker run --rm -it -p 8080:8080 \
   ghcr.io/icoretech/wootty:latest-openssh \
   run /usr/bin/ssh -o StrictHostKeyChecking=no -p 2222 user@example.com
+
+# SSH using a host alias from ~/.ssh/config
+docker run --rm -it -p 8080:8080 \
+  ghcr.io/icoretech/wootty:latest-openssh \
+  run /usr/bin/ssh icoretech-proxmox
 ```
 
 Runtime scope note:
@@ -101,6 +106,12 @@ Runtime scope note:
 ```bash
 pnpm install
 pnpm dev
+```
+
+Run dev with SSH alias target:
+
+```bash
+WOOTTY_COMMAND=/usr/bin/ssh WOOTTY_COMMAND_ARGS="icoretech-proxmox" pnpm dev
 ```
 
 - Web: `http://localhost:5173`
