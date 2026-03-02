@@ -1,4 +1,4 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { SessionSnapshot } from "../../contracts/session/session";
 import type { SessionsFetchResult } from "../../contracts/session/sessions-fetch";
 import type { Scheduler } from "../../platform/scheduler";
@@ -89,6 +89,26 @@ export function useSessionRefreshCoordinator({
   const latestRefreshRequestIdRef = useRef(0);
   const activeRefreshControllerRef = useRef<AbortController | null>(null);
   const pendingRefreshRef = useRef<PendingRefreshRequest | null>(null);
+  const fetchSessionsRef = useRef(fetchSessions);
+  const onRefreshFailureRef = useRef(onRefreshFailure);
+  const onRefreshSuccessRef = useRef(onRefreshSuccess);
+  const onInvalidEntriesRef = useRef(onInvalidEntries);
+
+  useEffect(() => {
+    fetchSessionsRef.current = fetchSessions;
+  }, [fetchSessions]);
+
+  useEffect(() => {
+    onRefreshFailureRef.current = onRefreshFailure;
+  }, [onRefreshFailure]);
+
+  useEffect(() => {
+    onRefreshSuccessRef.current = onRefreshSuccess;
+  }, [onRefreshSuccess]);
+
+  useEffect(() => {
+    onInvalidEntriesRef.current = onInvalidEntries;
+  }, [onInvalidEntries]);
 
   const requestSessionRefresh = useCallback(
     async (request: SessionRefreshRequest): Promise<SessionRefreshResult> => {
@@ -148,7 +168,7 @@ export function useSessionRefreshCoordinator({
           responseOrTimeout = await Promise.race<
             SessionsFetchResult | typeof refreshTimeoutToken
           >([
-            fetchSessions({
+            fetchSessionsRef.current({
               signal: refreshController.signal,
             }),
             new Promise<typeof refreshTimeoutToken>((resolve) => {
@@ -165,7 +185,7 @@ export function useSessionRefreshCoordinator({
           }
           if (timedOut) {
             const timeoutFailure = createRequestTimeoutFailure();
-            onRefreshFailure(timeoutFailure);
+            onRefreshFailureRef.current(timeoutFailure);
             return { ok: false, failure: timeoutFailure };
           }
           if (
@@ -179,13 +199,13 @@ export function useSessionRefreshCoordinator({
             reason: "network_error",
             cause: error,
           };
-          onRefreshFailure(failure);
+          onRefreshFailureRef.current(failure);
           return { ok: false, failure };
         }
 
         if (responseOrTimeout === refreshTimeoutToken) {
           const timeoutFailure = createRequestTimeoutFailure();
-          onRefreshFailure(timeoutFailure);
+          onRefreshFailureRef.current(timeoutFailure);
           return { ok: false, failure: timeoutFailure };
         }
 
@@ -195,7 +215,7 @@ export function useSessionRefreshCoordinator({
         }
         if (!response.ok) {
           if (shouldNotifyRefreshFailure(response.failure)) {
-            onRefreshFailure(response.failure);
+            onRefreshFailureRef.current(response.failure);
           }
           return { ok: false, failure: response.failure };
         }
@@ -209,7 +229,7 @@ export function useSessionRefreshCoordinator({
           }
           const failure = toRefreshPipelineFailure(error);
           if (shouldNotifyRefreshFailure(failure)) {
-            onRefreshFailure(failure);
+            onRefreshFailureRef.current(failure);
           }
           return { ok: false, failure };
         }
@@ -219,14 +239,14 @@ export function useSessionRefreshCoordinator({
         }
         if (!parsedResponse.ok) {
           if (shouldNotifyRefreshFailure(parsedResponse.failure)) {
-            onRefreshFailure(parsedResponse.failure);
+            onRefreshFailureRef.current(parsedResponse.failure);
           }
           return { ok: false, failure: parsedResponse.failure };
         }
 
-        onRefreshSuccess(parsedResponse.sessions);
+        onRefreshSuccessRef.current(parsedResponse.sessions);
         if (parsedResponse.invalidEntries > 0) {
-          onInvalidEntries(parsedResponse.invalidEntries);
+          onInvalidEntriesRef.current(parsedResponse.invalidEntries);
         }
         return { ok: true };
       } finally {
@@ -250,13 +270,7 @@ export function useSessionRefreshCoordinator({
         }
       }
     },
-    [
-      fetchSessions,
-      onInvalidEntries,
-      onRefreshFailure,
-      onRefreshSuccess,
-      scheduler,
-    ],
+    [scheduler],
   );
 
   return {
