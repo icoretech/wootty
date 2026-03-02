@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7](https://github.com/icoretech/wootty/compare/wootty-v0.2.6...wootty-v0.2.7) (2026-03-02)
+
+
+### Bug Fixes
+
+* **config:** trim host values from env and flag parsing ([#16](https://github.com/icoretech/wootty/issues/16)) ([1304922](https://github.com/icoretech/wootty/commit/1304922342f7027030ca6ec66a78d3ea553e527c))
+
 ## [0.2.6](https://github.com/icoretech/wootty/compare/wootty-v0.2.5...wootty-v0.2.6) (2026-03-02)
 
 
