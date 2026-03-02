@@ -96,6 +96,25 @@ docker build -t wootty:dev .
 docker run --rm -it -p 8080:8080 wootty:dev
 ```
 
+Run profile-based examples from the root `docker-compose.yml`:
+
+```bash
+# default shell/runtime
+docker compose up --build wootty
+
+# login shell
+docker compose --profile bash up --build wootty-bash
+
+# ssh command mode (set your destination in docker-compose.yml)
+docker compose --profile ssh up --build wootty-ssh
+
+# long-running detached session retention profile (72h TTL)
+docker compose --profile retention up --build wootty-retention
+
+# deterministic fake PTY mode for tests/e2e
+docker compose --profile test up --build wootty-fake-pty
+```
+
 The container serves:
 
 - backend API/websocket on `/api/*`
