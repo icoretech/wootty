@@ -7,9 +7,9 @@ import {
   buildStatusAnnouncement,
   buildTerminalViewModels,
 } from "../../view/terminal-view-models";
-import type { FloatingControlsModel } from "../../view-models/floating-controls-model";
-import type { SessionMenuModel } from "../../view-models/session-menu-model";
-import type { StatusBarModel } from "../../view-models/status-bar-model";
+import type { FloatingControlsModel } from "../../view/floating-controls-model";
+import type { SessionMenuModel } from "../../view/session-menu-model";
+import type { StatusBarModel } from "../../view/status-bar-model";
 import type { TransportFailureContext } from "../engine/transport/state/transport-state-machine";
 
 type TerminalPresentationInput = {
@@ -64,23 +64,15 @@ export function buildTerminalPresentationModel({
     sessionMenuModel,
     statusBarModel,
   } = buildTerminalViewModels({
-    controlsOpen: uiState.controlsOpen,
-    terminalReady: connectionRuntime.terminalReady,
-    fontSize: uiState.fontSize,
-    isFullscreen: uiState.isFullscreen,
-    sessionMenuOpen: sessionState.sessionMenuOpen,
-    lastSessionId: sessionState.lastSessionId,
-    sessionNotice: sessionState.sessionNotice,
-    liveSessions: sessionState.liveSessions,
-    sessionId: sessionState.sessionId,
-    sessionHistoryIds: sessionState.sessionHistoryIds,
-    status: connectionTransport.status,
-    latencyMs: connectionTransport.latencyMs,
-    attachMode: sessionState.attachMode,
-    reconnectAttempt: connectionTransport.reconnectAttempt,
-    queuedInputBytes: connectionTelemetry.queuedInputBytes,
-    droppedInputBytes: connectionTelemetry.droppedInputBytes,
-    outputBytes: connectionTelemetry.outputBytes,
+    ui: uiState,
+    session: sessionState,
+    connection: {
+      terminalReady: connectionRuntime.terminalReady,
+      status: connectionTransport.status,
+      latencyMs: connectionTransport.latencyMs,
+      reconnectAttempt: connectionTransport.reconnectAttempt,
+    },
+    telemetry: connectionTelemetry,
   });
   const statusAnnouncement = buildStatusAnnouncement({
     terminalReady: connectionRuntime.terminalReady,

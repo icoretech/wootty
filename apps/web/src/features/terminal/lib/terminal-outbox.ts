@@ -1,3 +1,5 @@
+import { utf8ByteLength } from "./terminal-format";
+
 const ONE_KIBIBYTE = 2 ** 10;
 const OUTBOX_MAX_BYTES = 512 * ONE_KIBIBYTE;
 
@@ -11,12 +13,6 @@ interface OutboxState {
   head: number;
   bytes: number;
   droppedBytes: number;
-}
-
-const encoder = new TextEncoder();
-
-function byteLength(value: string): number {
-  return encoder.encode(value).length;
 }
 
 export function createOutbox(): OutboxState {
@@ -54,7 +50,7 @@ export function enqueueOutbox(
   }
   const queuedChunk: OutboxChunk = {
     data: chunk,
-    bytes: byteLength(chunk),
+    bytes: utf8ByteLength(chunk),
   };
   outbox.chunks.push(queuedChunk);
   outbox.bytes += queuedChunk.bytes;

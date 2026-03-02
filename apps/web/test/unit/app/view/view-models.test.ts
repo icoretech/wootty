@@ -7,23 +7,31 @@ import {
 describe("terminal view-model mappers", () => {
   it("builds control, session, and status models from app state", () => {
     const models = buildTerminalViewModels({
-      controlsOpen: true,
-      terminalReady: true,
-      fontSize: 13,
-      isFullscreen: false,
-      sessionMenuOpen: true,
-      lastSessionId: "session-last",
-      sessionNotice: "updated",
-      liveSessions: [],
-      sessionId: "session-current",
-      sessionHistoryIds: ["session-old"],
-      status: "connected",
-      latencyMs: 22,
-      attachMode: "control",
-      reconnectAttempt: 0,
-      queuedInputBytes: 128,
-      droppedInputBytes: 64,
-      outputBytes: 1024,
+      ui: {
+        controlsOpen: true,
+        fontSize: 13,
+        isFullscreen: false,
+      },
+      session: {
+        sessionMenuOpen: true,
+        lastSessionId: "session-last",
+        sessionNotice: "updated",
+        liveSessions: [],
+        sessionId: "session-current",
+        sessionHistoryIds: ["session-old"],
+        attachMode: "control",
+      },
+      connection: {
+        terminalReady: true,
+        status: "connected",
+        latencyMs: 22,
+        reconnectAttempt: 0,
+      },
+      telemetry: {
+        queuedInputBytes: 128,
+        droppedInputBytes: 64,
+        outputBytes: 1024,
+      },
     });
 
     expect(models.statusText).toBe("Connected");

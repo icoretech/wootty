@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { utf8ByteLength } from "../../../lib/terminal-format";
 import { readTerminalTheme } from "../../../runtime/terminal-theme";
 import type {
   TerminalRuntime,
@@ -31,8 +32,6 @@ type RuntimeOrchestrator = {
   updateFontSize: (fontSize: number, onResized: () => void) => void;
   fitAndSyncSize: (onResize: (cols: number, rows: number) => void) => void;
 };
-
-const outputEncoder = new TextEncoder();
 
 export function useRuntimeOrchestrator({
   documentRef,
@@ -66,7 +65,7 @@ export function useRuntimeOrchestrator({
       return 0;
     }
     term.write(data);
-    return outputEncoder.encode(data).length;
+    return utf8ByteLength(data);
   }, []);
 
   const writeExit = useCallback((code: number, signal: number) => {

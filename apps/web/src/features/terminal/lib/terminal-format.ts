@@ -1,5 +1,10 @@
 const ONE_KIBIBYTE = 2 ** 10;
 const BYTE_UNITS = ["B", "KiB", "MiB", "GiB", "TiB"];
+const textEncoder = new TextEncoder();
+
+export function utf8ByteLength(value: string): number {
+  return textEncoder.encode(value).length;
+}
 
 export function formatLatency(latencyMs: number | null): string {
   if (latencyMs === null) {

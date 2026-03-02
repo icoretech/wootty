@@ -7,8 +7,6 @@ import {
 } from "../../preferences/font-size-policy";
 
 const FONT_SIZE_STORAGE_KEY = "wootty.fontSize";
-export { clampFontSize, DEFAULT_FONT_SIZE, FONT_SIZE_MAX, FONT_SIZE_MIN };
-
 export function readInitialFontSizeResult(storage: Storage | null): {
   fontSize: number;
   error: StorageAccessFailure | null;

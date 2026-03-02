@@ -15,7 +15,7 @@ import {
   floatingControlPolicy,
 } from "../commands/floating-controls/catalog";
 import type { FloatingControlIconToken } from "../commands/floating-controls/contracts";
-import type { FloatingControlsModel } from "../view-models/floating-controls-model";
+import type { FloatingControlsModel } from "../view/floating-controls-model";
 
 type FloatingControlsProps = {
   model: FloatingControlsModel;

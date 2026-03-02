@@ -10,17 +10,23 @@ import { handleIncomingServerMessage } from "./connection-message-policy";
 import type { ConnectionStatusFlag } from "./connection-status-projector";
 
 type UseConnectionMessageGatewayArgs = {
-  publishNotice: NoticePublisher;
-  setStatusFlag: (next: ConnectionStatusFlag | null) => void;
-  applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
-  clearMissingSession: () => void;
-  requestTransportRefresh: () => Promise<SessionRefreshResult>;
-  setSessionMode: (mode: AttachMode) => void;
-  writeServerError: (message: string) => void;
-  flushAfterReady: () => void;
-  writeOutputAndTrackBytes: (data: string) => void;
-  writeExit: (code: number, signal: number) => void;
-  markPong: () => void;
+  session: {
+    publishNotice: NoticePublisher;
+    applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
+    clearMissingSession: () => void;
+    requestTransportRefresh: () => Promise<SessionRefreshResult>;
+    setSessionMode: (mode: AttachMode) => void;
+  };
+  runtime: {
+    writeServerError: (message: string) => void;
+    flushAfterReady: () => void;
+    writeOutputAndTrackBytes: (data: string) => void;
+    writeExit: (code: number, signal: number) => void;
+  };
+  transport: {
+    setStatusFlag: (next: ConnectionStatusFlag | null) => void;
+    markPong: () => void;
+  };
 };
 
 type ConnectionMessageGateway = {
@@ -28,17 +34,20 @@ type ConnectionMessageGateway = {
 };
 
 export function useConnectionMessageGateway({
-  publishNotice,
-  setStatusFlag,
-  applyReadySession,
-  clearMissingSession,
-  requestTransportRefresh,
-  setSessionMode,
-  writeServerError,
-  flushAfterReady,
-  writeOutputAndTrackBytes,
-  writeExit,
-  markPong,
+  session: {
+    publishNotice,
+    applyReadySession,
+    clearMissingSession,
+    requestTransportRefresh,
+    setSessionMode,
+  },
+  runtime: {
+    writeServerError,
+    flushAfterReady,
+    writeOutputAndTrackBytes,
+    writeExit,
+  },
+  transport: { setStatusFlag, markPong },
 }: UseConnectionMessageGatewayArgs): ConnectionMessageGateway {
   const handleServerError = useCallback(
     (message: string, code?: TerminalServerErrorCode, rawCode?: string) => {

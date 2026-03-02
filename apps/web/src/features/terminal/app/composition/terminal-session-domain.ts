@@ -15,8 +15,8 @@ import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
+import { clampFontSize } from "../../preferences/font-size-policy";
 import {
-  clampFontSize,
   readInitialFontSizeResult,
   writeFontSizePreferenceResult,
 } from "../preferences/font-size-preferences";

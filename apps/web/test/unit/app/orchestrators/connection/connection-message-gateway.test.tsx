@@ -13,18 +13,39 @@ vi.mock(
 const mockedIncomingHandler = vi.mocked(handleIncomingServerMessage);
 
 function createGatewayArgs() {
-  return {
+  const session = {
     publishNotice: vi.fn(),
-    setStatusFlag: vi.fn(),
     applyReadySession: vi.fn(),
     clearMissingSession: vi.fn(),
     requestTransportRefresh: vi.fn(async () => ({ ok: true as const })),
     setSessionMode: vi.fn(),
+  };
+  const runtime = {
     writeServerError: vi.fn(),
     flushAfterReady: vi.fn(),
     writeOutputAndTrackBytes: vi.fn(),
     writeExit: vi.fn(),
+  };
+  const transport = {
+    setStatusFlag: vi.fn(),
     markPong: vi.fn(),
+  };
+  return {
+    session,
+    runtime,
+    transport,
+    // flat accessors for test assertions
+    publishNotice: session.publishNotice,
+    setStatusFlag: transport.setStatusFlag,
+    applyReadySession: session.applyReadySession,
+    clearMissingSession: session.clearMissingSession,
+    requestTransportRefresh: session.requestTransportRefresh,
+    setSessionMode: session.setSessionMode,
+    writeServerError: runtime.writeServerError,
+    flushAfterReady: runtime.flushAfterReady,
+    writeOutputAndTrackBytes: runtime.writeOutputAndTrackBytes,
+    writeExit: runtime.writeExit,
+    markPong: transport.markPong,
   };
 }
 

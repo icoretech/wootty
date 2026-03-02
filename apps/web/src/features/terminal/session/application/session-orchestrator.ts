@@ -220,21 +220,10 @@ export function useSessionOrchestrator({
     });
   }, [requestSessionRefresh, scheduleTrailingTransportRefresh, scheduler]);
 
-  const publishNoticeDetails = useCallback<NoticePublisher>(
-    (details) => {
-      publishNotice(details);
-    },
-    [publishNotice],
-  );
-
-  const setSessionMode = useCallback((mode: AttachMode) => {
-    setAttachMode(mode);
-  }, []);
-
   const applyReadySession = useCallback(
     (nextSessionId: string, readOnly: boolean) => {
       const nextMode: AttachMode = readOnly ? "watch" : "control";
-      setSessionMode(nextMode);
+      setAttachMode(nextMode);
       clearSessionNotice();
       setSessionId(nextSessionId);
       setSessionMenuOpenState(false);
@@ -247,21 +236,20 @@ export function useSessionOrchestrator({
       persistActiveSessionStorage,
       rememberSession,
       setSessionId,
-      setSessionMode,
     ],
   );
 
   const clearMissingSession = useCallback(() => {
     clearActiveSessionStorage();
     setSessionId(null);
-    setSessionMode("control");
+    setAttachMode("control");
     setSessionMenuOpenState(false);
-  }, [clearActiveSessionStorage, setSessionId, setSessionMode]);
+  }, [clearActiveSessionStorage, setSessionId]);
 
   const transitionSessionContext = useCallback(
     (nextSessionId: string | null, nextMode: AttachMode) => {
       clearSessionNotice();
-      setSessionMode(nextMode);
+      setAttachMode(nextMode);
       setSessionId(nextSessionId);
       setSessionMenuOpenState(false);
 
@@ -277,7 +265,6 @@ export function useSessionOrchestrator({
       clearSessionNotice,
       persistActiveSessionStorage,
       setSessionId,
-      setSessionMode,
     ],
   );
 
@@ -294,11 +281,11 @@ export function useSessionOrchestrator({
     },
     actions: {
       setSessionMenuOpen: setSessionMenuOpenState,
-      publishNoticeDetails,
+      publishNoticeDetails: publishNotice,
       publishSessionNotice,
       clearSessionNotice,
       reportStorageFailure,
-      setSessionMode,
+      setSessionMode: setAttachMode,
       requestSessionRefresh,
       requestTransportRefresh,
       applyReadySession,

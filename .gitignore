@@ -10,3 +10,4 @@ apps/server/woottyd
 .desloppify/
 findings.json
 scorecard.png
+.claude/

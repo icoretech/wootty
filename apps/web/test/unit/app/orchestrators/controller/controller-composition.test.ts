@@ -7,23 +7,31 @@ import {
 describe("controller composition helpers", () => {
   it("builds models from grouped session and connection state", () => {
     const models = buildTerminalViewModels({
-      controlsOpen: true,
-      terminalReady: true,
-      fontSize: 14,
-      isFullscreen: false,
-      sessionMenuOpen: false,
-      lastSessionId: "session-last",
-      sessionNotice: "",
-      liveSessions: [],
-      sessionId: "session-current",
-      sessionHistoryIds: ["session-last"],
-      attachMode: "control",
-      status: "connected",
-      latencyMs: 20,
-      reconnectAttempt: 0,
-      queuedInputBytes: 0,
-      droppedInputBytes: 0,
-      outputBytes: 42,
+      ui: {
+        controlsOpen: true,
+        fontSize: 14,
+        isFullscreen: false,
+      },
+      session: {
+        sessionMenuOpen: false,
+        lastSessionId: "session-last",
+        sessionNotice: "",
+        liveSessions: [],
+        sessionId: "session-current",
+        sessionHistoryIds: ["session-last"],
+        attachMode: "control",
+      },
+      connection: {
+        terminalReady: true,
+        status: "connected",
+        latencyMs: 20,
+        reconnectAttempt: 0,
+      },
+      telemetry: {
+        queuedInputBytes: 0,
+        droppedInputBytes: 0,
+        outputBytes: 42,
+      },
     });
     const statusAnnouncement = buildStatusAnnouncement({
       terminalReady: true,
@@ -40,23 +48,31 @@ describe("controller composition helpers", () => {
 
   it("exposes the ready bit and status through built view models", () => {
     const models = buildTerminalViewModels({
-      controlsOpen: true,
-      terminalReady: true,
-      fontSize: 14,
-      isFullscreen: false,
-      sessionMenuOpen: true,
-      lastSessionId: "session-last",
-      sessionNotice: "notice",
-      liveSessions: [],
-      sessionId: "session-current",
-      sessionHistoryIds: ["session-last"],
-      attachMode: "control",
-      status: "connected",
-      latencyMs: 42,
-      reconnectAttempt: 0,
-      queuedInputBytes: 0,
-      droppedInputBytes: 0,
-      outputBytes: 10,
+      ui: {
+        controlsOpen: true,
+        fontSize: 14,
+        isFullscreen: false,
+      },
+      session: {
+        sessionMenuOpen: true,
+        lastSessionId: "session-last",
+        sessionNotice: "notice",
+        liveSessions: [],
+        sessionId: "session-current",
+        sessionHistoryIds: ["session-last"],
+        attachMode: "control",
+      },
+      connection: {
+        terminalReady: true,
+        status: "connected",
+        latencyMs: 42,
+        reconnectAttempt: 0,
+      },
+      telemetry: {
+        queuedInputBytes: 0,
+        droppedInputBytes: 0,
+        outputBytes: 10,
+      },
     });
 
     const connectionContext = {

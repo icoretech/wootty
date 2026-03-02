@@ -2,7 +2,7 @@ import { ChevronDown, SlidersHorizontal, Wifi, WifiOff } from "lucide-react";
 import type { RefObject } from "react";
 import type { StatusBarAction } from "../commands/status-bar-actions";
 import { VIEWPORT_UI_COMMAND } from "../commands/viewport-commands";
-import type { StatusBarModel } from "../view-models/status-bar-model";
+import type { StatusBarModel } from "../view/status-bar-model";
 
 type StatusBarProps = {
   model: StatusBarModel;

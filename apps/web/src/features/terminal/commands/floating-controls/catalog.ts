@@ -133,24 +133,37 @@ function requireLookupValue<K, V>(
   );
 }
 
-export const FLOATING_CONTROL_CATALOG = buildFloatingControlCatalog(
-  COMMAND_FLOATING_CONTROL_REGISTRY,
-);
+let cachedCatalog: readonly FloatingControlCatalogEntry[] | null = null;
+let cachedLookup: FloatingControlLookup | null = null;
+
+function getCatalog(): readonly FloatingControlCatalogEntry[] {
+  if (cachedCatalog === null) {
+    cachedCatalog = Object.freeze(
+      buildFloatingControlCatalog(COMMAND_FLOATING_CONTROL_REGISTRY),
+    );
+  }
+  return cachedCatalog;
+}
+
+function getLookup(): FloatingControlLookup {
+  if (cachedLookup === null) {
+    cachedLookup = buildFloatingControlLookup(getCatalog());
+  }
+  return cachedLookup;
+}
+
+export const FLOATING_CONTROL_CATALOG = getCatalog();
 
 export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =
   Object.freeze([
     ...COMMAND_FLOATING_CONTROL_REGISTRY,
   ] satisfies readonly FloatingControlRegistryEntry[]);
 
-const FLOATING_CONTROL_LOOKUP = buildFloatingControlLookup(
-  FLOATING_CONTROL_CATALOG,
-);
-
 export function floatingControlPolicy(
   command: FloatingControlCommand,
 ): FloatingControlPolicy {
   return requireLookupValue(
-    FLOATING_CONTROL_LOOKUP.policyByAction,
+    getLookup().policyByAction,
     command,
     "floating control action policy",
   );
@@ -160,7 +173,7 @@ export function floatingControlDescriptor(
   metadataKey: FloatingControlMetadataKey,
 ): FloatingControlMetadata {
   return requireLookupValue(
-    FLOATING_CONTROL_LOOKUP.metadataByKey,
+    getLookup().metadataByKey,
     metadataKey,
     "floating control metadata",
   );

@@ -15,28 +15,36 @@ import {
 } from "../presentation/formatters";
 import { presentSessionCandidate } from "../presentation/session-menu-presenter";
 import { deriveSessionCandidates } from "../session/domain/session-candidates";
-import type { FloatingControlsModel } from "../view-models/floating-controls-model";
-import type { SessionMenuModel } from "../view-models/session-menu-model";
-import type { StatusBarModel } from "../view-models/status-bar-model";
+import type { FloatingControlsModel } from "./floating-controls-model";
+import type { SessionMenuModel } from "./session-menu-model";
+import type { StatusBarModel } from "./status-bar-model";
 
 type TerminalViewModelInput = {
-  controlsOpen: boolean;
-  terminalReady: boolean;
-  fontSize: number;
-  isFullscreen: boolean;
-  sessionMenuOpen: boolean;
-  lastSessionId: string | null;
-  sessionNotice: string;
-  liveSessions: SessionSnapshot[];
-  sessionId: string | null;
-  sessionHistoryIds: string[];
-  status: ConnectionStatus;
-  latencyMs: number | null;
-  attachMode: AttachMode;
-  reconnectAttempt: number;
-  queuedInputBytes: number;
-  droppedInputBytes: number;
-  outputBytes: number;
+  ui: {
+    controlsOpen: boolean;
+    fontSize: number;
+    isFullscreen: boolean;
+  };
+  session: {
+    sessionMenuOpen: boolean;
+    lastSessionId: string | null;
+    sessionNotice: string;
+    liveSessions: SessionSnapshot[];
+    sessionId: string | null;
+    sessionHistoryIds: string[];
+    attachMode: AttachMode;
+  };
+  connection: {
+    terminalReady: boolean;
+    status: ConnectionStatus;
+    latencyMs: number | null;
+    reconnectAttempt: number;
+  };
+  telemetry: {
+    queuedInputBytes: number;
+    droppedInputBytes: number;
+    outputBytes: number;
+  };
 };
 
 type TerminalViewModels = {
@@ -49,16 +57,18 @@ type TerminalViewModels = {
 export function buildTerminalViewModels(
   input: TerminalViewModelInput,
 ): TerminalViewModels {
-  const statusText = statusLabel(input.status);
-  const sessionDisplay = input.sessionId
-    ? shortSessionId(input.sessionId)
+  const { ui, session, connection, telemetry } = input;
+
+  const statusText = statusLabel(connection.status);
+  const sessionDisplay = session.sessionId
+    ? shortSessionId(session.sessionId)
     : "pending";
   const { liveSessionCandidates, historySessionCandidates } =
     deriveSessionCandidates({
-      liveSessions: input.liveSessions,
-      currentSessionId: input.sessionId,
-      sessionHistoryIds: input.sessionHistoryIds,
-      lastSessionId: input.lastSessionId,
+      liveSessions: session.liveSessions,
+      currentSessionId: session.sessionId,
+      sessionHistoryIds: session.sessionHistoryIds,
+      lastSessionId: session.lastSessionId,
     });
 
   const sessionMenuLiveRows = liveSessionCandidates.map((candidate) => {
@@ -77,39 +87,39 @@ export function buildTerminalViewModels(
   }));
 
   const floatingControlsModel: FloatingControlsModel = {
-    controlsOpen: input.controlsOpen,
-    terminalReady: input.terminalReady,
-    fontSize: input.fontSize,
+    controlsOpen: ui.controlsOpen,
+    terminalReady: connection.terminalReady,
+    fontSize: ui.fontSize,
     fontSizeMin: FONT_SIZE_MIN,
     fontSizeMax: FONT_SIZE_MAX,
     defaultFontSize: DEFAULT_FONT_SIZE,
-    isFullscreen: input.isFullscreen,
+    isFullscreen: ui.isFullscreen,
   };
 
   const sessionMenuModel: SessionMenuModel = {
-    sessionMenuOpen: input.sessionMenuOpen,
-    terminalReady: input.terminalReady,
-    canResumeLast: input.lastSessionId !== null,
-    sessionNotice: input.sessionNotice,
+    sessionMenuOpen: session.sessionMenuOpen,
+    terminalReady: connection.terminalReady,
+    canResumeLast: session.lastSessionId !== null,
+    sessionNotice: session.sessionNotice,
     liveRows: sessionMenuLiveRows,
     historyRows: sessionMenuHistoryRows,
   };
 
-  const tone = latencyTone(input.status, input.latencyMs);
+  const tone = latencyTone(connection.status, connection.latencyMs);
   const statusBarModel: StatusBarModel = {
-    controlsOpen: input.controlsOpen,
-    sessionMenuOpen: input.sessionMenuOpen,
-    status: input.status,
+    controlsOpen: ui.controlsOpen,
+    sessionMenuOpen: session.sessionMenuOpen,
+    status: connection.status,
     latencyTone: tone,
     statusText,
-    latencyText: formatLatency(input.latencyMs),
+    latencyText: formatLatency(connection.latencyMs),
     sessionDisplay,
-    attachMode: input.attachMode,
-    reconnectAttempt: input.reconnectAttempt,
-    queuedInputText: formatBytes(input.queuedInputBytes),
-    droppedInputText: formatBytes(input.droppedInputBytes),
-    outputText: formatBytes(input.outputBytes),
-    outputBytes: input.outputBytes,
+    attachMode: session.attachMode,
+    reconnectAttempt: connection.reconnectAttempt,
+    queuedInputText: formatBytes(telemetry.queuedInputBytes),
+    droppedInputText: formatBytes(telemetry.droppedInputBytes),
+    outputText: formatBytes(telemetry.outputBytes),
+    outputBytes: telemetry.outputBytes,
   };
 
   return {

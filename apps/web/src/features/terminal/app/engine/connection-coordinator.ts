@@ -161,18 +161,24 @@ export function useConnectionCoordinator({
     [publishNotice],
   );
   const { handleSocketMessage } = useConnectionMessageGateway({
-    publishNotice,
-    setStatusFlag,
-    applyReadySession,
-    clearMissingSession,
-    requestTransportRefresh,
-    setSessionMode,
-    writeServerError: runtimeBridge.writeServerError,
-    flushAfterReady: runtimeBridge.flushAfterReady,
-    writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
-    writeExit: runtimeBridge.writeExit,
-    markPong: () => {
-      markPongRef.current();
+    session: {
+      publishNotice,
+      applyReadySession,
+      clearMissingSession,
+      requestTransportRefresh,
+      setSessionMode,
+    },
+    runtime: {
+      writeServerError: runtimeBridge.writeServerError,
+      flushAfterReady: runtimeBridge.flushAfterReady,
+      writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
+      writeExit: runtimeBridge.writeExit,
+    },
+    transport: {
+      setStatusFlag,
+      markPong: () => {
+        markPongRef.current();
+      },
     },
   });
   const transportHandlers = useMemo(

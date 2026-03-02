@@ -36,16 +36,23 @@ function buildCommandRegistry(): CommandRegistry {
   };
 }
 
-const COMMAND_REGISTRY = buildCommandRegistry();
+let cachedRegistry: CommandRegistry | null = null;
+
+function getCommandRegistry(): CommandRegistry {
+  if (cachedRegistry === null) {
+    cachedRegistry = buildCommandRegistry();
+  }
+  return cachedRegistry;
+}
 
 export function resolveCommandFromShortcutCode(
   code: string,
 ): ShortcutAction | null {
-  return COMMAND_REGISTRY.commandByShortcutCode.get(code) ?? null;
+  return getCommandRegistry().commandByShortcutCode.get(code) ?? null;
 }
 
 function resolveHandlerForCommand(command: ShortcutAction): CommandHandlerKind {
-  const handler = COMMAND_REGISTRY.handlerByCommand.get(command);
+  const handler = getCommandRegistry().handlerByCommand.get(command);
   if (!handler) {
     throw new TerminalBootstrapInvariantError(
       `No command handler descriptor found for '${command}'.`,

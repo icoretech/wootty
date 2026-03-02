@@ -3,7 +3,7 @@ import { floatingControlPolicy } from "../../../../src/features/terminal/command
 import type { FloatingControlIconToken } from "../../../../src/features/terminal/commands/floating-controls/contracts";
 import { TERMINAL_RUNTIME_COMMAND } from "../../../../src/features/terminal/commands/runtime-commands";
 import { VIEWPORT_UI_COMMAND } from "../../../../src/features/terminal/commands/viewport-commands";
-import type { FloatingControlsModel } from "../../../../src/features/terminal/view-models/floating-controls-model";
+import type { FloatingControlsModel } from "../../../../src/features/terminal/view/floating-controls-model";
 
 const BASE_MODEL: FloatingControlsModel = {
   controlsOpen: true,

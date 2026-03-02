@@ -1,6 +1,6 @@
 import { Eye, History, Play, Plus } from "lucide-react";
 import type { SessionMenuAction } from "../commands/session-menu-actions";
-import type { SessionMenuModel } from "../view-models/session-menu-model";
+import type { SessionMenuModel } from "../view/session-menu-model";
 
 type SessionMenuProps = {
   model: SessionMenuModel;
