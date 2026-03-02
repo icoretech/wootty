@@ -77,7 +77,8 @@ pnpm dev
 ```
 
 - Web: `http://localhost:5173`
-- Server: `http://127.0.0.1:8080`
+- Server: `http://127.0.0.1:8080` (auto-falls back to next free port if `8080` is busy)
+- Set `WOOTTY_PORT` explicitly to force a fixed dev port.
 
 Production-like local run:
 

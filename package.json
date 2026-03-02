@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "concurrently -k -n server,web -c green,yellow \"cd apps/server && go run ./cmd/woottyd run\" \"pnpm --filter @icoretech/wootty-web dev\"",
+    "dev": "node scripts/dev.mjs",
     "build": "pnpm --filter @icoretech/wootty-web build && cd apps/server && go build ./...",
     "ci": "pnpm lint && git diff --exit-code && pnpm test && pnpm build && pnpm test:e2e",
     "ci:act:quality": "act pull_request -j quality",
