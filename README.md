@@ -62,6 +62,13 @@ docker run --rm -it -p 8080:8080 \
   ghcr.io/icoretech/wootty:latest
 ```
 
+Runtime scope note:
+
+- `WOOTTY_COMMAND` is executed by `woottyd` in its own runtime environment.
+- If `woottyd` runs on your host, it can run host binaries.
+- If `woottyd` runs in Docker, it can only run binaries available inside the image/container filesystem.
+- For uncommon commands, build/use a custom image that includes the required binary.
+
 ### Run from Source
 
 ```bash
@@ -135,7 +142,7 @@ Session controls:
 | `WOOTTY_RECONNECT_GRACE_MS` | `0` | Legacy detached-session cleanup timeout in ms (used only when `WOOTTY_DETACHED_TTL_MS=0`) |
 | `WOOTTY_DETACHED_TTL_MS` | `86400000` | Hard TTL for running detached sessions (24h). `0` disables this TTL |
 | `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
-| `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command |
+| `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command in the `woottyd` runtime environment (host or container) |
 | `WOOTTY_COMMAND_ARGS` | _empty_ | Space-separated command args |
 | `WOOTTY_CWD` | current directory | Process working directory |
 | `WOOTTY_STATIC_DIR` | auto-detected | Directory with built web assets |
