@@ -92,6 +92,34 @@ func TestParseRunConfigParsesAllowedOrigins(t *testing.T) {
 	}
 }
 
+func TestParseRunConfigTrimsHostFromEnvironment(t *testing.T) {
+	cfg, err := ParseRunConfig(
+		[]string{"run"},
+		map[string]string{"WOOTTY_HOST": " 127.0.0.1 "},
+		"/tmp/wootty/apps/server",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Host != "127.0.0.1" {
+		t.Fatalf("expected trimmed host from env, got %q", cfg.Host)
+	}
+}
+
+func TestParseRunConfigTrimsHostFromFlag(t *testing.T) {
+	cfg, err := ParseRunConfig(
+		[]string{"run", "--host", " 127.0.0.1 "},
+		map[string]string{},
+		"/tmp/wootty/apps/server",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Host != "127.0.0.1" {
+		t.Fatalf("expected trimmed host from flag, got %q", cfg.Host)
+	}
+}
+
 func TestParseRunConfigUnknownFlag(t *testing.T) {
 	_, err := ParseRunConfig([]string{"run", "--nope"}, map[string]string{}, "/tmp/wootty/apps/server")
 	if err == nil {
