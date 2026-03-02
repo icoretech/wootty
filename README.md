@@ -189,7 +189,6 @@ Session controls:
 | --- | --- | --- |
 | `WOOTTY_HOST` | `0.0.0.0` | Bind address |
 | `WOOTTY_PORT` | `8080` | HTTP/WebSocket port |
-| `WOOTTY_RECONNECT_GRACE_MS` | `0` | Legacy detached-session cleanup timeout in ms (used only when `WOOTTY_DETACHED_TTL_MS=0`) |
 | `WOOTTY_DETACHED_TTL_MS` | `86400000` | Hard TTL for running detached sessions (24h). `0` disables this TTL |
 | `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
 | `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command in the `woottyd` runtime environment (host or container) |
@@ -222,7 +221,7 @@ WOOTTY_COMMAND_ARGS='-lc "printf \"[%s]\\n\" \"\" \"non-empty\""'
 
 If `WOOTTY_COMMAND_ARGS` has invalid quoting (for example an unterminated quote), WooTTY fails fast on startup with a config error.
 
-CLI equivalents are available for key timing controls: `--reconnect-grace-ms` and `--detached-ttl-ms`.
+CLI equivalent is available for detached retention timing: `--detached-ttl-ms`.
 
 For non-local deployments, set `WOOTTY_AUTH_TOKEN` (and optionally `WOOTTY_ALLOWED_ORIGINS`) to protect session and websocket endpoints.
 
@@ -230,16 +229,14 @@ For non-local deployments, set `WOOTTY_AUTH_TOKEN` (and optionally `WOOTTY_ALLOW
 
 - Session metadata and PTY state are in-memory only.
 - If a terminal process exits, the session is removed immediately.
-- If a terminal process is still running and no controller/watcher is attached, the detached session retention timer is:
-  - `WOOTTY_DETACHED_TTL_MS` when `WOOTTY_DETACHED_TTL_MS > 0`
-  - otherwise `WOOTTY_RECONNECT_GRACE_MS` (legacy fallback)
-- If both `WOOTTY_DETACHED_TTL_MS=0` and `WOOTTY_RECONNECT_GRACE_MS=0`, running detached sessions are not timer-cleaned and remain available until the process exits or the server restarts.
+- If a terminal process is still running and no controller/watcher is attached:
+  - `WOOTTY_DETACHED_TTL_MS > 0`: session is cleaned up after that TTL.
+  - `WOOTTY_DETACHED_TTL_MS = 0`: timer cleanup is disabled; session remains available until process exit or server restart.
 - Server restart clears all sessions because there is no persistent session store.
 
 Recommended for long-running jobs with occasional reconnects:
 
 ```bash
-WOOTTY_RECONNECT_GRACE_MS=0
 WOOTTY_DETACHED_TTL_MS=259200000  # 72h
 ```
 
@@ -252,7 +249,6 @@ services:
     ports:
       - "8080:8080"
     environment:
-      WOOTTY_RECONNECT_GRACE_MS: "0"
       WOOTTY_DETACHED_TTL_MS: "259200000"
 ```
 

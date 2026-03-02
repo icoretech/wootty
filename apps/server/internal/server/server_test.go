@@ -510,6 +510,7 @@ func TestWatchModeIsReadOnly(t *testing.T) {
 
 func TestAttachMissingSessionReturnsSessionNotFoundCode(t *testing.T) {
 	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	cfg.DetachedTTLMS = 100
 	server := New(cfg)
 	defer server.Shutdown()
 
@@ -607,17 +608,16 @@ func TestCleanPathRejectsTraversal(t *testing.T) {
 func testRuntimeConfig(t *testing.T, fakePTY bool, command string, staticDir string) config.RuntimeConfig {
 	t.Helper()
 	return config.RuntimeConfig{
-		Host:             "127.0.0.1",
-		Port:             0,
-		ReconnectGraceMS: 100,
-		DetachedTTLMS:    0,
-		HistoryBytes:     4096,
-		FakePTY:          fakePTY,
-		Command:          command,
-		Args:             []string{},
-		Cwd:              t.TempDir(),
-		Env:              map[string]string{"TERM": "xterm-256color"},
-		StaticDir:        staticDir,
+		Host:          "127.0.0.1",
+		Port:          0,
+		DetachedTTLMS: 0,
+		HistoryBytes:  4096,
+		FakePTY:       fakePTY,
+		Command:       command,
+		Args:          []string{},
+		Cwd:           t.TempDir(),
+		Env:           map[string]string{"TERM": "xterm-256color"},
+		StaticDir:     staticDir,
 	}
 }
 
