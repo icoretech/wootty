@@ -1,0 +1,63 @@
+x-wootty-common: &wootty-common
+  build:
+    context: .
+    dockerfile: Dockerfile
+  image: wootty:local
+  restart: unless-stopped
+  environment:
+    WOOTTY_HOST: 0.0.0.0
+    WOOTTY_PORT: 8080
+
+services:
+  wootty:
+    <<: *wootty-common
+    container_name: wootty-default
+    ports:
+      - "8080:8080"
+
+  wootty-bash:
+    <<: *wootty-common
+    container_name: wootty-bash
+    profiles: ["bash"]
+    ports:
+      - "8081:8080"
+    environment:
+      WOOTTY_HOST: 0.0.0.0
+      WOOTTY_PORT: 8080
+      WOOTTY_COMMAND: /bin/bash
+      WOOTTY_COMMAND_ARGS: -l
+
+  wootty-ssh:
+    <<: *wootty-common
+    container_name: wootty-ssh
+    profiles: ["ssh"]
+    ports:
+      - "8082:8080"
+    environment:
+      WOOTTY_HOST: 0.0.0.0
+      WOOTTY_PORT: 8080
+      WOOTTY_COMMAND: /usr/bin/ssh
+      WOOTTY_COMMAND_ARGS: -o StrictHostKeyChecking=no user@example.com
+
+  wootty-retention:
+    <<: *wootty-common
+    container_name: wootty-retention
+    profiles: ["retention"]
+    ports:
+      - "8083:8080"
+    environment:
+      WOOTTY_HOST: 0.0.0.0
+      WOOTTY_PORT: 8080
+      WOOTTY_RECONNECT_GRACE_MS: "0"
+      WOOTTY_DETACHED_TTL_MS: "259200000"
+
+  wootty-fake-pty:
+    <<: *wootty-common
+    container_name: wootty-fake-pty
+    profiles: ["test"]
+    ports:
+      - "8084:8080"
+    environment:
+      WOOTTY_HOST: 0.0.0.0
+      WOOTTY_PORT: 8080
+      WOOTTY_FAKE_PTY: "1"
