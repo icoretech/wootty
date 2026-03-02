@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.4](https://github.com/icoretech/wootty/compare/wootty-v0.2.3...wootty-v0.2.4) (2026-03-02)
+
+
+### Bug Fixes
+
+* **config:** parse WOOTTY_COMMAND_ARGS with shell-like quoting ([85ff153](https://github.com/icoretech/wootty/commit/85ff153698afe1f242f9e31ad505e99d97e626c5))
+
 ## [0.2.3](https://github.com/icoretech/wootty/compare/wootty-v0.2.2...wootty-v0.2.3) (2026-03-02)
 
 
