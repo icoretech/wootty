@@ -230,8 +230,10 @@ For non-local deployments, set `WOOTTY_AUTH_TOKEN` (and optionally `WOOTTY_ALLOW
 
 - Session metadata and PTY state are in-memory only.
 - If a terminal process exits, the session is removed immediately.
-- If a terminal process is still running but no client is attached, the session is retained for `WOOTTY_DETACHED_TTL_MS`.
-- If `WOOTTY_DETACHED_TTL_MS=0`, cleanup falls back to `WOOTTY_RECONNECT_GRACE_MS` behavior.
+- If a terminal process is still running and no controller/watcher is attached, the detached session retention timer is:
+  - `WOOTTY_DETACHED_TTL_MS` when `WOOTTY_DETACHED_TTL_MS > 0`
+  - otherwise `WOOTTY_RECONNECT_GRACE_MS` (legacy fallback)
+- If both `WOOTTY_DETACHED_TTL_MS=0` and `WOOTTY_RECONNECT_GRACE_MS=0`, running detached sessions are not timer-cleaned and remain available until the process exits or the server restarts.
 - Server restart clears all sessions because there is no persistent session store.
 
 Recommended for long-running jobs with occasional reconnects:
@@ -241,12 +243,17 @@ WOOTTY_RECONNECT_GRACE_MS=0
 WOOTTY_DETACHED_TTL_MS=259200000  # 72h
 ```
 
-Example in Compose:
+Compose example:
 
 ```yaml
-environment:
-  WOOTTY_RECONNECT_GRACE_MS: "0"
-  WOOTTY_DETACHED_TTL_MS: "259200000"
+services:
+  wootty:
+    image: ghcr.io/icoretech/wootty:latest
+    ports:
+      - "8080:8080"
+    environment:
+      WOOTTY_RECONNECT_GRACE_MS: "0"
+      WOOTTY_DETACHED_TTL_MS: "259200000"
 ```
 
 ## Architecture
