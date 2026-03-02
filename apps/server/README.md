@@ -28,6 +28,12 @@ With frontend dev server:
 pnpm dev
 ```
 
+Command execution scope:
+
+- `WOOTTY_COMMAND` is launched by this server process.
+- When running `woottyd` directly on a host, command resolution uses host binaries.
+- When running in a container, command resolution is limited to binaries installed in that container image.
+
 ## Test
 
 ```bash
