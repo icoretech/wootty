@@ -39,4 +39,4 @@ RUN ln -s /usr/local/bin/wootty /usr/local/bin/woottyd \
 
 EXPOSE 8080
 
-CMD ["wootty", "run", "bash"]
+CMD ["wootty", "run"]
