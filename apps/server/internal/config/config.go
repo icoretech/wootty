@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 const (
@@ -95,7 +96,11 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 	if len(commandParts) == 0 {
 		if envCommand, ok := env["WOOTTY_COMMAND"]; ok && strings.TrimSpace(envCommand) != "" {
 			commandParts = append(commandParts, envCommand)
-			commandParts = append(commandParts, splitArgs(env["WOOTTY_COMMAND_ARGS"])...)
+			commandArgs, parseErr := splitArgs(env["WOOTTY_COMMAND_ARGS"])
+			if parseErr != nil {
+				return RuntimeConfig{}, errors.New("Invalid WOOTTY_COMMAND_ARGS: " + parseErr.Error())
+			}
+			commandParts = append(commandParts, commandArgs...)
 		}
 	}
 
@@ -173,12 +178,92 @@ func parseNonNegativeInt(value string, fallback int) int {
 	return parsed
 }
 
-func splitArgs(value string) []string {
-	parts := strings.Fields(value)
-	if len(parts) == 0 {
-		return nil
+func splitArgs(value string) ([]string, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
 	}
-	return parts
+
+	parts := make([]string, 0)
+	var current strings.Builder
+	tokenStarted := false
+	inSingleQuote := false
+	inDoubleQuote := false
+	escaped := false
+
+	flush := func() {
+		parts = append(parts, current.String())
+		current.Reset()
+		tokenStarted = false
+	}
+
+	for _, r := range value {
+		if escaped {
+			current.WriteRune(r)
+			tokenStarted = true
+			escaped = false
+			continue
+		}
+
+		if inSingleQuote {
+			if r == '\'' {
+				inSingleQuote = false
+				tokenStarted = true
+				continue
+			}
+			current.WriteRune(r)
+			tokenStarted = true
+			continue
+		}
+
+		if inDoubleQuote {
+			switch r {
+			case '"':
+				inDoubleQuote = false
+				tokenStarted = true
+			case '\\':
+				escaped = true
+				tokenStarted = true
+			default:
+				current.WriteRune(r)
+				tokenStarted = true
+			}
+			continue
+		}
+
+		if unicode.IsSpace(r) {
+			if tokenStarted {
+				flush()
+			}
+			continue
+		}
+
+		switch r {
+		case '\'':
+			inSingleQuote = true
+			tokenStarted = true
+		case '"':
+			inDoubleQuote = true
+			tokenStarted = true
+		case '\\':
+			escaped = true
+			tokenStarted = true
+		default:
+			current.WriteRune(r)
+			tokenStarted = true
+		}
+	}
+
+	if escaped {
+		return nil, errors.New("unterminated escape")
+	}
+	if inSingleQuote || inDoubleQuote {
+		return nil, errors.New("unterminated quote")
+	}
+	if tokenStarted {
+		flush()
+	}
+
+	return parts, nil
 }
 
 func cloneEnv(input map[string]string) map[string]string {
