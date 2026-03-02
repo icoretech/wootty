@@ -14,9 +14,18 @@ permissions:
 
 jobs:
   publish:
-    name: Build and Publish GHCR Image
+    name: Build and Publish GHCR Image (${{ matrix.variant }})
     if: github.ref_name == 'main'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - variant: base
+            target: final
+            tag_suffix: ""
+          - variant: openssh
+            target: final-openssh
+            tag_suffix: "-openssh"
 
     steps:
       - name: Prepare metadata
@@ -94,15 +103,16 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=${{ steps.prepare.outputs.version_tag }}
-            type=raw,value=${{ steps.prepare.outputs.noversion_tag }},enable=${{ steps.prepare.outputs.has_v_prefix == 'true' }}
-            type=raw,value=latest,enable=${{ steps.prepare.outputs.publish_latest == 'true' }}
+            type=raw,value=${{ steps.prepare.outputs.version_tag }}${{ matrix.tag_suffix }}
+            type=raw,value=${{ steps.prepare.outputs.noversion_tag }}${{ matrix.tag_suffix }},enable=${{ steps.prepare.outputs.has_v_prefix == 'true' }}
+            type=raw,value=latest${{ matrix.tag_suffix }},enable=${{ steps.prepare.outputs.publish_latest == 'true' }}
 
       - name: Build and publish image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
+          target: ${{ matrix.target }}
           platforms: ${{ steps.prepare.outputs.platforms }}
           push: ${{ steps.prepare.outputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
