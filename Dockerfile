@@ -45,6 +45,11 @@ COPY --from=server-builder /out/woottyd /usr/local/bin/wootty
 RUN ln -s /usr/local/bin/wootty /usr/local/bin/woottyd \
   && ln -s /usr/local/bin/wootty /app/apps/server/woottyd
 
+LABEL org.opencontainers.image.source="https://github.com/icoretech/wootty" \
+  org.opencontainers.image.url="https://github.com/icoretech/wootty" \
+  org.opencontainers.image.description="WooTTY browser terminal image with OpenSSH client runtime." \
+  org.opencontainers.image.licenses="MIT"
+
 EXPOSE 8080
 
 CMD ["wootty", "run"]
@@ -56,6 +61,11 @@ WORKDIR /app/apps/server
 COPY --from=server-builder /out/woottyd /usr/local/bin/wootty
 RUN ln -s /usr/local/bin/wootty /usr/local/bin/woottyd \
   && ln -s /usr/local/bin/wootty /app/apps/server/woottyd
+
+LABEL org.opencontainers.image.source="https://github.com/icoretech/wootty" \
+  org.opencontainers.image.url="https://github.com/icoretech/wootty" \
+  org.opencontainers.image.description="WooTTY browser terminal image with minimal bash runtime." \
+  org.opencontainers.image.licenses="MIT"
 
 EXPOSE 8080
 

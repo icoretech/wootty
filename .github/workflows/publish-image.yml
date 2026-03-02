@@ -23,9 +23,11 @@ jobs:
           - variant: base
             target: final
             tag_suffix: ""
+            oci_description: WooTTY browser terminal image with minimal bash runtime.
           - variant: openssh
             target: final-openssh
             tag_suffix: "-openssh"
+            oci_description: WooTTY browser terminal image with OpenSSH client runtime.
 
     steps:
       - name: Prepare metadata
@@ -100,12 +102,24 @@ jobs:
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
         with:
           images: ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=${{ steps.prepare.outputs.version_tag }}${{ matrix.tag_suffix }}
             type=raw,value=${{ steps.prepare.outputs.noversion_tag }}${{ matrix.tag_suffix }},enable=${{ steps.prepare.outputs.has_v_prefix == 'true' }}
             type=raw,value=latest${{ matrix.tag_suffix }},enable=${{ steps.prepare.outputs.publish_latest == 'true' }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=${{ matrix.oci_description }}
+            org.opencontainers.image.licenses=MIT
+          annotations: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.url=https://github.com/${{ github.repository }}
+            org.opencontainers.image.description=${{ matrix.oci_description }}
+            org.opencontainers.image.licenses=MIT
 
       - name: Build and publish image
         uses: docker/build-push-action@v6
@@ -117,5 +131,6 @@ jobs:
           push: ${{ steps.prepare.outputs.push == 'true' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.prepare.outputs.push == 'true' && steps.meta.outputs.annotations || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
