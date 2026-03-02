@@ -1,5 +1,7 @@
 import { spawn } from "node:child_process";
 import { createServer } from "node:net";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const DEFAULT_PORT = 8080;
 const MAX_PORT = 65535;
@@ -65,27 +67,101 @@ const env = {
   WOOTTY_DEV_PROXY_PORT: String(effectivePort),
 };
 
-const child = spawn(
-  "concurrently",
-  [
-    "-k",
-    "-n",
-    "server,web",
-    "-c",
-    "green,yellow",
-    "cd apps/server && go run ./cmd/woottyd run",
-    "pnpm --filter @icoretech/wootty-web dev",
-  ],
-  {
+const repoRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
+
+function pipeWithPrefix(stream, writer, prefix) {
+  let buffer = "";
+  stream.on("data", (chunk) => {
+    buffer += chunk.toString();
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      writer.write(`${prefix} ${line}\n`);
+    }
+  });
+  stream.on("end", () => {
+    if (buffer.length > 0) {
+      writer.write(`${prefix} ${buffer}\n`);
+    }
+  });
+}
+
+function startProcess(name, command, args, cwd) {
+  const child = spawn(command, args, {
+    cwd,
     env,
-    stdio: "inherit",
-  },
+    stdio: ["inherit", "pipe", "pipe"],
+  });
+
+  if (child.stdout) {
+    pipeWithPrefix(child.stdout, process.stdout, `[${name}]`);
+  }
+  if (child.stderr) {
+    pipeWithPrefix(child.stderr, process.stderr, `[${name}]`);
+  }
+
+  return child;
+}
+
+const server = startProcess("server", "go", ["run", "./cmd/woottyd", "run"], path.join(repoRoot, "apps/server"));
+const web = startProcess(
+  "web",
+  "pnpm",
+  ["exec", "vite", "--config", "config/build/vite.config.ts"],
+  path.join(repoRoot, "apps/web"),
 );
 
-child.on("exit", (code, signal) => {
-  if (signal) {
-    process.kill(process.pid, signal);
+let shuttingDown = false;
+let remaining = 2;
+let finalExitCode = 0;
+
+function stopChildren(signal) {
+  for (const child of [server, web]) {
+    if (!child.killed && child.exitCode === null) {
+      child.kill(signal);
+    }
+  }
+}
+
+function beginShutdown(signal, exitCode) {
+  if (typeof exitCode === "number") {
+    finalExitCode = Math.max(finalExitCode, exitCode);
+  }
+  if (shuttingDown) {
     return;
   }
-  process.exit(code ?? 1);
+  shuttingDown = true;
+  stopChildren(signal);
+}
+
+process.on("SIGINT", () => {
+  beginShutdown("SIGINT", 0);
 });
+process.on("SIGTERM", () => {
+  beginShutdown("SIGTERM", 0);
+});
+
+function bindLifecycle(name, child) {
+  child.on("error", (error) => {
+    process.stderr.write(`[${name}] failed to start: ${error.message}\n`);
+    beginShutdown("SIGTERM", 1);
+  });
+
+  child.on("exit", (code, signal) => {
+    if (!shuttingDown) {
+      if (signal !== null || (code ?? 0) !== 0) {
+        beginShutdown("SIGTERM", 1);
+      } else {
+        beginShutdown("SIGTERM", 0);
+      }
+    }
+
+    remaining -= 1;
+    if (remaining === 0) {
+      process.exit(finalExitCode);
+    }
+  });
+}
+
+bindLifecycle("server", server);
+bindLifecycle("web", web);
