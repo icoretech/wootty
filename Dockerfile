@@ -28,7 +28,7 @@ RUN cd apps/server && CGO_ENABLED=0 go build -o /out/woottyd ./cmd/woottyd
 FROM debian:bookworm-slim
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends bash ca-certificates \
+  && apt-get install -y --no-install-recommends bash ca-certificates openssh-client \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/apps/server
