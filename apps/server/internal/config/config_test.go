@@ -98,6 +98,36 @@ func TestParseRunConfigUnknownFlag(t *testing.T) {
 	}
 }
 
+func TestParseRunConfigRejectsRemovedReconnectGraceFlag(t *testing.T) {
+	_, err := ParseRunConfig(
+		[]string{"run", "--reconnect-grace-ms", "100"},
+		map[string]string{},
+		"/tmp/wootty/apps/server",
+	)
+	if err == nil {
+		t.Fatal("expected error for removed reconnect grace flag")
+	}
+	if !strings.Contains(err.Error(), "Unknown flag: --reconnect-grace-ms") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestParseRunConfigRejectsRemovedReconnectGraceEnv(t *testing.T) {
+	_, err := ParseRunConfig(
+		[]string{"run"},
+		map[string]string{
+			"WOOTTY_RECONNECT_GRACE_MS": "100",
+		},
+		"/tmp/wootty/apps/server",
+	)
+	if err == nil {
+		t.Fatal("expected error for removed reconnect grace env")
+	}
+	if !strings.Contains(err.Error(), "WOOTTY_RECONNECT_GRACE_MS has been removed") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
 func TestParseRunConfigUsesEnvCommandArgsAndFakePTY(t *testing.T) {
 	cfg, err := ParseRunConfig(
 		[]string{"run"},

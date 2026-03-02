@@ -11,27 +11,25 @@ import (
 )
 
 const (
-	DefaultPort             = 8080
-	DefaultHistoryBytes     = 5 * 1024 * 1024
-	DefaultReconnectGraceMS = 0
-	DefaultDetachedTTLMS    = 86_400_000
-	DefaultHost             = "0.0.0.0"
+	DefaultPort          = 8080
+	DefaultHistoryBytes  = 5 * 1024 * 1024
+	DefaultDetachedTTLMS = 86_400_000
+	DefaultHost          = "0.0.0.0"
 )
 
 type RuntimeConfig struct {
-	Host             string
-	Port             int
-	ReconnectGraceMS int
-	DetachedTTLMS    int
-	HistoryBytes     int
-	FakePTY          bool
-	Command          string
-	Args             []string
-	Cwd              string
-	Env              map[string]string
-	StaticDir        string
-	AuthToken        string
-	AllowedOrigins   []string
+	Host           string
+	Port           int
+	DetachedTTLMS  int
+	HistoryBytes   int
+	FakePTY        bool
+	Command        string
+	Args           []string
+	Cwd            string
+	Env            map[string]string
+	StaticDir      string
+	AuthToken      string
+	AllowedOrigins []string
 }
 
 func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeConfig, error) {
@@ -42,7 +40,11 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 
 	host := getOrDefault(env["WOOTTY_HOST"], DefaultHost)
 	port := parsePositiveInt(env["WOOTTY_PORT"], DefaultPort)
-	reconnectGraceMS := parseNonNegativeInt(env["WOOTTY_RECONNECT_GRACE_MS"], DefaultReconnectGraceMS)
+	if strings.TrimSpace(env["WOOTTY_RECONNECT_GRACE_MS"]) != "" {
+		return RuntimeConfig{}, errors.New(
+			"WOOTTY_RECONNECT_GRACE_MS has been removed; use WOOTTY_DETACHED_TTL_MS",
+		)
+	}
 	detachedTTLMS := parseNonNegativeInt(env["WOOTTY_DETACHED_TTL_MS"], DefaultDetachedTTLMS)
 	historyBytes := parsePositiveInt(env["WOOTTY_HISTORY_BYTES"], DefaultHistoryBytes)
 
@@ -64,12 +66,6 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 			i++
 			if i < len(args) && strings.TrimSpace(args[i]) != "" {
 				host = args[i]
-			}
-			continue
-		case "--reconnect-grace-ms":
-			i++
-			if i < len(args) {
-				reconnectGraceMS = parseNonNegativeInt(args[i], reconnectGraceMS)
 			}
 			continue
 		case "--detached-ttl-ms":
@@ -127,19 +123,18 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 	authToken := strings.TrimSpace(env["WOOTTY_AUTH_TOKEN"])
 
 	return RuntimeConfig{
-		Host:             host,
-		Port:             port,
-		ReconnectGraceMS: reconnectGraceMS,
-		DetachedTTLMS:    detachedTTLMS,
-		HistoryBytes:     historyBytes,
-		FakePTY:          env["WOOTTY_FAKE_PTY"] == "1",
-		Command:          commandParts[0],
-		Args:             append([]string(nil), commandParts[1:]...),
-		Cwd:              getOrDefault(env["WOOTTY_CWD"], cwd),
-		Env:              execEnv,
-		StaticDir:        staticDir,
-		AuthToken:        authToken,
-		AllowedOrigins:   parseCSVList(env["WOOTTY_ALLOWED_ORIGINS"]),
+		Host:           host,
+		Port:           port,
+		DetachedTTLMS:  detachedTTLMS,
+		HistoryBytes:   historyBytes,
+		FakePTY:        env["WOOTTY_FAKE_PTY"] == "1",
+		Command:        commandParts[0],
+		Args:           append([]string(nil), commandParts[1:]...),
+		Cwd:            getOrDefault(env["WOOTTY_CWD"], cwd),
+		Env:            execEnv,
+		StaticDir:      staticDir,
+		AuthToken:      authToken,
+		AllowedOrigins: parseCSVList(env["WOOTTY_ALLOWED_ORIGINS"]),
 	}, nil
 }
 

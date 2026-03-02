@@ -51,7 +51,6 @@ services:
     environment:
       WOOTTY_HOST: 0.0.0.0
       WOOTTY_PORT: 8080
-      WOOTTY_RECONNECT_GRACE_MS: "0"
       WOOTTY_DETACHED_TTL_MS: "259200000"
 
   wootty-fake-pty:

@@ -34,10 +34,9 @@ func New(cfg config.RuntimeConfig) *Server {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	manager := session.NewManager(session.ManagerOptions{
-		ReconnectGrace: time.Duration(cfg.ReconnectGraceMS) * time.Millisecond,
-		DetachedTTL:    time.Duration(cfg.DetachedTTLMS) * time.Millisecond,
-		HistoryBytes:   cfg.HistoryBytes,
-		FakePTY:        cfg.FakePTY,
+		DetachedTTL:  time.Duration(cfg.DetachedTTLMS) * time.Millisecond,
+		HistoryBytes: cfg.HistoryBytes,
+		FakePTY:      cfg.FakePTY,
 		ProcessOptions: session.ProcessOptions{
 			Command: cfg.Command,
 			Args:    cfg.Args,

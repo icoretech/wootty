@@ -14,9 +14,8 @@ import (
 
 func TestManagerAttachWriteAndExit(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 100 * time.Millisecond,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -65,9 +64,8 @@ func TestManagerAttachWriteAndExit(t *testing.T) {
 
 func TestManagerReconnectReplaysHistory(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 500 * time.Millisecond,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -116,9 +114,8 @@ func TestManagerReconnectReplaysHistory(t *testing.T) {
 
 func TestManagerRejectsSecondActiveAttach(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 500 * time.Millisecond,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -147,9 +144,8 @@ func TestManagerRejectsSecondActiveAttach(t *testing.T) {
 
 func TestManagerWatchAttachIsReadOnly(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 500 * time.Millisecond,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -187,11 +183,11 @@ func TestManagerWatchAttachIsReadOnly(t *testing.T) {
 	}
 }
 
-func TestManagerReconnectGraceExpiryRemovesSession(t *testing.T) {
+func TestManagerDetachedTTLExpiryRemovesSession(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 30 * time.Millisecond,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		DetachedTTL:  30 * time.Millisecond,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -217,15 +213,15 @@ func TestManagerReconnectGraceExpiryRemovesSession(t *testing.T) {
 
 	_, err = manager.Attach(firstAttach.SessionID, serverConnB, 80, 24, false)
 	if !errors.Is(err, ErrSessionNotFound) {
-		t.Fatalf("expected ErrSessionNotFound after reconnect grace expiry, got %v", err)
+		t.Fatalf("expected ErrSessionNotFound after detached ttl expiry, got %v", err)
 	}
 }
 
-func TestManagerDetachedSessionPersistsWhenGraceDisabled(t *testing.T) {
+func TestManagerDetachedSessionPersistsWhenTTLDisabled(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 0,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		DetachedTTL:  0,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -254,7 +250,7 @@ func TestManagerDetachedSessionPersistsWhenGraceDisabled(t *testing.T) {
 		t.Fatalf("second attach failed: %v", err)
 	}
 	if secondAttach.Created {
-		t.Fatal("expected detached session to remain resumable when grace is disabled")
+		t.Fatal("expected detached session to remain resumable when detached ttl is disabled")
 	}
 	if secondAttach.SessionID != firstAttach.SessionID {
 		t.Fatalf("expected session id %q, got %q", firstAttach.SessionID, secondAttach.SessionID)
@@ -263,10 +259,9 @@ func TestManagerDetachedSessionPersistsWhenGraceDisabled(t *testing.T) {
 
 func TestManagerDetachedSessionExpiresWithDetachedTTL(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 0,
-		DetachedTTL:    30 * time.Millisecond,
-		HistoryBytes:   4096,
-		FakePTY:        true,
+		DetachedTTL:  30 * time.Millisecond,
+		HistoryBytes: 4096,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
@@ -298,9 +293,8 @@ func TestManagerDetachedSessionExpiresWithDetachedTTL(t *testing.T) {
 
 func TestManagerSendJSONAndShutdown(t *testing.T) {
 	manager := NewManager(ManagerOptions{
-		ReconnectGrace: 100 * time.Millisecond,
-		HistoryBytes:   1024,
-		FakePTY:        true,
+		HistoryBytes: 1024,
+		FakePTY:      true,
 		ProcessOptions: ProcessOptions{
 			Command: "sh",
 			Args:    []string{},
