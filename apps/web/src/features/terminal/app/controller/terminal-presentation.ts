@@ -3,13 +3,13 @@ import type {
   AttachMode,
   SessionSnapshot,
 } from "../../contracts/session/session";
+import type { FloatingControlsModel } from "../../view/floating-controls-model";
+import type { SessionMenuModel } from "../../view/session-menu-model";
+import type { StatusBarModel } from "../../view/status-bar-model";
 import {
   buildStatusAnnouncement,
   buildTerminalViewModels,
 } from "../../view/terminal-view-models";
-import type { FloatingControlsModel } from "../../view/floating-controls-model";
-import type { SessionMenuModel } from "../../view/session-menu-model";
-import type { StatusBarModel } from "../../view/status-bar-model";
 import type { TransportFailureContext } from "../engine/transport/state/transport-state-machine";
 
 type TerminalPresentationInput = {

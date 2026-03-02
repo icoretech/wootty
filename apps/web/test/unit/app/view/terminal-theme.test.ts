@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { readInitialFontSizeResult } from "../../../../src/features/terminal/app/preferences/font-size-preferences";
 import {
   clampFontSize,
   DEFAULT_FONT_SIZE,
   FONT_SIZE_MAX,
   FONT_SIZE_MIN,
 } from "../../../../src/features/terminal/preferences/font-size-policy";
-import { readInitialFontSizeResult } from "../../../../src/features/terminal/app/preferences/font-size-preferences";
 import { readTerminalTheme } from "../../../../src/features/terminal/runtime/terminal-theme";
 
 describe("terminal-theme helpers", () => {

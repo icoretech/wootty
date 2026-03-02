@@ -13,9 +13,9 @@ import type { TerminalDomainEnvironment } from "../../environment/terminal-envir
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
+import { clampFontSize } from "../../preferences/font-size-policy";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
-import { clampFontSize } from "../../preferences/font-size-policy";
 import {
   readInitialFontSizeResult,
   writeFontSizePreferenceResult,
