@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -16,6 +17,8 @@ const (
 	DefaultDetachedTTLMS = 86_400_000
 	DefaultHost          = "0.0.0.0"
 )
+
+var ErrHelpRequested = errors.New("help requested")
 
 type RuntimeConfig struct {
 	Host           string
@@ -56,6 +59,8 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		switch token {
 		case "-n", "--naked":
 			continue
+		case "-h", "--help":
+			return RuntimeConfig{}, ErrHelpRequested
 		case "-p", "--port":
 			i++
 			if i < len(args) {
@@ -145,6 +150,47 @@ func ReadSystemConfig(argv []string) (RuntimeConfig, error) {
 	}
 
 	return ParseRunConfig(argv, envMapFromSlice(os.Environ()), cwd)
+}
+
+func HelpText(programName string) string {
+	name := strings.TrimSpace(programName)
+	if name == "" {
+		name = "wootty"
+	}
+
+	return fmt.Sprintf(
+		`Usage:
+  %[1]s run [flags] [command [args...]]
+  %[1]s [flags] [command [args...]]
+
+Examples:
+  %[1]s run bash
+  %[1]s run /usr/bin/ssh user@example.com
+  %[1]s run --port 9090 --host 127.0.0.1 bash
+
+Flags:
+  -h, --help                  Show this help and exit
+  -p, --port <port>           HTTP/WebSocket listen port (default 8080)
+      --host <host>           Bind address (default 0.0.0.0)
+      --detached-ttl-ms <ms>  Detached session hard TTL in milliseconds (default 86400000; 0 disables)
+      --history-bytes <bytes> Replay buffer size in bytes (default 5242880)
+      --naked                 Compatibility no-op flag accepted for legacy callers
+
+Environment overrides:
+  WOOTTY_HOST
+  WOOTTY_PORT
+  WOOTTY_DETACHED_TTL_MS
+  WOOTTY_HISTORY_BYTES
+  WOOTTY_COMMAND
+  WOOTTY_COMMAND_ARGS
+  WOOTTY_CWD
+  WOOTTY_STATIC_DIR
+  WOOTTY_AUTH_TOKEN
+  WOOTTY_ALLOWED_ORIGINS
+  WOOTTY_FAKE_PTY
+`,
+		name,
+	)
 }
 
 func parsePositiveInt(value string, fallback int) int {

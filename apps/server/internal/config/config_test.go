@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"strings"
 	"testing"
 )
@@ -95,6 +96,40 @@ func TestParseRunConfigUnknownFlag(t *testing.T) {
 	_, err := ParseRunConfig([]string{"run", "--nope"}, map[string]string{}, "/tmp/wootty/apps/server")
 	if err == nil {
 		t.Fatal("expected error for unknown flag")
+	}
+}
+
+func TestParseRunConfigHelpAtRoot(t *testing.T) {
+	_, err := ParseRunConfig([]string{"--help"}, map[string]string{}, "/tmp/wootty/apps/server")
+	if !errors.Is(err, ErrHelpRequested) {
+		t.Fatalf("expected ErrHelpRequested, got %v", err)
+	}
+}
+
+func TestParseRunConfigHelpWithRunCommand(t *testing.T) {
+	_, err := ParseRunConfig([]string{"run", "--help"}, map[string]string{}, "/tmp/wootty/apps/server")
+	if !errors.Is(err, ErrHelpRequested) {
+		t.Fatalf("expected ErrHelpRequested, got %v", err)
+	}
+}
+
+func TestParseRunConfigHelpWithRunShortFlag(t *testing.T) {
+	_, err := ParseRunConfig([]string{"run", "-h"}, map[string]string{}, "/tmp/wootty/apps/server")
+	if !errors.Is(err, ErrHelpRequested) {
+		t.Fatalf("expected ErrHelpRequested, got %v", err)
+	}
+}
+
+func TestParseRunConfigForwardsHelpToCommandAfterCommandToken(t *testing.T) {
+	cfg, err := ParseRunConfig([]string{"run", "bash", "--help"}, map[string]string{}, "/tmp/wootty/apps/server")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Command != "bash" {
+		t.Fatalf("expected command bash, got %q", cfg.Command)
+	}
+	if len(cfg.Args) != 1 || cfg.Args[0] != "--help" {
+		t.Fatalf("expected forwarded --help arg, got %#v", cfg.Args)
 	}
 }
 
@@ -198,5 +233,23 @@ func TestParseRunConfigErrorsOnInvalidEnvCommandArgs(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "Invalid WOOTTY_COMMAND_ARGS") {
 		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestHelpTextContainsCoreUsageAndFlags(t *testing.T) {
+	help := HelpText("wootty")
+	required := []string{
+		"Usage:",
+		"wootty run [flags] [command [args...]]",
+		"-h, --help",
+		"--detached-ttl-ms",
+		"--history-bytes",
+		"WOOTTY_COMMAND_ARGS",
+	}
+
+	for _, snippet := range required {
+		if !strings.Contains(help, snippet) {
+			t.Fatalf("expected help text to contain %q", snippet)
+		}
 	}
 }

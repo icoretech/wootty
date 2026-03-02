@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/icoretech/wootty/apps/server/internal/config"
 	"github.com/icoretech/wootty/apps/server/internal/server"
@@ -13,6 +14,10 @@ import (
 func main() {
 	cfg, err := config.ReadSystemConfig(os.Args[1:])
 	if err != nil {
+		if errors.Is(err, config.ErrHelpRequested) {
+			_, _ = os.Stdout.WriteString(config.HelpText(filepath.Base(os.Args[0])))
+			return
+		}
 		log.Fatalf("Failed to start WooTTY Go server: %v", err)
 	}
 
