@@ -92,7 +92,7 @@ docker run --rm -it -p 8080:8080 wootty:dev
 The container serves:
 
 - backend API/websocket on `/api/*`
-- web UI from `apps/web/dist`
+- web UI bundled from `apps/web/src`
 
 ## Operator Controls
 
