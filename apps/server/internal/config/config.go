@@ -41,7 +41,7 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		args = args[1:]
 	}
 
-	host := getOrDefault(env["WOOTTY_HOST"], DefaultHost)
+	host := normalizeHost(env["WOOTTY_HOST"], DefaultHost)
 	port := parsePositiveInt(env["WOOTTY_PORT"], DefaultPort)
 	if strings.TrimSpace(env["WOOTTY_RECONNECT_GRACE_MS"]) != "" {
 		return RuntimeConfig{}, errors.New(
@@ -70,7 +70,7 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 		case "--host":
 			i++
 			if i < len(args) && strings.TrimSpace(args[i]) != "" {
-				host = args[i]
+				host = strings.TrimSpace(args[i])
 			}
 			continue
 		case "--detached-ttl-ms":
@@ -342,6 +342,14 @@ func getOrDefault(value string, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func normalizeHost(value string, fallback string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return fallback
+	}
+	return trimmed
 }
 
 func parseCSVList(value string) []string {
