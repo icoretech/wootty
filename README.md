@@ -36,7 +36,7 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 
 ## Quick Start
 
-### Run with Docker
+### Docker Quick Start
 
 Stable image from GitHub Container Registry:
 
@@ -46,60 +46,7 @@ docker run --rm -it -p 8080:8080 ghcr.io/icoretech/wootty:latest
 
 Then open `http://127.0.0.1:8080`.
 
-Image flavors:
-
-- `ghcr.io/icoretech/wootty:latest` (or `:vX.Y.Z`): minimal runtime (`bash` + `ca-certificates`).
-- `ghcr.io/icoretech/wootty:latest-openssh` (or `:vX.Y.Z-openssh`): minimal runtime + `openssh-client`.
-
-Pin by version:
-
-```bash
-docker run --rm -it -p 8080:8080 ghcr.io/icoretech/wootty:v0.2.0
-```
-
-Run a custom command:
-
-```bash
-docker run --rm -it -p 8080:8080 \
-  -e WOOTTY_COMMAND=/bin/bash \
-  -e WOOTTY_COMMAND_ARGS="-l" \
-  ghcr.io/icoretech/wootty:latest
-```
-
-Run with SSH command support (OpenSSH flavor):
-
-```bash
-docker run --rm -it -p 8080:8080 \
-  -e WOOTTY_COMMAND=/usr/bin/ssh \
-  -e WOOTTY_COMMAND_ARGS="user@example.com" \
-  ghcr.io/icoretech/wootty:latest-openssh
-```
-
-Run a custom command directly via container args (no `WOOTTY_COMMAND*` env):
-
-```bash
-# Login shell
-docker run --rm -it -p 8080:8080 \
-  ghcr.io/icoretech/wootty:latest \
-  run /bin/bash -l
-
-# SSH command + options (OpenSSH flavor)
-docker run --rm -it -p 8080:8080 \
-  ghcr.io/icoretech/wootty:latest-openssh \
-  run /usr/bin/ssh -o StrictHostKeyChecking=no -p 2222 user@example.com
-
-# SSH using a host alias from ~/.ssh/config
-docker run --rm -it -p 8080:8080 \
-  ghcr.io/icoretech/wootty:latest-openssh \
-  run /usr/bin/ssh icoretech-proxmox
-```
-
-Runtime scope note:
-
-- `WOOTTY_COMMAND` is executed by `woottyd` in its own runtime environment.
-- If `woottyd` runs on your host, it can run host binaries.
-- If `woottyd` runs in Docker, it can only run binaries available inside the image/container filesystem.
-- Use `-openssh` flavor for SSH use cases; for other uncommon commands, build/use a custom image that includes required binaries.
+For image flavors, SSH usage, direct command args, compose profiles, and custom images, see [Run with Docker](#run-with-docker).
 
 ### Run from Source
 
@@ -111,7 +58,7 @@ pnpm dev
 Run dev with SSH alias target:
 
 ```bash
-WOOTTY_COMMAND=/usr/bin/ssh WOOTTY_COMMAND_ARGS="icoretech-proxmox" pnpm dev
+WOOTTY_COMMAND=/usr/bin/ssh WOOTTY_COMMAND_ARGS="my-ssh-host-alias" pnpm dev
 ```
 
 - Web: `http://localhost:5173`
