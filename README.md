@@ -26,6 +26,7 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 
 - [Quick Start](#quick-start)
 - [Run with Docker](#run-with-docker)
+- [Kubernetes Deployments](#kubernetes-deployments)
 - [Run from Source](#run-from-source)
 - [Operator Controls](#operator-controls)
 - [Configuration](#configuration)
@@ -160,6 +161,91 @@ The container serves:
 
 - backend API/websocket on `/api/*`
 - web UI bundled from `apps/web/src`
+
+## Kubernetes Deployments
+
+### Embed `wootty` Into Your App Image
+
+```dockerfile
+# Your existing runtime image
+FROM your-runtime-image:tag
+
+# Keep this pinned and automated (example Renovate comment)
+# renovate: datasource=docker depName=ghcr.io/icoretech/wootty versioning=semver
+COPY --from=ghcr.io/icoretech/wootty:<version> /usr/local/bin/wootty /usr/local/bin/wootty
+```
+
+Then start WooTTY as your container command (or entrypoint), pointing to the shell/binary you want:
+
+```bash
+wootty run bash
+```
+
+### Minimal Kubernetes Manifests (Official Image)
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-webcli
+  namespace: myapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp-webcli
+  template:
+    metadata:
+      labels:
+        app: myapp-webcli
+    spec:
+      containers:
+        - name: webcli
+          # Or use ghcr.io/icoretech/wootty:latest-openssh or your own custom image.
+          image: ghcr.io/icoretech/wootty:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "-lc"]
+          args:
+            - |
+              exec wootty run bash
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: WOOTTY_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: wootty-auth
+                  key: token
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-webcli
+  namespace: myapp
+spec:
+  selector:
+    app: myapp-webcli
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+```
+
+### Deployment Ideas
+
+- Keep web CLI in a dedicated deployment (`myapp-webcli`) so scaling/restarts are independent from your main app.
+- Protect ingress with SSO, IP allowlists, or both; avoid exposing an unauthenticated terminal endpoint.
+- Set `WOOTTY_AUTH_TOKEN` from a Secret and rotate it like any other credential.
+- Use direct command args when you want a non-shell target, for example `wootty run /usr/bin/ssh user@example.com` or `wootty run /usr/local/bin/your-admin-tool --flag value`.
 
 ## Operator Controls
 
