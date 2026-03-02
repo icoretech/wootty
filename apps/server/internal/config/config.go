@@ -14,7 +14,7 @@ const (
 	DefaultHistoryBytes     = 5 * 1024 * 1024
 	DefaultReconnectGraceMS = 0
 	DefaultDetachedTTLMS    = 86_400_000
-	DefaultHost             = "127.0.0.1"
+	DefaultHost             = "0.0.0.0"
 )
 
 type RuntimeConfig struct {
@@ -120,9 +120,6 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 	}
 
 	authToken := strings.TrimSpace(env["WOOTTY_AUTH_TOKEN"])
-	if authToken == "" && !isLoopbackHost(host) {
-		return RuntimeConfig{}, errors.New("WOOTTY_AUTH_TOKEN is required when binding to non-loopback hosts")
-	}
 
 	return RuntimeConfig{
 		Host:             host,
@@ -239,16 +236,6 @@ func parseCSVList(value string) []string {
 		return nil
 	}
 	return items
-}
-
-func isLoopbackHost(host string) bool {
-	normalized := strings.TrimSpace(strings.ToLower(host))
-	switch normalized {
-	case "127.0.0.1", "localhost", "::1":
-		return true
-	default:
-		return false
-	}
 }
 
 func detectStaticDir(cwd string) string {

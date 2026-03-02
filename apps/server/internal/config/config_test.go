@@ -56,14 +56,17 @@ func TestParseRunConfigWithFlagsAndCommand(t *testing.T) {
 	}
 }
 
-func TestParseRunConfigRequiresAuthTokenOnNonLoopbackHost(t *testing.T) {
-	_, err := ParseRunConfig(
+func TestParseRunConfigAllowsNonLoopbackHostWithoutAuthToken(t *testing.T) {
+	cfg, err := ParseRunConfig(
 		[]string{"run", "--host", "0.0.0.0"},
 		map[string]string{},
 		"/tmp/wootty/apps/server",
 	)
-	if err == nil {
-		t.Fatal("expected auth token requirement for non-loopback host")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.AuthToken != "" {
+		t.Fatalf("expected empty auth token by default, got %q", cfg.AuthToken)
 	}
 }
 

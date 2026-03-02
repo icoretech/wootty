@@ -139,9 +139,13 @@ Session controls:
 | `WOOTTY_COMMAND_ARGS` | _empty_ | Space-separated command args |
 | `WOOTTY_CWD` | current directory | Process working directory |
 | `WOOTTY_STATIC_DIR` | auto-detected | Directory with built web assets |
+| `WOOTTY_AUTH_TOKEN` | _empty_ | Optional bearer token required by `/api/sessions` and `/api/terminal` when set |
+| `WOOTTY_ALLOWED_ORIGINS` | _empty_ | Optional comma-separated websocket origin allowlist |
 | `WOOTTY_FAKE_PTY` | `0` | Set to `1` for deterministic fake PTY mode |
 
 CLI equivalents are available for key timing controls: `--reconnect-grace-ms` and `--detached-ttl-ms`.
+
+For non-local deployments, set `WOOTTY_AUTH_TOKEN` (and optionally `WOOTTY_ALLOWED_ORIGINS`) to protect session and websocket endpoints.
 
 ### Session Retention Model
 
