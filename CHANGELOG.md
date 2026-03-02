@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6](https://github.com/icoretech/wootty/compare/wootty-v0.2.5...wootty-v0.2.6) (2026-03-02)
+
+
+### Features
+
+* **cli:** add first-class help output for root and run commands ([46ae925](https://github.com/icoretech/wootty/commit/46ae92513509d0323e5fee7041da3a3a60333c58))
+
 ## [0.2.5](https://github.com/icoretech/wootty/compare/wootty-v0.2.4...wootty-v0.2.5) (2026-03-02)
 
 
