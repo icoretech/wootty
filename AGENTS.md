@@ -38,6 +38,9 @@ cd apps/server && go run ./cmd/woottyd run --host 127.0.0.1 --port 8080
 - Conventional Commits are required for all non-release commits.
 - Required format: `<type>(optional-scope): <summary>`.
 - Accepted types include: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`.
+- Commit prefix must be Release Please-compatible, or no release PR/version bump is generated.
+- For changes that must ship in a release, use releasable prefixes: `feat`, `fix`, or `perf` (and `!` for breaking changes when applicable).
+- Do not rely on `docs`/`chore`/`ci`/`build`/`test`-only commits to trigger a release.
 - Examples: `fix: resolve Playwright webServer cwd`, `refactor(session): split transport lifecycle boundaries`.
 - Do not manually craft release commits; Release Please generates `chore(main): release ...`.
 - PRs should include:

@@ -7,8 +7,6 @@
 [![Go](https://img.shields.io/badge/go-%3E%3D1.26-00ADD8)](https://go.dev/)
 [![License](https://img.shields.io/github/license/icoretech/wootty)](./LICENSE)
 
-Flawless browser terminal for real operators.
-
 WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome: a terminal experience that stays reliable under real pressure (resize storms, reconnects, long output, and unstable networks).
 
 ![WooTTY UI screenshot](docs/assets/wootty-ui.png)
@@ -21,6 +19,7 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 - Explicit multi-session actions: `Resume` for controllable sessions, `Watch` for sessions already controlled elsewhere (read-only).
 - Resize fidelity: client and PTY stay in sync during rapid window changes.
 - Operational defaults: high scrollback, keyboard-first controls, low-friction deployment.
+- Deployment flexibility: minimal image by default, plus `-openssh` image variant for SSH workflows.
 - Modern stack: Go 1.26+, Node 24+, React 19 + compiler, xterm.js.
 
 ## Table of Contents
@@ -74,6 +73,20 @@ docker run --rm -it -p 8080:8080 \
   -e WOOTTY_COMMAND=/usr/bin/ssh \
   -e WOOTTY_COMMAND_ARGS="user@example.com" \
   ghcr.io/icoretech/wootty:latest-openssh
+```
+
+Run a custom command directly via container args (no `WOOTTY_COMMAND*` env):
+
+```bash
+# Login shell
+docker run --rm -it -p 8080:8080 \
+  ghcr.io/icoretech/wootty:latest \
+  run /bin/bash -l
+
+# SSH command + options (OpenSSH flavor)
+docker run --rm -it -p 8080:8080 \
+  ghcr.io/icoretech/wootty:latest-openssh \
+  run /usr/bin/ssh -o StrictHostKeyChecking=no -p 2222 user@example.com
 ```
 
 Runtime scope note:
@@ -157,6 +170,14 @@ docker run --rm -it -p 8080:8080 \
   -e WOOTTY_COMMAND=/usr/bin/ssh \
   -e WOOTTY_COMMAND_ARGS="user@example.com" \
   wootty:custom
+```
+
+Equivalent direct-args form:
+
+```bash
+docker run --rm -it -p 8080:8080 \
+  wootty:custom \
+  run /usr/bin/ssh user@example.com
 ```
 
 Use this pattern whenever `WOOTTY_COMMAND` depends on binaries not present in the default image.
@@ -351,6 +372,12 @@ pnpm lint
 pnpm test
 pnpm build
 pnpm test:e2e
+```
+
+One-shot local CI parity:
+
+```bash
+pnpm ci
 ```
 
 Cross-browser browser matrix (Chromium + Firefox + WebKit):
