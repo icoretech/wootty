@@ -166,6 +166,7 @@ Status bar metrics:
 
 - connection status and latency
 - session id
+- attach mode (`Control` or `Read-only`)
 - reconnect count
 - buffered/dropped input size (humanized units)
 - output size (humanized units)
