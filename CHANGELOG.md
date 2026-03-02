@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.5](https://github.com/icoretech/wootty/compare/wootty-v0.2.4...wootty-v0.2.5) (2026-03-02)
+
+
+### Bug Fixes
+
+* **docker:** document migration to openssh image flavor ([7031f70](https://github.com/icoretech/wootty/commit/7031f70be28dfdbb70c16b4892e6434ac734ccf9))
+
 ## [0.2.4](https://github.com/icoretech/wootty/compare/wootty-v0.2.3...wootty-v0.2.4) (2026-03-02)
 
 
