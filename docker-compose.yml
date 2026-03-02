@@ -2,7 +2,6 @@ x-wootty-common: &wootty-common
   build:
     context: .
     dockerfile: Dockerfile
-  image: wootty:local
   restart: unless-stopped
   environment:
     WOOTTY_HOST: 0.0.0.0
@@ -11,12 +10,14 @@ x-wootty-common: &wootty-common
 services:
   wootty:
     <<: *wootty-common
+    image: wootty:local-default
     container_name: wootty-default
     ports:
       - "8080:8080"
 
   wootty-bash:
     <<: *wootty-common
+    image: wootty:local-bash
     container_name: wootty-bash
     profiles: ["bash"]
     ports:
@@ -29,6 +30,7 @@ services:
 
   wootty-ssh:
     <<: *wootty-common
+    image: wootty:local-ssh
     container_name: wootty-ssh
     profiles: ["ssh"]
     ports:
@@ -41,6 +43,7 @@ services:
 
   wootty-retention:
     <<: *wootty-common
+    image: wootty:local-retention
     container_name: wootty-retention
     profiles: ["retention"]
     ports:
@@ -53,6 +56,7 @@ services:
 
   wootty-fake-pty:
     <<: *wootty-common
+    image: wootty:local-fake-pty
     container_name: wootty-fake-pty
     profiles: ["test"]
     ports:
