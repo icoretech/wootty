@@ -199,6 +199,28 @@ Session controls:
 | `WOOTTY_ALLOWED_ORIGINS` | _empty_ | Optional comma-separated websocket origin allowlist |
 | `WOOTTY_FAKE_PTY` | `0` | Set to `1` for deterministic fake PTY mode |
 
+`WOOTTY_COMMAND_ARGS` examples:
+
+```bash
+# 1) Run a shell command with spaces
+WOOTTY_COMMAND=/bin/bash
+WOOTTY_COMMAND_ARGS='-lc "echo hello world && whoami"'
+
+# 2) SSH with multiple options
+WOOTTY_COMMAND=/usr/bin/ssh
+WOOTTY_COMMAND_ARGS='-o StrictHostKeyChecking=no -p 2222 user@example.com'
+
+# 3) Include escaped quotes inside an argument
+WOOTTY_COMMAND=/bin/bash
+WOOTTY_COMMAND_ARGS='-lc "echo \"quoted text\" && date"'
+
+# 4) Pass an explicit empty argument ("")
+WOOTTY_COMMAND=/bin/bash
+WOOTTY_COMMAND_ARGS='-lc "printf \"[%s]\\n\" \"\" \"non-empty\""'
+```
+
+If `WOOTTY_COMMAND_ARGS` has invalid quoting (for example an unterminated quote), WooTTY fails fast on startup with a config error.
+
 CLI equivalents are available for key timing controls: `--reconnect-grace-ms` and `--detached-ttl-ms`.
 
 For non-local deployments, set `WOOTTY_AUTH_TOKEN` (and optionally `WOOTTY_ALLOWED_ORIGINS`) to protect session and websocket endpoints.
