@@ -52,8 +52,6 @@ Image flavors:
 - `ghcr.io/icoretech/wootty:latest` (or `:vX.Y.Z`): minimal runtime (`bash` + `ca-certificates`).
 - `ghcr.io/icoretech/wootty:latest-openssh` (or `:vX.Y.Z-openssh`): minimal runtime + `openssh-client`.
 
-If you previously used `:latest` for SSH commands, switch to `:latest-openssh`.
-
 Pin by version:
 
 ```bash
