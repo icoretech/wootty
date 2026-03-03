@@ -52,6 +52,14 @@ export function enqueueOutbox(
     data: chunk,
     bytes: utf8ByteLength(chunk),
   };
+
+  // If a single chunk exceeds the limit, drop it entirely rather than
+  // allowing negative byte accounting or dropping all existing chunks.
+  if (queuedChunk.bytes > maxBytes) {
+    outbox.droppedBytes += queuedChunk.bytes;
+    return;
+  }
+
   outbox.chunks.push(queuedChunk);
   outbox.bytes += queuedChunk.bytes;
 

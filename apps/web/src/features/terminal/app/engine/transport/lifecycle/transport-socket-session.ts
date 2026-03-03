@@ -40,6 +40,11 @@ export class TransportSocketSession {
     return this.generation;
   }
 
+  /**
+   * Close the active socket if it's in a closable state.
+   * Returns false if the socket is already closed/closing, indicating
+   * the caller should proceed with cleanup/reconnect without waiting.
+   */
   closeActive(
     code: number,
     reason: string,
@@ -49,6 +54,9 @@ export class TransportSocketSession {
       this.socket === null ||
       this.socket.readyState >= TRANSPORT_READY_STATE.CLOSING
     ) {
+      // Socket is already closing or closed - clear state and let
+      // the close event handler complete the reconnect flow.
+      this.clear();
       return false;
     }
     this.closeIntent = closeIntent;
