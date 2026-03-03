@@ -9,6 +9,7 @@ import {
   TERMINAL_CLOSE_CODE,
   TERMINAL_HEARTBEAT_MS,
 } from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
+import { TRANSPORT_READY_STATE } from "../../../../../src/features/terminal/contracts/transport/transport";
 import {
   initialTransportState,
   reduceTransportState,
@@ -148,6 +149,28 @@ describe("transport lifecycle service", () => {
     harness.service.markPong();
 
     expect(harness.state().latencyMs).toBe(50);
+  });
+
+  it("reconnects after pong timeout when socket is already closing", () => {
+    const harness = createHarness();
+
+    harness.service.connect();
+    harness.sockets[0].emitOpen();
+    harness.sockets[0].readyState = TRANSPORT_READY_STATE.CLOSING;
+
+    harness.scheduler.advanceBy(TERMINAL_HEARTBEAT_MS.INTERVAL);
+    harness.scheduler.advanceBy(TERMINAL_HEARTBEAT_MS.PONG_TIMEOUT);
+
+    expect(harness.sockets[0].closeCalls).toHaveLength(0);
+
+    harness.sockets[0].emitClose(
+      TERMINAL_CLOSE_CODE.PONG_TIMEOUT,
+      "pong timeout",
+    );
+    expect(harness.state().status).toBe("reconnecting");
+
+    harness.scheduler.advanceBy(reconnectDelayMs(0));
+    expect(harness.sockets).toHaveLength(2);
   });
 
   it("rebinds to the latest endpoint when websocket url changes mid-connection", () => {

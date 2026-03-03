@@ -52,3 +52,7 @@ if (!window.ResizeObserver) {
   window.ResizeObserver =
     TestResizeObserver as unknown as typeof ResizeObserver;
 }
+
+if (window.HTMLCanvasElement) {
+  window.HTMLCanvasElement.prototype.getContext = () => null;
+}
