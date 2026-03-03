@@ -9,13 +9,13 @@ import {
   TERMINAL_CLOSE_CODE,
   TERMINAL_HEARTBEAT_MS,
 } from "../../../../../src/features/terminal/app/engine/transport/state/transport-policy";
-import { TRANSPORT_READY_STATE } from "../../../../../src/features/terminal/contracts/transport/transport";
 import {
   initialTransportState,
   reduceTransportState,
   type TransportEvent,
   type TransportState,
 } from "../../../../../src/features/terminal/app/engine/transport/state/transport-state-machine";
+import { TRANSPORT_READY_STATE } from "../../../../../src/features/terminal/contracts/transport/transport";
 import { createPingMessage } from "../../../../../src/features/terminal/protocol/terminal-client-messages";
 import { FakeScheduler } from "../../../../support/harness/fake-scheduler";
 import { FakeTransport } from "../../../../support/harness/fake-transport";
