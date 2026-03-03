@@ -61,6 +61,7 @@ type _BootstrapCodeLiteralCheck = AssertTrue<
     | "env_socket_url_invalid_format"
     | "env_socket_url_requires_window_host"
     | "env_socket_url_unsupported_protocol"
+    | "env_socket_url_required"
     | "socket_url_invalid_format"
     | "socket_url_unsupported_protocol"
   >

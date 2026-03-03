@@ -152,6 +152,15 @@ function getLookup(): FloatingControlLookup {
   return cachedLookup;
 }
 
+/**
+ * Reset the floating control catalog and lookup caches.
+ * Exported for testing purposes to allow test isolation.
+ */
+export function resetFloatingControlCatalog(): void {
+  cachedCatalog = null;
+  cachedLookup = null;
+}
+
 export const FLOATING_CONTROL_CATALOG = getCatalog();
 
 export const FLOATING_CONTROL_REGISTRY: readonly FloatingControlRegistryEntry[] =

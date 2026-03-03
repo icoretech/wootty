@@ -45,6 +45,14 @@ function getCommandRegistry(): CommandRegistry {
   return cachedRegistry;
 }
 
+/**
+ * Reset the command registry cache.
+ * Exported for testing purposes to allow test isolation.
+ */
+export function resetCommandRegistry(): void {
+  cachedRegistry = null;
+}
+
 export function resolveCommandFromShortcutCode(
   code: string,
 ): ShortcutAction | null {

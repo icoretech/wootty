@@ -129,12 +129,25 @@ function resolveRelativeSocketUrl(
   };
 }
 
-function defaultSocketUrl(windowRef: Window | null): string {
+function defaultSocketUrl(
+  windowRef: Window | null,
+): SocketUrlResolutionResult {
   if (!windowRef) {
-    return `ws://127.0.0.1${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`;
+    // Non-browser environments must explicitly configure the socket URL.
+    // Silently defaulting to localhost masks misconfiguration.
+    return {
+      ok: false,
+      issue: createBackendResolutionIssue(
+        "env_socket_url_required",
+        "Socket URL must be explicitly configured in non-browser environments. Set VITE_WOOTTY_WS_URL or provide an injected endpoint.",
+      ),
+    };
   }
   const protocol = windowRef.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${windowRef.location.host}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`;
+  return {
+    ok: true,
+    socketUrl: `${protocol}//${windowRef.location.host}${TERMINAL_BACKEND_ROUTE.TERMINAL_WS}`,
+  };
 }
 
 export function resolveSocketUrl(
@@ -143,10 +156,7 @@ export function resolveSocketUrl(
 ): SocketUrlResolutionResult {
   const configured = envUrl?.trim();
   if (!configured) {
-    return {
-      ok: true,
-      socketUrl: defaultSocketUrl(windowRef),
-    };
+    return defaultSocketUrl(windowRef);
   }
 
   if (configured.startsWith("ws://") || configured.startsWith("wss://")) {

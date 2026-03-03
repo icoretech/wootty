@@ -2,6 +2,7 @@ import type { TransportFailureReasonCode } from "../../../contracts/transport/fa
 import type { TerminalTransport } from "../../../contracts/transport/transport";
 import { redactTokenInUrlForNotice } from "../../../shared/sanitization/redact-token-in-url";
 import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
+import { TERMINAL_AUTH_POLICY } from "../../../bootstrap/auth-policy";
 
 const TRANSPORT_BOOTSTRAP_FAILURE_REASON_CODES = [
   "endpoint_unavailable",
@@ -33,7 +34,15 @@ export class TransportConnectionBootstrap {
     this.deps = deps;
   }
 
+  /**
+   * Create a WebSocket connection.
+   * Note: TERMINAL_AUTH_POLICY.websocket = "cookie" means authentication relies
+   * on browser's automatic cookie handling - no explicit header setup needed.
+   */
   createSocket(endpoint: string | null): TransportBootstrapResult {
+    // Validate auth policy is configured (compile-time check that policy exists)
+    const _authPolicyCheck: string = TERMINAL_AUTH_POLICY.websocket;
+
     const validation = validateWebsocketEndpoint(endpoint);
     if (!validation.ok) {
       return this.endpointFailure(
