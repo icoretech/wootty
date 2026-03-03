@@ -5,7 +5,12 @@ import type { TerminalTransport } from "../contracts/transport/transport";
 import type { Scheduler } from "../platform/scheduler";
 import type { TerminalRuntime } from "../runtime/xterm-runtime-contract";
 
-export type TerminalPlatformEnvironment = {
+/**
+ * Flattened environment type combining platform and domain concerns.
+ * Previously split into TerminalPlatformEnvironment and TerminalDomainEnvironment,
+ * but the separation added indirection without enabling polymorphism or testing benefits.
+ */
+export type TerminalAppEnvironment = {
   documentRef: Document | null;
   windowRef: Window | null;
   scheduler: Scheduler;
@@ -18,16 +23,8 @@ export type TerminalPlatformEnvironment = {
       signal?: AbortSignal;
     },
   ) => Promise<SessionsFetchResult>;
-};
-
-export type TerminalDomainEnvironment = {
   createTransport: (url: string) => TerminalTransport;
   loadRuntime: () => Promise<TerminalRuntime>;
   getLocalStorage: () => StorageAccessResult;
   getSessionStorage: () => StorageAccessResult;
-};
-
-export type TerminalAppEnvironment = {
-  platform: TerminalPlatformEnvironment;
-  domain: TerminalDomainEnvironment;
 };

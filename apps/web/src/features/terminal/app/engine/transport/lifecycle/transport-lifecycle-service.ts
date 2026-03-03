@@ -164,12 +164,14 @@ export class TransportLifecycleService {
           previousSocket &&
           previousSocket.readyState < TRANSPORT_READY_STATE.CLOSING
         ) {
-          // Detach before reconnect so connect() is not blocked by old socket state.
-          this.connect();
+          // Close old socket first to prevent stale listeners from firing
+          // during the new connection setup.
           previousSocket.close(
             TERMINAL_CLOSE_CODE.MANUAL_RECONNECT,
             "endpoint changed",
           );
+          // Then establish new connection with updated endpoint.
+          this.connect();
           return true;
         }
         return false;

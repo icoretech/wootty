@@ -294,3 +294,18 @@ export function useSessionOrchestrator({
     },
   };
 }
+
+/**
+ * Session interface used across composition layers.
+ * Extracted to reduce boilerplate duplication.
+ */
+export type SessionOrchestratorInterface = {
+  sessionId: string | null;
+  attachMode: AttachMode;
+  hasActiveSession: boolean;
+  setSessionMode: (mode: AttachMode) => void;
+  applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
+  clearMissingSession: () => void;
+  requestTransportRefresh: () => Promise<SessionRefreshResult>;
+  publishNotice: NoticePublisher;
+};

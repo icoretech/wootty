@@ -18,7 +18,7 @@ import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
 import type { TerminalRuntime } from "../../runtime/xterm-runtime-contract";
-import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
+import type { SessionOrchestratorInterface } from "../../session/application/session-orchestrator";
 import { useConnectionMessageGateway } from "./protocol/connection-message-gateway";
 import {
   type ConnectionStatusFlag,
@@ -51,16 +51,7 @@ type UseConnectionCoordinatorArgs = {
     documentRef: Document | null;
     initialFontSize: number;
   };
-  session: {
-    sessionId: string | null;
-    attachMode: AttachMode;
-    hasActiveSession: boolean;
-    setSessionMode: (mode: AttachMode) => void;
-    applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
-    clearMissingSession: () => void;
-    requestTransportRefresh: () => Promise<SessionRefreshResult>;
-    publishNotice: NoticePublisher;
-  };
+  session: SessionOrchestratorInterface;
 };
 
 type ConnectionCoordinatorState = {

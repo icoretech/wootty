@@ -9,13 +9,13 @@ import {
 } from "react";
 import type { AttachMode } from "../../contracts/session/session";
 import type { StorageAccessFailure } from "../../contracts/storage-access";
-import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
+import type { TerminalAppEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { clampFontSize } from "../../preferences/font-size-policy";
 import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
-import type { SessionRefreshResult } from "../../session/application/session-refresh-result";
+import type { SessionOrchestratorInterface } from "../../session/application/session-orchestrator";
 import {
   readInitialFontSizeResult,
   writeFontSizePreferenceResult,
@@ -43,7 +43,7 @@ type InitialFontSizeState = {
 };
 
 function readInitialFontSizeState(
-  getLocalStorage: TerminalDomainEnvironment["getLocalStorage"],
+  getLocalStorage: TerminalAppEnvironment["getLocalStorage"],
 ): InitialFontSizeState {
   const bootstrapStorageFailures: StorageAccessFailure[] = [];
   const access = getLocalStorage();
@@ -61,7 +61,7 @@ function readInitialFontSizeState(
 }
 
 function useControllerUiState(
-  getLocalStorage: TerminalDomainEnvironment["getLocalStorage"],
+  getLocalStorage: TerminalAppEnvironment["getLocalStorage"],
   onStorageFailure?: (failure: StorageAccessFailure) => void,
 ): ControllerUiState {
   const initialFontSizeStateRef = useRef<InitialFontSizeState | null>(null);
@@ -146,16 +146,7 @@ type TerminalSessionDomain = {
   uiState: ControllerUiState;
   sessionState: ReturnType<typeof useSessionOrchestrator>["state"];
   sessionActions: ReturnType<typeof useSessionOrchestrator>["actions"];
-  connectionSession: {
-    sessionId: string | null;
-    attachMode: AttachMode;
-    hasActiveSession: boolean;
-    setSessionMode: (mode: AttachMode) => void;
-    applyReadySession: (nextSessionId: string, readOnly: boolean) => void;
-    clearMissingSession: () => void;
-    requestTransportRefresh: () => Promise<SessionRefreshResult>;
-    publishNotice: NoticePublisher;
-  };
+  connectionSession: SessionOrchestratorInterface;
   wsUrl: string | null;
 };
 
@@ -163,7 +154,7 @@ export function useTerminalSessionDomain({
   environment,
   platform,
 }: {
-  environment: TerminalDomainEnvironment;
+  environment: TerminalAppEnvironment;
   platform: TerminalPlatformContext;
 }): TerminalSessionDomain {
   const session = useSessionOrchestrator({

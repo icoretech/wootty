@@ -22,7 +22,7 @@ export type SessionRefreshResult =
       readonly failure: SessionRefreshFailure;
     };
 
-export type PollingRefreshResultKind =
+type PollingRefreshResultKind =
   | "success"
   | "ignored_failure"
   | "bootstrap_retry"

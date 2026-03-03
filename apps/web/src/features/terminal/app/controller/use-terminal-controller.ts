@@ -37,9 +37,9 @@ export function useTerminalController(
   const sessionMenuRef = useRef<HTMLDivElement | null>(null);
   const sessionButtonRef = useRef<HTMLDivElement | null>(null);
 
-  const platform = useTerminalPlatformContext(environment.platform);
+  const platform = useTerminalPlatformContext(environment);
   const domain = useTerminalDomainController({
-    environment: environment.domain,
+    environment,
     platform,
     appViewportRef,
     sessionMenuRef,

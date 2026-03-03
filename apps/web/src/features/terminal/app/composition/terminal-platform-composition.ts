@@ -1,11 +1,11 @@
 import { useCallback, useMemo } from "react";
 import type { TerminalBackendResolution } from "../../contracts/backend-resolution";
 import type { SessionsFetchResult } from "../../contracts/session/sessions-fetch";
-import type { TerminalPlatformEnvironment } from "../../environment/terminal-environment-contract";
+import type { TerminalAppEnvironment } from "../../environment/terminal-environment-contract";
 import type { Scheduler } from "../../platform/scheduler";
 
 function useFetchSessions(
-  environment: TerminalPlatformEnvironment,
+  environment: TerminalAppEnvironment,
   backendResolution: TerminalBackendResolution,
 ): (options?: { signal?: AbortSignal }) => Promise<SessionsFetchResult> {
   return useCallback(
@@ -40,7 +40,7 @@ export type TerminalPlatformContext = {
 };
 
 export function useTerminalPlatformContext(
-  environment: TerminalPlatformEnvironment,
+  environment: TerminalAppEnvironment,
 ): TerminalPlatformContext {
   const windowRef = environment.windowRef;
   const documentRef = environment.documentRef;

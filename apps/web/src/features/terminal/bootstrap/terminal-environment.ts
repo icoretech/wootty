@@ -1,9 +1,5 @@
 import { createBrowserTransport } from "../adapters/browser-transport";
-import type {
-  TerminalAppEnvironment,
-  TerminalDomainEnvironment,
-  TerminalPlatformEnvironment,
-} from "../environment/terminal-environment-contract";
+import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
 import { browserScheduler } from "../platform/scheduler";
 import {
   type AuthTokenProvider,
@@ -33,11 +29,13 @@ function resolveConfiguredSocketUrl(
   return normalized.length > 0 ? normalized : undefined;
 }
 
-function createPlatformEnvironment(
-  authTokenProvider: AuthTokenProvider,
-  envSocketUrl?: string,
-): TerminalPlatformEnvironment {
+export const createTerminalAppEnvironment = (
+  options: TerminalEnvironmentOptions = {},
+): TerminalAppEnvironment => {
+  const envSocketUrl = resolveConfiguredSocketUrl(options);
+  const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
   const windowRef = readWindow();
+  const loadRuntime = createRuntimeLoader();
   return {
     documentRef: readDocument(),
     windowRef,
@@ -46,27 +44,9 @@ function createPlatformEnvironment(
       return resolveBrowserBackendEndpoints(targetWindowRef, envSocketUrl);
     },
     fetchSessionsPayload: createBrowserSessionsClient(authTokenProvider),
-  };
-}
-
-export const createTerminalAppEnvironment = (
-  options: TerminalEnvironmentOptions = {},
-): TerminalAppEnvironment => {
-  const envSocketUrl = resolveConfiguredSocketUrl(options);
-  const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
-  const platform = envSocketUrl
-    ? createPlatformEnvironment(authTokenProvider, envSocketUrl)
-    : createPlatformEnvironment(authTokenProvider);
-  const loadRuntime = createRuntimeLoader();
-  const domain: TerminalDomainEnvironment = {
     createTransport: createBrowserTransport,
     loadRuntime,
     getLocalStorage: () => readStorageResult("localStorage"),
     getSessionStorage: () => readStorageResult("sessionStorage"),
   };
-  const environment: TerminalAppEnvironment = {
-    platform,
-    domain,
-  };
-  return environment;
 };

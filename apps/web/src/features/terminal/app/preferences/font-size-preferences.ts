@@ -1,10 +1,12 @@
 import type { StorageAccessFailure } from "../../contracts/storage-access";
+import { withStorageErrorHandling } from "../../contracts/storage-access";
 import {
   clampFontSize,
   DEFAULT_FONT_SIZE,
 } from "../../preferences/font-size-policy";
 
 const FONT_SIZE_STORAGE_KEY = "wootty.fontSize";
+
 export function readInitialFontSizeResult(storage: Storage | null): {
   fontSize: number;
   error: StorageAccessFailure | null;
@@ -13,19 +15,16 @@ export function readInitialFontSizeResult(storage: Storage | null): {
     return { fontSize: DEFAULT_FONT_SIZE, error: null };
   }
 
-  let raw: string | null = null;
-  try {
-    raw = storage.getItem(FONT_SIZE_STORAGE_KEY);
-  } catch (cause) {
-    return {
-      fontSize: DEFAULT_FONT_SIZE,
-      error: {
-        operation: "read",
-        key: FONT_SIZE_STORAGE_KEY,
-        cause,
-      },
-    };
+  const { value: raw, error } = withStorageErrorHandling(
+    "read",
+    FONT_SIZE_STORAGE_KEY,
+    () => storage.getItem(FONT_SIZE_STORAGE_KEY),
+  );
+
+  if (error) {
+    return { fontSize: DEFAULT_FONT_SIZE, error };
   }
+
   if (!raw) {
     return { fontSize: DEFAULT_FONT_SIZE, error: null };
   }
@@ -71,16 +70,10 @@ export function writeFontSizePreferenceResult(
   if (!storage) {
     return { error: null };
   }
-  try {
-    storage.setItem(FONT_SIZE_STORAGE_KEY, String(clampFontSize(fontSize)));
-    return { error: null };
-  } catch (cause) {
-    return {
-      error: {
-        operation: "write",
-        key: FONT_SIZE_STORAGE_KEY,
-        cause,
-      },
-    };
-  }
+  const { error } = withStorageErrorHandling(
+    "write",
+    FONT_SIZE_STORAGE_KEY,
+    () => storage.setItem(FONT_SIZE_STORAGE_KEY, String(clampFontSize(fontSize))),
+  );
+  return { error };
 }

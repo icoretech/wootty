@@ -33,6 +33,17 @@ async function mountApp(rootElement: HTMLElement): Promise<void> {
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
-  throw new Error("Missing #root element");
+  const message = bootstrapFailureMessage(
+    new TerminalBootstrapInvariantError("Missing #root element"),
+  );
+  const main = document.createElement("main");
+  main.className = "shell shell--bootstrap-failure";
+  const section = document.createElement("section");
+  section.setAttribute("role", "alert");
+  section.setAttribute("data-testid", "bootstrap-failure");
+  section.textContent = message;
+  main.appendChild(section);
+  document.body.appendChild(main);
+} else {
+  void mountApp(rootElement);
 }
-void mountApp(rootElement);

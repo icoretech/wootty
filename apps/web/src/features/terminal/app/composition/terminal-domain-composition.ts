@@ -2,7 +2,7 @@ import { type RefObject, useCallback } from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
-import type { TerminalDomainEnvironment } from "../../environment/terminal-environment-contract";
+import type { TerminalAppEnvironment } from "../../environment/terminal-environment-contract";
 import {
   useSessionMenuActions,
   useTerminalCommandActions,
@@ -24,6 +24,10 @@ type TerminalDomainController = {
   dispatchStatusBar: (action: StatusBarAction) => void;
 };
 
+/**
+ * Consolidated domain controller hook.
+ * Directly composes session and connection hooks without excessive forwarding layers.
+ */
 export function useTerminalDomainController({
   environment,
   platform,
@@ -31,7 +35,7 @@ export function useTerminalDomainController({
   sessionMenuRef,
   sessionButtonRef,
 }: {
-  environment: TerminalDomainEnvironment;
+  environment: TerminalAppEnvironment;
   platform: TerminalPlatformContext;
   appViewportRef: RefObject<HTMLElement | null>;
   sessionMenuRef: RefObject<HTMLDivElement | null>;

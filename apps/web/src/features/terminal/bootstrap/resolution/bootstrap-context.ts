@@ -20,17 +20,27 @@ export function normalizeAuthToken(
   return normalized.length > 0 ? normalized : undefined;
 }
 
+/**
+ * Extract auth token from a URL search params string.
+ * Consolidated function for token extraction from various sources.
+ */
+function extractTokenFromSearchParams(
+  searchParams: string | URLSearchParams,
+): string | undefined {
+  const params =
+    typeof searchParams === "string"
+      ? new URLSearchParams(searchParams)
+      : searchParams;
+  return normalizeAuthToken(params.get("token"));
+}
+
 export function readAuthTokenFromWindow(
   windowRef: Window | null,
 ): string | undefined {
   if (!windowRef) {
     return undefined;
   }
-  return normalizeAuthToken(
-    windowRef.location.search
-      ? new URLSearchParams(windowRef.location.search).get("token")
-      : null,
-  );
+  return extractTokenFromSearchParams(windowRef.location.search);
 }
 
 export function readAuthTokenFromUrlResult(
@@ -39,7 +49,7 @@ export function readAuthTokenFromUrlResult(
   try {
     const parsed = new URL(rawUrl);
     return {
-      token: normalizeAuthToken(parsed.searchParams.get("token")),
+      token: extractTokenFromSearchParams(parsed.searchParams),
     };
   } catch {
     return {

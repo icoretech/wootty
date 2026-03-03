@@ -1,4 +1,5 @@
 import type { StorageAccessFailure } from "../contracts/storage-access";
+import { withStorageErrorHandling } from "../contracts/storage-access";
 
 type BrowserStorageKind = "localStorage" | "sessionStorage";
 
@@ -16,21 +17,12 @@ export function readStorageResult(
       error: null,
     };
   }
-  try {
-    return {
-      storage: window[kind],
-      error: null,
-    };
-  } catch (cause) {
-    return {
-      storage: null,
-      error: {
-        operation: "read",
-        key: kind,
-        cause,
-      },
-    };
-  }
+  const { value: storage, error } = withStorageErrorHandling(
+    "read",
+    kind,
+    () => window[kind],
+  );
+  return { storage, error };
 }
 
 export function readDocument(): Document | null {
