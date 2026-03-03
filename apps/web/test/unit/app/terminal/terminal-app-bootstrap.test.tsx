@@ -7,8 +7,31 @@ const { createTerminalAppEnvironment, useTerminalController } = vi.hoisted(
     return {
       createTerminalAppEnvironment: vi.fn(() => {
         return {
-          platform: {},
-          domain: {},
+          documentRef: null,
+          windowRef: null,
+          scheduler: {
+            now: () => 0,
+            setTimeout: () => 0,
+            clearTimeout: () => {},
+            setInterval: () => 0,
+            clearInterval: () => {},
+          },
+          resolveBackendEndpoints: () => ({
+            ok: false,
+            issue: { code: "test", details: "test" },
+          }),
+          fetchSessionsPayload: async () => ({
+            ok: false,
+            failure: { source: "fetch", reason: "test" },
+          }),
+          createTransport: () => {
+            throw new Error("not used");
+          },
+          loadRuntime: async () => {
+            throw new Error("not used");
+          },
+          getLocalStorage: () => ({ storage: null, error: null }),
+          getSessionStorage: () => ({ storage: null, error: null }),
         };
       }),
       useTerminalController: vi.fn(() => {
@@ -69,9 +92,35 @@ describe("terminal app bootstrap", () => {
   });
 
   it("does not create a default environment when a custom environment is provided", () => {
-    const customEnvironment = {
-      platform: {} as TerminalAppEnvironment["platform"],
-      domain: {} as TerminalAppEnvironment["domain"],
+    const customEnvironment: TerminalAppEnvironment = {
+      documentRef: null,
+      windowRef: null,
+      scheduler: {
+        now: () => 0,
+        setTimeout: () => 0,
+        clearTimeout: () => {},
+        setInterval: () => 0,
+        clearInterval: () => {},
+      },
+      resolveBackendEndpoints: () => ({
+        ok: true,
+        endpoints: {
+          terminalWsUrl: "ws://test",
+          sessionsHttpUrl: "http://test",
+        },
+      }),
+      fetchSessionsPayload: async () => ({
+        ok: true,
+        payload: { sessions: [] },
+      }),
+      createTransport: () => {
+        throw new Error("not used");
+      },
+      loadRuntime: async () => {
+        throw new Error("not used");
+      },
+      getLocalStorage: () => ({ storage: null, error: null }),
+      getSessionStorage: () => ({ storage: null, error: null }),
     };
 
     render(<TerminalApp environment={customEnvironment} />);

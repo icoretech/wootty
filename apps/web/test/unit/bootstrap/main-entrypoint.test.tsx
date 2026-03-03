@@ -33,10 +33,18 @@ describe("main entrypoint", () => {
     });
   });
 
-  it("throws when #root is missing", async () => {
-    await expect(import("../../../src/main")).rejects.toThrow(
-      "Missing #root element",
-    );
+  it("renders a bootstrap fallback when #root is missing", async () => {
+    document.body.innerHTML = "";
+
+    await import("../../../src/main");
+
+    await waitFor(() => {
+      const alert = document.querySelector(
+        '[role="alert"][data-testid="bootstrap-failure"]',
+      );
+      expect(alert).toBeTruthy();
+      expect(alert?.textContent).toContain("Missing #root element");
+    });
   });
 
   it("renders a bootstrap fallback when App import fails invariants", async () => {

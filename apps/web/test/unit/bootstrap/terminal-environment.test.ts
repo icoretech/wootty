@@ -7,7 +7,6 @@ const WS_PROTOCOL = "ws:";
 const WSS_PROTOCOL = "wss:";
 const APP_HOST = "app.example.test";
 const WS_HOST = "ws.example.test";
-const LOOPBACK_HOST = "127.0.0.1";
 
 function createWindowLikeRef(url: string): Window {
   const parsed = new URL(url);
@@ -115,6 +114,7 @@ describe("terminal environment backend endpoint resolution", () => {
         envSocketUrl: `${HTTPS_PROTOCOL}//${WS_HOST}/api/terminal`,
         expectedWsUrl: `${WSS_PROTOCOL}//${WS_HOST}/api/terminal`,
         expectedSessionsUrl: `${HTTPS_PROTOCOL}//${WS_HOST}/api/sessions`,
+        expectOk: true,
       },
       {
         label: "http endpoint to ws",
@@ -122,6 +122,7 @@ describe("terminal environment backend endpoint resolution", () => {
         envSocketUrl: `${HTTP_PROTOCOL}//${WS_HOST}/api/terminal`,
         expectedWsUrl: `${WS_PROTOCOL}//${WS_HOST}/api/terminal`,
         expectedSessionsUrl: `${HTTP_PROTOCOL}//${WS_HOST}/api/sessions`,
+        expectOk: true,
       },
       {
         label: "relative endpoint uses window host",
@@ -129,13 +130,13 @@ describe("terminal environment backend endpoint resolution", () => {
         envSocketUrl: "/api/terminal",
         expectedWsUrl: `wss://${APP_HOST}/api/terminal`,
         expectedSessionsUrl: `${HTTPS_PROTOCOL}//${APP_HOST}/api/sessions`,
+        expectOk: true,
       },
       {
-        label: "window-null default endpoint",
+        label: "window-null default endpoint fails fast",
         windowRef: null,
         envSocketUrl: undefined,
-        expectedWsUrl: `${WS_PROTOCOL}//${LOOPBACK_HOST}/api/terminal`,
-        expectedSessionsUrl: `${HTTP_PROTOCOL}//${LOOPBACK_HOST}/api/sessions`,
+        expectOk: false,
       },
       {
         label: "pathful websocket override keeps prefix for sessions endpoint",
@@ -143,6 +144,7 @@ describe("terminal environment backend endpoint resolution", () => {
         envSocketUrl: `${WSS_PROTOCOL}//${WS_HOST}/tenant-a/api/terminal`,
         expectedWsUrl: `${WSS_PROTOCOL}//${WS_HOST}/tenant-a/api/terminal`,
         expectedSessionsUrl: `${HTTPS_PROTOCOL}//${WS_HOST}/tenant-a/api/sessions`,
+        expectOk: true,
       },
     ] as const;
 
@@ -151,13 +153,23 @@ describe("terminal environment backend endpoint resolution", () => {
         testCase.windowRef,
         testCase.envSocketUrl,
       );
-      expect(resolved, testCase.label).toEqual({
-        ok: true,
-        endpoints: {
-          terminalWsUrl: testCase.expectedWsUrl,
-          sessionsHttpUrl: testCase.expectedSessionsUrl,
-        },
-      });
+      if (testCase.expectOk) {
+        expect(resolved, testCase.label).toEqual({
+          ok: true,
+          endpoints: {
+            terminalWsUrl: testCase.expectedWsUrl,
+            sessionsHttpUrl: testCase.expectedSessionsUrl,
+          },
+        });
+      } else {
+        expect(resolved, testCase.label).toEqual({
+          ok: false,
+          issue: expect.objectContaining({
+            code: expect.any(String),
+            details: expect.any(String),
+          }),
+        });
+      }
     }
   });
 });

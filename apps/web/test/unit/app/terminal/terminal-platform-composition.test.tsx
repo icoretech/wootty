@@ -10,7 +10,7 @@ type PlatformProbeProps = {
 };
 
 function PlatformProbe({ environment }: PlatformProbeProps) {
-  const platform = useTerminalPlatformContext(environment.platform);
+  const platform = useTerminalPlatformContext(environment);
   const wsUrl = platform.backendResolution.ok
     ? platform.backendResolution.endpoints.terminalWsUrl
     : "invalid";
@@ -61,45 +61,41 @@ function createEnvironment(
 ): TerminalAppEnvironment {
   const storage = new Map<string, string>();
   return {
-    platform: {
-      resolveBackendEndpoints: () => backendResolution,
-      fetchSessionsPayload,
-      documentRef: document,
-      windowRef: window,
-      scheduler: browserScheduler,
+    documentRef: document,
+    windowRef: window,
+    scheduler: browserScheduler,
+    resolveBackendEndpoints: () => backendResolution,
+    fetchSessionsPayload,
+    createTransport: () => {
+      throw new Error("not used");
     },
-    domain: {
-      createTransport: () => {
-        throw new Error("not used");
-      },
-      loadRuntime: async () => {
-        throw new Error("not used");
-      },
-      getLocalStorage: () => ({
-        storage: {
-          get length() {
-            return storage.size;
-          },
-          clear() {
-            storage.clear();
-          },
-          getItem(key: string) {
-            return storage.get(key) ?? null;
-          },
-          key(index: number) {
-            return Array.from(storage.keys())[index] ?? null;
-          },
-          removeItem(key: string) {
-            storage.delete(key);
-          },
-          setItem(key: string, value: string) {
-            storage.set(key, value);
-          },
-        } as Storage,
-        error: null,
-      }),
-      getSessionStorage: () => ({ storage: null, error: null }),
+    loadRuntime: async () => {
+      throw new Error("not used");
     },
+    getLocalStorage: () => ({
+      storage: {
+        get length() {
+          return storage.size;
+        },
+        clear() {
+          storage.clear();
+        },
+        getItem(key: string) {
+          return storage.get(key) ?? null;
+        },
+        key(index: number) {
+          return Array.from(storage.keys())[index] ?? null;
+        },
+        removeItem(key: string) {
+          storage.delete(key);
+        },
+        setItem(key: string, value: string) {
+          storage.set(key, value);
+        },
+      } as Storage,
+      error: null,
+    }),
+    getSessionStorage: () => ({ storage: null, error: null }),
   };
 }
 
@@ -164,7 +160,7 @@ describe("terminal platform composition", () => {
     });
     let currentWsUrl = "ws://127.0.0.1/api/terminal?token=one";
     const environment = createEnvironment(fetchSessionsPayload);
-    environment.platform.resolveBackendEndpoints = () => {
+    environment.resolveBackendEndpoints = () => {
       return {
         ok: true,
         endpoints: {

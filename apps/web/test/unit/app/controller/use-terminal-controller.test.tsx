@@ -66,25 +66,21 @@ function createStorageStub(): Storage {
 function createEnvironmentStub(): TerminalAppEnvironment {
   const storage = createStorageStub();
   return {
-    platform: {
-      resolveBackendEndpoints: () => ({
-        ok: true,
-        endpoints: {
-          sessionsHttpUrl: "/api/sessions",
-          terminalWsUrl: "ws://127.0.0.1/api/terminal",
-        },
-      }),
-      fetchSessionsPayload: fetchSessionsStub,
-      documentRef: document,
-      windowRef: window,
-      scheduler: browserScheduler,
-    },
-    domain: {
-      createTransport: throwTransportCalled,
-      loadRuntime: throwRuntimeCalled,
-      getLocalStorage: () => ({ storage, error: null }),
-      getSessionStorage: () => ({ storage, error: null }),
-    },
+    documentRef: document,
+    windowRef: window,
+    scheduler: browserScheduler,
+    resolveBackendEndpoints: () => ({
+      ok: true,
+      endpoints: {
+        sessionsHttpUrl: "/api/sessions",
+        terminalWsUrl: "ws://127.0.0.1/api/terminal",
+      },
+    }),
+    fetchSessionsPayload: fetchSessionsStub,
+    createTransport: throwTransportCalled,
+    loadRuntime: throwRuntimeCalled,
+    getLocalStorage: () => ({ storage, error: null }),
+    getSessionStorage: () => ({ storage, error: null }),
   };
 }
 

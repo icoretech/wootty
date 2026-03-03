@@ -39,7 +39,7 @@ describe("terminal app environment factory", () => {
       socketUrl,
     });
 
-    const resolution = environment.platform.resolveBackendEndpoints(window);
+    const resolution = environment.resolveBackendEndpoints(window);
     expect(resolution).toEqual({
       ok: true,
       endpoints: {
@@ -54,7 +54,7 @@ describe("terminal app environment factory", () => {
       socketUrl: "   ",
     });
 
-    const resolution = environment.platform.resolveBackendEndpoints(window);
+    const resolution = environment.resolveBackendEndpoints(window);
     expect(resolution).toEqual({
       ok: true,
       endpoints: {

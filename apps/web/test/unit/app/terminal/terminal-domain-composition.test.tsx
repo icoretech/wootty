@@ -58,34 +58,28 @@ function createEnvironment(): TerminalAppEnvironment {
     },
   } as Storage;
   return {
-    platform: {
-      resolveBackendEndpoints: () => ({
-        ok: true,
-        endpoints: {
-          sessionsHttpUrl: "/api/sessions",
-          terminalWsUrl: "ws://127.0.0.1/api/terminal",
-        },
-      }),
-      fetchSessionsPayload: async () => ({
-        ok: true,
-        payload: {},
-      }),
-      documentRef: document,
-      windowRef: window,
-      scheduler: browserScheduler,
-    },
-    domain: {
-      createTransport: () => {
-        throw new Error("transport should be disabled when bootstrap fails");
+    documentRef: document,
+    windowRef: window,
+    scheduler: browserScheduler,
+    resolveBackendEndpoints: () => ({
+      ok: true,
+      endpoints: {
+        sessionsHttpUrl: "/api/sessions",
+        terminalWsUrl: "ws://127.0.0.1/api/terminal",
       },
-      loadRuntime: async () => {
-        throw new Error(
-          "runtime should not load without a mounted terminal ref",
-        );
-      },
-      getLocalStorage: () => ({ storage: asStorage, error: null }),
-      getSessionStorage: () => ({ storage: asStorage, error: null }),
+    }),
+    fetchSessionsPayload: async () => ({
+      ok: true,
+      payload: {},
+    }),
+    createTransport: () => {
+      throw new Error("transport should be disabled when bootstrap fails");
     },
+    loadRuntime: async () => {
+      throw new Error("runtime should not load without a mounted terminal ref");
+    },
+    getLocalStorage: () => ({ storage: asStorage, error: null }),
+    getSessionStorage: () => ({ storage: asStorage, error: null }),
   };
 }
 
@@ -109,7 +103,7 @@ function DomainProbe() {
   const sessionButtonRef = useRef<HTMLDivElement | null>(null);
 
   const domain = useTerminalDomainController({
-    environment: environment.domain,
+    environment,
     platform,
     appViewportRef,
     sessionMenuRef,

@@ -19,11 +19,8 @@ export function createTerminalEnvironment(
 ): TerminalAppEnvironment {
   const environment = createTerminalAppEnvironment();
   return {
-    platform: environment.platform,
-    domain: {
-      ...environment.domain,
-      createTransport: transportBoundary.createTransport,
-      loadRuntime: runtimeBoundary.loadRuntime,
-    },
+    ...environment,
+    createTransport: transportBoundary.createTransport,
+    loadRuntime: runtimeBoundary.loadRuntime,
   };
 }
