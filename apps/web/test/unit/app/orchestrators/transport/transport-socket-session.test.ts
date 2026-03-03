@@ -90,6 +90,20 @@ describe("transport socket session", () => {
     expect(session.closeActive(1002, "closing")).toBe(false);
   });
 
+  it("keeps listeners attached when socket is already closing", () => {
+    const session = new TransportSocketSession();
+    const socket = new SocketDouble();
+    const handlers = createHandlers();
+
+    session.attach(socket, handlers);
+    socket.readyState = TRANSPORT_READY_STATE.CLOSING;
+
+    expect(session.closeActive(1002, "closing")).toBe(false);
+
+    socket.emit("close", new Event("close"));
+    expect(handlers.onClose).toHaveBeenCalledTimes(1);
+  });
+
   it("releases only the active generation and supports socket swap", () => {
     const session = new TransportSocketSession();
     const firstSocket = new SocketDouble();

@@ -54,9 +54,6 @@ export class TransportSocketSession {
       this.socket === null ||
       this.socket.readyState >= TRANSPORT_READY_STATE.CLOSING
     ) {
-      // Socket is already closing or closed - clear state and let
-      // the close event handler complete the reconnect flow.
-      this.clear();
       return false;
     }
     this.closeIntent = closeIntent;
