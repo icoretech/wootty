@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.8](https://github.com/icoretech/wootty/compare/wootty-v0.2.7...wootty-v0.2.8) (2026-03-03)
+
+
+### Bug Fixes
+
+* **terminal:** fail fast on missing socket URL in non-browser environments ([74ce930](https://github.com/icoretech/wootty/commit/74ce930610a4069a66e2dfd0cdf03615633c6789))
+* **terminal:** prevent reconnect stall on CLOSING sockets and outbox byte corruption ([d5926ab](https://github.com/icoretech/wootty/commit/d5926aba857ba7878d2e7f8a20304701f86f32c4))
+* **transport:** keep listeners on closing socket ([58af1ae](https://github.com/icoretech/wootty/commit/58af1ae6eaae914f71e7658a3166427f3d590a17))
+* **web:** apply biome assist import-order and unused import fixes ([f33de1b](https://github.com/icoretech/wootty/commit/f33de1bcea7ba8e75e507b86b5ee409121208f77))
+
 ## [0.2.7](https://github.com/icoretech/wootty/compare/wootty-v0.2.6...wootty-v0.2.7) (2026-03-02)
 
 
