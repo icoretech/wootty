@@ -1,19 +1,44 @@
 :root {
   color-scheme: dark;
-  font-family: "Space Grotesk", "Sora", "JetBrains Mono", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---- Typography ---- */
+  --font-ui: "Inter", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code",
+    monospace;
+
+  /* ---- Backgrounds ---- */
   --bg-0: #04090a;
   --bg-1: #071117;
-  --ink-0: #ebf9ff;
-  --ink-1: #8cb3c1;
-  --line: #1f4a5f;
-  --line-soft: #173a4b;
-  --accent: #35d0bb;
-  --danger: #ff6f61;
+  --bg-2: #0c1318;
+
+  /* ---- Text ---- */
+  --ink-0: #e4eef3;
+  --ink-1: #7a9aaa;
+  --ink-2: #4d6876;
+
+  /* ---- Borders ---- */
+  --line: #1c3545;
+  --line-soft: #152a38;
+
+  /* ---- Accents ---- */
+  --accent: #34d1b8;
+  --accent-dim: rgba(52, 209, 184, 0.12);
+  --danger: #ff6b5e;
+  --warn: #f0c050;
+
+  /* ---- Terminal ---- */
   --terminal-bg: #00000000;
-  --terminal-fg: #dcf8ff;
+  --terminal-fg: #d8f4ff;
   --terminal-cursor: #ffcc66;
-  --terminal-selection: #2b5e68;
+  --terminal-selection: #264e5c;
   --terminal-black: #0a171c;
+
+  /* ---- Glass & effects ---- */
+  --glass: rgba(10, 18, 24, 0.78);
+  --glass-border: rgba(40, 80, 100, 0.45);
+  --glow-accent: 0 0 20px rgba(52, 209, 184, 0.08);
+  --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 1px rgba(0, 0, 0, 0.7);
 }
 
 * {
@@ -29,8 +54,11 @@ body,
 }
 
 body {
+  font-family: var(--font-ui);
   background: radial-gradient(circle at 30% -20%, #0d2530, var(--bg-0) 52%);
   color: var(--ink-0);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .sr-only {
@@ -47,6 +75,39 @@ body {
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* ---- Keyframes ---- */
+
+@keyframes cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes status-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

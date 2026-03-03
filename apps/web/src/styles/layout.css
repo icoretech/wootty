@@ -11,8 +11,8 @@
 }
 
 .shell.is-fullscreen {
-  padding: 6px;
-  gap: 6px;
+  padding: 4px;
+  gap: 4px;
 }
 
 .shell__background {
@@ -22,13 +22,36 @@
   background:
     radial-gradient(circle at 80% 8%, rgba(55, 161, 184, 0.2), transparent 40%),
     radial-gradient(circle at 5% 100%, rgba(35, 76, 92, 0.4), transparent 45%),
-    linear-gradient(165deg, rgba(5, 11, 14, 0.98), rgba(6, 13, 18, 0.94));
+    linear-gradient(
+      165deg,
+      rgba(5, 11, 14, 0.98),
+      rgba(6, 13, 18, 0.94)
+    );
 }
+
+/* Subtle scanline texture — just enough for the terminal vibe */
+.shell__background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.035) 2px,
+    rgba(0, 0, 0, 0.035) 4px
+  );
+  pointer-events: none;
+}
+
+/* ---- Workspace ---- */
 
 .workspace {
   position: relative;
   min-height: 0;
 }
+
+/* ---- Terminal ---- */
 
 .terminal-wrap {
   width: 100%;
@@ -55,11 +78,11 @@
 .terminal-wrap .xterm-viewport {
   background-color: transparent !important;
   scrollbar-width: thin;
-  scrollbar-color: rgba(53, 130, 156, 0.78) transparent;
+  scrollbar-color: rgba(52, 130, 160, 0.4) transparent;
 }
 
 .terminal-wrap .xterm-viewport::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 .terminal-wrap .xterm-viewport::-webkit-scrollbar-track {
@@ -67,62 +90,89 @@
 }
 
 .terminal-wrap .xterm-viewport::-webkit-scrollbar-thumb {
-  background: rgba(53, 130, 156, 0.78);
+  background: rgba(52, 130, 160, 0.35);
   border-radius: 999px;
+}
+
+.terminal-wrap .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(52, 130, 160, 0.55);
 }
 
 .terminal-wrap .xterm-viewport::-webkit-scrollbar-corner {
   background: transparent;
 }
 
+/* ---- Loading overlay ---- */
+
 .terminal-overlay {
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: linear-gradient(180deg, rgba(3, 8, 11, 0.62), rgba(3, 8, 11, 0.78));
   display: grid;
   place-content: center;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(6, 12, 16, 0.65),
+    rgba(6, 12, 16, 0.88)
+  );
+  backdrop-filter: blur(6px);
   pointer-events: none;
 }
 
 .empty-state {
-  min-width: min(420px, 88vw);
+  min-width: min(400px, 85vw);
   display: grid;
   justify-items: center;
-  gap: 8px;
-  padding: 16px 20px;
-  border: 1px solid rgba(58, 111, 133, 0.7);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(10, 25, 35, 0.9), rgba(7, 18, 26, 0.94));
+  gap: 10px;
+  padding: 28px 24px;
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    var(--shadow-panel),
+    var(--glow-accent);
   text-align: center;
+  animation: fade-in-up 400ms ease-out;
 }
 
 .empty-state__icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  border: 1px solid rgba(83, 151, 177, 0.75);
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid rgba(52, 209, 184, 0.25);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #91e5d7;
-  background: linear-gradient(180deg, rgba(17, 56, 72, 0.9), rgba(13, 42, 57, 0.9));
+  color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .empty-state p {
   margin: 0;
-  font-size: 0.96rem;
-  font-weight: 620;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+/* Blinking cursor after the loading text */
+.empty-state p::after {
+  content: "_";
+  color: var(--terminal-cursor);
+  margin-left: 2px;
+  animation: cursor-blink 1s step-end infinite;
 }
 
 .empty-state small {
   color: var(--ink-1);
-  font-size: 0.74rem;
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 @media (max-width: 640px) {
   .shell {
-    padding: 6px;
-    gap: 6px;
+    padding: 4px;
+    gap: 4px;
   }
 }

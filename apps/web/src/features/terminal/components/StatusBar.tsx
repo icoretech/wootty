@@ -1,4 +1,4 @@
-import { ChevronDown, SlidersHorizontal, Wifi, WifiOff } from "lucide-react";
+import { ChevronDown, SlidersHorizontal } from "lucide-react";
 import type { RefObject } from "react";
 import type { StatusBarAction } from "../commands/status-bar-actions";
 import { VIEWPORT_UI_COMMAND } from "../commands/viewport-commands";
@@ -15,8 +15,6 @@ export function StatusBar({
   sessionButtonRef,
   dispatch,
 }: StatusBarProps) {
-  const StatusIcon = model.status === "connected" ? Wifi : WifiOff;
-
   return (
     <footer className="statusbar">
       <div className="statusbar__group">
@@ -42,7 +40,6 @@ export function StatusBar({
           data-status={model.status}
           data-latency={model.latencyTone}
         >
-          <StatusIcon size={13} aria-hidden="true" />
           <span data-testid="status-label">{model.statusText}</span>
           <span className="status-pill__latency" data-testid="latency-value">
             {model.latencyText}

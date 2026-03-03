@@ -1,15 +1,23 @@
+/* ---- Controls toggle (status bar) ---- */
+
 .controls-toggle {
   width: 36px;
   height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--line-soft);
+  border: 1px solid var(--line);
   border-radius: 10px;
-  color: #cfeef8;
-  background: linear-gradient(180deg, #12303f, #0f2733);
+  color: var(--ink-0);
+  background: var(--glass);
+  backdrop-filter: blur(12px);
   cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
 }
+
+/* ---- Floating controls panel ---- */
 
 .floating-controls {
   position: absolute;
@@ -18,17 +26,19 @@
   z-index: 6;
   width: 46px;
   display: grid;
-  gap: 6px;
-  padding: 7px;
-  border: 1px solid var(--line-soft);
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid var(--glass-border);
   border-radius: 12px;
-  background: linear-gradient(170deg, rgba(8, 23, 31, 0.94), rgba(8, 19, 27, 0.89));
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow-panel);
   opacity: 0;
   pointer-events: none;
   transform: translateY(8px);
   transition:
-    opacity 140ms ease,
-    transform 140ms ease;
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .floating-controls.is-open {
@@ -38,16 +48,20 @@
 }
 
 .floating-controls button {
-  width: 30px;
-  height: 30px;
-  border: 1px solid rgba(71, 132, 154, 0.8);
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--line);
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, #184053, #143445);
-  color: #e4f8ff;
+  background: rgba(18, 32, 42, 0.6);
+  color: var(--ink-0);
   cursor: pointer;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease,
+    box-shadow 100ms ease;
 }
 
 .floating-controls__item {
@@ -58,26 +72,36 @@
 
 .floating-controls__tooltip {
   position: absolute;
-  left: calc(100% + 8px);
+  left: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  padding: 3px 7px;
+  padding: 4px 8px;
   border-radius: 6px;
-  border: 1px solid rgba(58, 122, 146, 0.85);
-  background: rgba(8, 22, 31, 0.95);
-  color: #d4f4ff;
-  font-size: 0.62rem;
-  letter-spacing: 0.03em;
+  border: 1px solid var(--glass-border);
+  background: rgba(8, 16, 22, 0.96);
+  backdrop-filter: blur(8px);
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 90ms ease;
+  transition: opacity 100ms ease;
 }
 
-.controls-toggle:hover,
+/* ---- Hover / active states ---- */
+
+.controls-toggle:hover {
+  border-color: rgba(52, 209, 184, 0.3);
+  background: rgba(52, 209, 184, 0.06);
+}
+
 .floating-controls button:hover {
-  background: linear-gradient(180deg, #1c4c62, #184357);
+  border-color: rgba(52, 209, 184, 0.3);
+  background: rgba(52, 209, 184, 0.08);
+  box-shadow: 0 0 12px rgba(52, 209, 184, 0.06);
 }
 
 .floating-controls__item:hover .floating-controls__tooltip,
@@ -87,9 +111,17 @@
 
 .controls-toggle:disabled,
 .floating-controls button:disabled {
-  opacity: 0.56;
+  opacity: 0.35;
   cursor: not-allowed;
 }
+
+.floating-controls button:disabled:hover {
+  border-color: var(--line);
+  background: rgba(18, 32, 42, 0.6);
+  box-shadow: none;
+}
+
+/* ---- Session popover layer ---- */
 
 .session-popover-layer {
   position: absolute;
@@ -98,73 +130,87 @@
   z-index: 12;
 }
 
+/* ---- Session menu ---- */
+
 .session-menu {
   position: relative;
   width: min(380px, 92vw);
-  padding: 10px;
+  padding: 12px;
   display: grid;
   gap: 8px;
-  border: 1px solid rgba(56, 112, 133, 0.85);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(10, 25, 34, 0.98), rgba(7, 18, 25, 0.97));
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-panel);
+  animation: fade-in-up 180ms ease-out;
 }
 
 .session-menu__action {
-  height: 30px;
-  border: 1px solid rgba(55, 118, 143, 0.85);
+  height: 32px;
+  border: 1px solid var(--line);
   border-radius: 8px;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   justify-content: center;
-  color: #ddf6ff;
-  background: linear-gradient(180deg, #153b4d, #103143);
+  color: var(--ink-0);
+  background: rgba(18, 32, 42, 0.6);
+  font-family: var(--font-mono);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-size: 0.65rem;
-  font-weight: 620;
+  letter-spacing: 0.04em;
+  font-size: 0.62rem;
+  font-weight: 500;
   cursor: pointer;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
 }
 
 .session-menu__action:hover {
-  background: linear-gradient(180deg, #1a4a60, #143f53);
+  border-color: rgba(52, 209, 184, 0.3);
+  background: rgba(52, 209, 184, 0.08);
 }
 
 .session-menu__action:disabled {
-  opacity: 0.56;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .session-menu__list {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   max-height: 180px;
   overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(52, 130, 160, 0.35) transparent;
 }
 
 .session-menu__section-title {
-  margin: 2px 2px 0;
-  color: #9fc4d1;
-  font-size: 0.58rem;
-  letter-spacing: 0.05em;
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .session-menu__notice {
   margin: 0;
-  padding: 6px 8px;
-  border: 1px solid rgba(182, 116, 92, 0.8);
+  padding: 8px 10px;
+  border: 1px solid rgba(200, 100, 70, 0.3);
   border-radius: 8px;
-  background: rgba(64, 29, 20, 0.6);
+  background: rgba(80, 30, 20, 0.25);
   color: #ffd6c8;
-  font-size: 0.64rem;
+  font-size: 0.66rem;
+  line-height: 1.4;
 }
 
 .session-menu__resume {
   min-height: 44px;
   width: 100%;
-  border: 1px solid rgba(47, 104, 126, 0.7);
+  border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
   grid-template-columns: 1fr auto;
@@ -174,15 +220,21 @@
   align-items: center;
   column-gap: 10px;
   row-gap: 2px;
-  padding: 7px 8px;
-  color: #cdefff;
-  background: rgba(9, 24, 33, 0.92);
+  padding: 8px 10px;
+  color: var(--ink-0);
+  background: rgba(12, 20, 28, 0.55);
   cursor: pointer;
   text-align: left;
+  transition:
+    background 100ms ease,
+    border-color 100ms ease;
 }
 
 .session-menu__primary {
   grid-area: primary;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -190,7 +242,7 @@
 
 .session-menu__secondary {
   grid-area: secondary;
-  color: #91afba;
+  color: var(--ink-1);
   font-size: 0.6rem;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -203,10 +255,12 @@
   align-items: center;
   gap: 5px;
   justify-content: flex-end;
-  color: #a8f1e3;
-  font-size: 0.63rem;
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 
 .session-menu__resume strong svg {
@@ -220,40 +274,47 @@
 }
 
 .session-menu__resume:hover {
-  background: rgba(13, 33, 45, 0.96);
+  border-color: rgba(52, 209, 184, 0.25);
+  background: rgba(52, 209, 184, 0.04);
 }
 
 .session-menu__resume:disabled {
-  opacity: 0.56;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .session-menu__resume--inactive {
   cursor: default;
-  border-color: rgba(58, 85, 96, 0.75);
-  background: rgba(8, 19, 25, 0.85);
+  border-color: rgba(40, 55, 65, 0.5);
+  background: rgba(10, 16, 22, 0.45);
+}
+
+.session-menu__resume--inactive:hover {
+  border-color: rgba(40, 55, 65, 0.5);
+  background: rgba(10, 16, 22, 0.45);
 }
 
 .session-menu__resume--inactive strong {
-  color: #e0a8a8;
+  color: var(--danger);
+  opacity: 0.6;
 }
 
 .session-menu__empty {
   margin: 0;
-  color: var(--ink-1);
+  color: var(--ink-2);
   font-size: 0.66rem;
 }
 
 @media (max-width: 640px) {
   .floating-controls {
-    bottom: 8px;
-    left: 8px;
+    bottom: 6px;
+    left: 6px;
   }
 
   .session-popover-layer {
-    left: 8px;
-    right: 8px;
-    bottom: 8px;
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
   }
 
   .session-menu {

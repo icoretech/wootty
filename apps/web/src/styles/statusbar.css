@@ -1,29 +1,35 @@
+/* ---- Status bar toggle ---- */
+
 .statusbar-toggle {
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
-  border-color: rgba(52, 101, 121, 0.9);
-  background: linear-gradient(180deg, #153b4c, #123241);
+  border-color: var(--line);
+  background: var(--glass);
 }
+
+/* ---- Status bar ---- */
 
 .statusbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  padding: 6px 10px;
-  border: 1px solid var(--line);
+  padding: 5px 8px;
+  border: 1px solid var(--line-soft);
   border-radius: 10px;
-  background: linear-gradient(180deg, rgba(6, 18, 25, 0.92), rgba(7, 15, 22, 0.9));
-  font-size: 0.7rem;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
   color: var(--ink-1);
 }
 
 .statusbar__group {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   min-width: 0;
 }
@@ -32,6 +38,8 @@
   margin-left: auto;
 }
 
+/* ---- Connection status pill ---- */
+
 .status-pill {
   display: inline-flex;
   align-items: center;
@@ -39,99 +47,135 @@
   height: 24px;
   padding: 0 8px;
   border-radius: 999px;
-  border: 1px solid color-mix(in oklab, var(--line), var(--accent) 20%);
-  color: #d5faff;
-  font-weight: 620;
+  border: 1px solid var(--line);
+  color: var(--ink-0);
+  font-weight: 500;
+  font-size: 0.64rem;
+}
+
+/* Animated status dot via pseudo-element */
+.status-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-2);
+  flex-shrink: 0;
 }
 
 .status-pill[data-status="connected"] {
-  border-color: color-mix(in oklab, var(--line), var(--accent) 34%);
+  border-color: rgba(52, 209, 184, 0.22);
+}
+
+.status-pill[data-status="connected"]::before {
+  background: var(--accent);
+  box-shadow: 0 0 8px rgba(52, 209, 184, 0.5);
+  animation: status-pulse 2.5s ease-in-out infinite;
 }
 
 .status-pill[data-status="error"] {
-  border-color: color-mix(in oklab, var(--line), var(--danger) 40%);
+  border-color: rgba(255, 107, 94, 0.25);
   color: #ffd5cf;
+}
+
+.status-pill[data-status="error"]::before {
+  background: var(--danger);
+  box-shadow: 0 0 8px rgba(255, 107, 94, 0.4);
 }
 
 .status-pill__latency {
   padding-left: 4px;
-  font-size: 0.67rem;
+  font-size: 0.6rem;
   font-variant-numeric: tabular-nums;
 }
 
 .status-pill[data-latency="good"] .status-pill__latency {
-  color: #8cf0dd;
+  color: var(--accent);
 }
 
 .status-pill[data-latency="warn"] .status-pill__latency {
-  color: #ffd37f;
+  color: var(--warn);
 }
 
 .status-pill[data-latency="bad"] .status-pill__latency {
-  color: #ff9d95;
+  color: var(--danger);
 }
+
+/* ---- Status items (pills) ---- */
 
 .status-item {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   height: 24px;
   padding: 0 8px;
-  border: 1px solid rgba(52, 101, 121, 0.7);
+  border: 1px solid var(--line-soft);
   border-radius: 999px;
-  background: rgba(7, 18, 25, 0.55);
+  background: rgba(10, 18, 24, 0.35);
+  font-size: 0.64rem;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
 .status-item--button {
   cursor: pointer;
+  transition:
+    border-color 100ms ease,
+    background 100ms ease;
 }
+
+.status-item--button:hover {
+  border-color: rgba(52, 209, 184, 0.22);
+  background: rgba(52, 209, 184, 0.04);
+}
+
+/* ---- Session display ---- */
 
 .status-session {
   min-width: 0;
 }
 
 .status-session__button {
+  font-family: inherit;
   color: var(--ink-1);
-  font-size: 0.7rem;
+  font-size: 0.64rem;
 }
 
 .status-session__button svg {
-  color: var(--ink-1);
+  color: var(--ink-2);
 }
 
 .status-session__button strong,
 .status-session__value {
-  font-size: 0.7rem;
-  font-weight: 640;
+  font-size: 0.64rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: #daf6ff;
+  color: var(--ink-0);
   text-transform: none;
   letter-spacing: normal;
 }
 
 .status-item strong {
-  color: #daf6ff;
+  color: var(--ink-0);
   text-transform: none;
   letter-spacing: normal;
-  font-weight: 640;
-  font-size: 0.7rem;
+  font-weight: 600;
+  font-size: 0.64rem;
   max-width: 220px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .status-item[data-mode="watch"] {
-  border-color: rgba(84, 149, 172, 0.86);
+  border-color: rgba(84, 149, 172, 0.45);
   color: #c8f3ff;
 }
 
 @media (max-width: 900px) {
   .statusbar {
-    gap: 6px;
-    font-size: 0.66rem;
+    gap: 4px;
+    font-size: 0.6rem;
   }
 
   .status-item strong {
@@ -142,7 +186,7 @@
 @media (max-width: 640px) {
   .statusbar {
     justify-content: flex-start;
-    padding: 6px 8px;
+    padding: 4px 6px;
   }
 
   .statusbar__group:last-child {
