@@ -7,15 +7,14 @@ import {
   useRef,
   useState,
 } from "react";
-import type { AttachMode } from "../../contracts/session/session";
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalAppEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { clampFontSize } from "../../preferences/font-size-policy";
-import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import type { SessionOrchestratorInterface } from "../../session/application/session-orchestrator";
+import { useSessionOrchestrator } from "../../session/application/session-orchestrator";
 import {
   readInitialFontSizeResult,
   writeFontSizePreferenceResult,

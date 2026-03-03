@@ -73,7 +73,8 @@ export function writeFontSizePreferenceResult(
   const { error } = withStorageErrorHandling(
     "write",
     FONT_SIZE_STORAGE_KEY,
-    () => storage.setItem(FONT_SIZE_STORAGE_KEY, String(clampFontSize(fontSize))),
+    () =>
+      storage.setItem(FONT_SIZE_STORAGE_KEY, String(clampFontSize(fontSize))),
   );
   return { error };
 }

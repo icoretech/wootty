@@ -129,9 +129,7 @@ function resolveRelativeSocketUrl(
   };
 }
 
-function defaultSocketUrl(
-  windowRef: Window | null,
-): SocketUrlResolutionResult {
+function defaultSocketUrl(windowRef: Window | null): SocketUrlResolutionResult {
   if (!windowRef) {
     // Non-browser environments must explicitly configure the socket URL.
     // Silently defaulting to localhost masks misconfiguration.

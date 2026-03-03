@@ -1,10 +1,7 @@
 import { createBrowserTransport } from "../adapters/browser-transport";
 import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
 import { browserScheduler } from "../platform/scheduler";
-import {
-  type AuthTokenProvider,
-  createBrowserAuthTokenProvider,
-} from "./auth-token-provider";
+import { createBrowserAuthTokenProvider } from "./auth-token-provider";
 import {
   readDocument,
   readStorageResult,

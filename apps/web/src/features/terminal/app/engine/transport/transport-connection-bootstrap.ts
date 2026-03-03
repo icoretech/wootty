@@ -1,8 +1,8 @@
+import { TERMINAL_AUTH_POLICY } from "../../../bootstrap/auth-policy";
 import type { TransportFailureReasonCode } from "../../../contracts/transport/failure-reason";
 import type { TerminalTransport } from "../../../contracts/transport/transport";
 import { redactTokenInUrlForNotice } from "../../../shared/sanitization/redact-token-in-url";
 import { validateWebsocketEndpoint } from "../../../validation/websocket-endpoint";
-import { TERMINAL_AUTH_POLICY } from "../../../bootstrap/auth-policy";
 
 const TRANSPORT_BOOTSTRAP_FAILURE_REASON_CODES = [
   "endpoint_unavailable",

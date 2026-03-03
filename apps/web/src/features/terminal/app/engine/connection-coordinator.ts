@@ -8,12 +8,10 @@ import {
   useState,
 } from "react";
 import type { ConnectionStatus } from "../../contracts/connection";
-import type { AttachMode } from "../../contracts/session/session";
 import type {
   TerminalTransport,
   TerminalTransportMessageEvent,
 } from "../../contracts/transport/transport";
-import type { NoticePublisher } from "../../notifications/notice-contract";
 import type { Scheduler } from "../../platform/scheduler";
 import { createAttachMessage } from "../../protocol/terminal-client-messages";
 import type { TerminalClientMessage } from "../../protocol/terminal-wire-schema";
