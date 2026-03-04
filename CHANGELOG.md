@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.10](https://github.com/icoretech/wootty/compare/wootty-v0.2.9...wootty-v0.2.10) (2026-03-04)
+
+
+### Features
+
+* **web:** add copy-current-session feedback in status bar ([c8d0f29](https://github.com/icoretech/wootty/commit/c8d0f2944d596d93fce0183fc5dce8ee1b7a309f))
+
+
+### Bug Fixes
+
+* **web:** restore 0.2.2 terminal font rendering profile ([fb225ff](https://github.com/icoretech/wootty/commit/fb225ffdc210c3d16b4417a54cdf2a22e4e10d18))
+
 ## [0.2.9](https://github.com/icoretech/wootty/compare/wootty-v0.2.8...wootty-v0.2.9) (2026-03-04)
 
 
