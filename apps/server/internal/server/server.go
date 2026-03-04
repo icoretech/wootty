@@ -11,6 +11,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -322,12 +323,7 @@ func (s *Server) isAllowedOrigin(r *http.Request) bool {
 	}
 
 	if len(s.cfg.AllowedOrigins) > 0 {
-		for _, allowedOrigin := range s.cfg.AllowedOrigins {
-			if origin == allowedOrigin {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(s.cfg.AllowedOrigins, origin)
 	}
 
 	expectedHost := strings.TrimSpace(r.Host)
@@ -463,8 +459,7 @@ func embeddedAssetExists(assets fs.FS, assetPath string) bool {
 
 func cloneRequestWithPath(request *http.Request, requestPath string) *http.Request {
 	clone := request.Clone(request.Context())
-	urlCopy := *request.URL
-	clone.URL = &urlCopy
+	clone.URL = new(*request.URL)
 	clone.URL.Path = requestPath
 	clone.URL.RawPath = requestPath
 	return clone

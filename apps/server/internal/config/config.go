@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -309,9 +310,7 @@ func splitArgs(value string) ([]string, error) {
 
 func cloneEnv(input map[string]string) map[string]string {
 	out := make(map[string]string, len(input))
-	for k, v := range input {
-		out[k] = v
-	}
+	maps.Copy(out, input)
 	return out
 }
 
