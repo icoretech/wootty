@@ -1,10 +1,7 @@
 # WooTTY
 
 [![CI](https://img.shields.io/github/actions/workflow/status/icoretech/wootty/ci.yml?branch=main&label=CI)](https://github.com/icoretech/wootty/actions/workflows/ci.yml)
-[![Release Please](https://img.shields.io/github/actions/workflow/status/icoretech/wootty/release-please.yml?branch=main&label=Release%20Please)](https://github.com/icoretech/wootty/actions/workflows/release-please.yml)
 [![GitHub Release](https://img.shields.io/github/v/release/icoretech/wootty)](https://github.com/icoretech/wootty/releases)
-[![Node](https://img.shields.io/badge/node-%3E%3D24-3c873a)](https://nodejs.org/)
-[![Go](https://img.shields.io/badge/go-%3E%3D1.26-00ADD8)](https://go.dev/)
 [![License](https://img.shields.io/github/license/icoretech/wootty)](./LICENSE)
 
 WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome: a terminal experience that stays reliable under real pressure (resize storms, reconnects, long output, and unstable networks).
