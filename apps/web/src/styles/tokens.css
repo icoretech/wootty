@@ -2,9 +2,10 @@
   color-scheme: dark;
 
   /* ---- Typography ---- */
-  --font-ui: "Inter", "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Code", "Fira Code",
-    monospace;
+  --font-ui: "Space Grotesk", "Sora", "JetBrains Mono", ui-sans-serif,
+    system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Iosevka", "Fira Code", ui-monospace,
+    "SFMono-Regular", Menlo, monospace;
 
   /* ---- Backgrounds ---- */
   --bg-0: #04090a;
@@ -57,8 +58,6 @@ body {
   font-family: var(--font-ui);
   background: radial-gradient(circle at 30% -20%, #0d2530, var(--bg-0) 52%);
   color: var(--ink-0);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 .sr-only {
