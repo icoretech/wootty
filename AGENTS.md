@@ -24,6 +24,7 @@ cd apps/server && go run ./cmd/woottyd run --host 127.0.0.1 --port 8080
 
 ## Coding Style & Naming Conventions
 - Use Biome (`biome.json`) for formatting/linting in JS/TS/JSON/Markdown.
+- When running Biome manually, always use fix mode directly (`pnpm exec biome check --write --assist-enabled=true ...` or `pnpm lint`), and do not run check-only Biome commands.
 - Use `gofmt`/standard Go formatting for all Go changes.
 - Keep React components in PascalCase (`App.tsx`), utility modules in kebab/lowercase (`terminal-session.ts`).
 - Keep packages scoped under `@icoretech/*` naming where applicable.

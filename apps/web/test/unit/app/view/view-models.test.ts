@@ -38,6 +38,7 @@ describe("terminal view-model mappers", () => {
     expect(models.floatingControlsModel.fontSize).toBe(13);
     expect(models.sessionMenuModel.sessionNotice).toBe("updated");
     expect(models.statusBarModel.latencyText).toBe("22ms");
+    expect(models.statusBarModel.sessionName).toBe("session-current");
     expect(models.statusBarModel.queuedInputText).toBe("128 B");
   });
 

@@ -8,6 +8,7 @@ export type StatusBarModel = {
   latencyTone: "neutral" | "good" | "warn" | "bad";
   statusText: string;
   latencyText: string;
+  sessionName: string | null;
   sessionDisplay: string;
   attachMode: AttachMode;
   reconnectAttempt: number;

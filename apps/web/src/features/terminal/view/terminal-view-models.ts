@@ -60,9 +60,8 @@ export function buildTerminalViewModels(
   const { ui, session, connection, telemetry } = input;
 
   const statusText = statusLabel(connection.status);
-  const sessionDisplay = session.sessionId
-    ? shortSessionId(session.sessionId)
-    : "pending";
+  const sessionName = session.sessionId;
+  const sessionDisplay = sessionName ? shortSessionId(sessionName) : "pending";
   const { liveSessionCandidates, historySessionCandidates } =
     deriveSessionCandidates({
       liveSessions: session.liveSessions,
@@ -113,6 +112,7 @@ export function buildTerminalViewModels(
     latencyTone: tone,
     statusText,
     latencyText: formatLatency(connection.latencyMs),
+    sessionName,
     sessionDisplay,
     attachMode: session.attachMode,
     reconnectAttempt: connection.reconnectAttempt,

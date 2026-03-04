@@ -57,6 +57,7 @@ describe("view contracts", () => {
       latencyTone: "good",
       statusText: "Connected",
       latencyText: "25ms",
+      sessionName: "session-a-full",
       sessionDisplay: "session-a",
       attachMode: "control",
       reconnectAttempt: 0,

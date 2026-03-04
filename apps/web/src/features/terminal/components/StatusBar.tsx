@@ -1,5 +1,5 @@
-import { ChevronDown, SlidersHorizontal } from "lucide-react";
-import type { RefObject } from "react";
+import { Check, ChevronDown, Copy, SlidersHorizontal } from "lucide-react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import type { StatusBarAction } from "../commands/status-bar-actions";
 import { VIEWPORT_UI_COMMAND } from "../commands/viewport-commands";
 import type { StatusBarModel } from "../view/status-bar-model";
@@ -15,6 +15,46 @@ export function StatusBar({
   sessionButtonRef,
   dispatch,
 }: StatusBarProps) {
+  const [copyConfirmed, setCopyConfirmed] = useState(false);
+  const copyResetTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimerRef.current !== null) {
+        window.clearTimeout(copyResetTimerRef.current);
+      }
+    };
+  }, []);
+
+  const scheduleCopyFeedbackReset = () => {
+    if (copyResetTimerRef.current !== null) {
+      window.clearTimeout(copyResetTimerRef.current);
+    }
+    copyResetTimerRef.current = window.setTimeout(() => {
+      setCopyConfirmed(false);
+      copyResetTimerRef.current = null;
+    }, 1400);
+  };
+
+  const copyCurrentSessionName = () => {
+    if (!model.sessionName) {
+      return;
+    }
+    const clipboard = globalThis.navigator?.clipboard;
+    if (!clipboard || typeof clipboard.writeText !== "function") {
+      return;
+    }
+    void clipboard
+      .writeText(model.sessionName)
+      .then(() => {
+        setCopyConfirmed(true);
+        scheduleCopyFeedbackReset();
+      })
+      .catch(() => {
+        setCopyConfirmed(false);
+      });
+  };
+
   return (
     <footer className="statusbar">
       <div className="statusbar__group">
@@ -65,6 +105,25 @@ export function StatusBar({
               {model.sessionDisplay}
             </strong>
             <ChevronDown size={12} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="status-item status-item--button status-session__copy"
+            data-testid="session-copy-button"
+            aria-label={
+              copyConfirmed
+                ? "Current session name copied"
+                : "Copy current session name"
+            }
+            onClick={copyCurrentSessionName}
+            disabled={!model.sessionName}
+            data-copied={copyConfirmed ? "true" : "false"}
+          >
+            {copyConfirmed ? (
+              <Check size={12} aria-hidden="true" />
+            ) : (
+              <Copy size={12} aria-hidden="true" />
+            )}
           </button>
         </div>
         <span className="status-item" data-mode={model.attachMode}>
