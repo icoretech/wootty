@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.9](https://github.com/icoretech/wootty/compare/wootty-v0.2.8...wootty-v0.2.9) (2026-03-04)
+
+
+### Features
+
+* **ui:** modernize terminal UI with glassmorphism and refined styling ([1da3f05](https://github.com/icoretech/wootty/commit/1da3f05fb01795437c9b2311da1f6d20a2a5ce03))
+
 ## [0.2.8](https://github.com/icoretech/wootty/compare/wootty-v0.2.7...wootty-v0.2.8) (2026-03-03)
 
 
