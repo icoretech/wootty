@@ -1,0 +1,71 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["github-actions", "npm"],
+  "dependencyDashboard": true,
+  "labels": ["dependencies"],
+  "platformAutomerge": false,
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 10,
+  "rebaseWhen": "conflicted",
+  "rangeStrategy": "bump",
+  "timezone": "Europe/Rome",
+  "schedule": ["before 6am on monday"],
+  "packageRules": [
+    {
+      "description": "Keep major updates manual",
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Group frontend runtime updates",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["/^react$/", "/^react-dom$/", "/^@xterm\\//"],
+      "groupName": "frontend-runtime",
+      "groupSlug": "frontend-runtime"
+    },
+    {
+      "description": "Group frontend tooling updates",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "/^@vitejs\\//",
+        "/^vite$/",
+        "/^vitest$/",
+        "/^@playwright\\//"
+      ],
+      "groupName": "frontend-tooling",
+      "groupSlug": "frontend-tooling"
+    },
+    {
+      "description": "Group server runtime updates",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "/^fastify$/",
+        "/^@fastify\\//",
+        "/^@lydell\\/node-pty$/"
+      ],
+      "groupName": "server-runtime",
+      "groupSlug": "server-runtime"
+    },
+    {
+      "description": "Group QA tooling updates",
+      "matchManagers": ["npm"],
+      "matchPackageNames": [
+        "/^@biomejs\\//",
+        "/^typescript$/",
+        "/^tsx$/",
+        "/^concurrently$/",
+        "/^zod$/",
+        "/^ws$/"
+      ],
+      "groupName": "qa-tooling",
+      "groupSlug": "qa-tooling"
+    },
+    {
+      "description": "Automerge non-major updates after checks pass",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr"
+    }
+  ]
+}
