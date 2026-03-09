@@ -32,18 +32,18 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.30.0
+          version: 10.31.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 24.14.0
           cache: pnpm
 
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26.x"
+          go-version: "1.26.1"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -72,18 +72,18 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10.30.0
+          version: 10.31.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 24
+          node-version: 24.14.0
           cache: pnpm
 
       - name: Setup Go
         uses: actions/setup-go@v6
         with:
-          go-version: "1.26.x"
+          go-version: "1.26.1"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
