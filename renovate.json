@@ -10,7 +10,6 @@
   "rebaseWhen": "conflicted",
   "rangeStrategy": "bump",
   "timezone": "Europe/Rome",
-  "schedule": ["before 6am on monday"],
   "packageRules": [
     {
       "description": "Keep major updates manual",
