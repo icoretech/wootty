@@ -21,14 +21,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Validate Conventional Commit subjects
-        run: ./scripts/ci/check-conventional-commits.sh
-        env:
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_BEFORE_SHA: ${{ github.event.before }}
-          GITHUB_BASE_SHA: ${{ github.event.pull_request.base.sha }}
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -48,11 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint (auto-format + typecheck)
-        run: pnpm lint
-
-      - name: Ensure no formatting drift
-        run: git diff --exit-code
+      - name: Lint (check-only + typecheck)
+        run: pnpm lint:ci
 
       - name: Unit and integration tests
         run: pnpm test

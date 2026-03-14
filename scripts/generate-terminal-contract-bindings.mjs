@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -180,18 +181,17 @@ var SessionSnapshotOptionalFields = []string${renderGoStringArray(
 )}
 `;
 
-writeFileSync(
-  resolve(
-    repoRoot,
-    "apps/web/src/features/terminal/protocol/generated-wire-contract.ts",
-  ),
-  tsOutput,
-  "utf8",
+const tsOutputPath = resolve(
+  repoRoot,
+  "apps/web/src/features/terminal/protocol/generated-wire-contract.ts",
 );
-writeFileSync(
-  resolve(repoRoot, "apps/server/internal/protocol/wire_contract.go"),
-  goOutput,
-  "utf8",
-);
+const goOutputPath = resolve(repoRoot, "apps/server/internal/protocol/wire_contract.go");
+
+writeFileSync(tsOutputPath, tsOutput, "utf8");
+writeFileSync(goOutputPath, goOutput, "utf8");
+execFileSync("pnpm", ["exec", "biome", "format", "--write", tsOutputPath], {
+  cwd: repoRoot,
+});
+execFileSync("gofmt", ["-w", goOutputPath]);
 
 console.log("Generated terminal contract bindings for web and server.");

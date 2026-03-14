@@ -446,7 +446,7 @@ pnpm test:e2e:cross
 Notes:
 
 - `pnpm lint` applies Biome fixes, runs `go fix` on the server module, and then runs typecheck.
-- CI enforces zero formatting drift (`git diff --exit-code`).
+- `pnpm lint:ci` is the non-mutating CI variant: `biome ci`, `gofmt` verification, docs/governance checks, and typecheck.
 - Test environment ownership:
   - Browser test polyfills and setup wiring live under `apps/web/test/support/`.
   - E2E URL/port defaults live under `apps/web/config/e2e/e2e-env.ts`.

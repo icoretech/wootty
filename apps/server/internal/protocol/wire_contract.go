@@ -15,26 +15,26 @@ const (
 
 const (
 	ClientMessageTypeAttach = "attach"
-	ClientMessageTypeInput = "input"
+	ClientMessageTypeInput  = "input"
 	ClientMessageTypeResize = "resize"
-	ClientMessageTypePing = "ping"
+	ClientMessageTypePing   = "ping"
 )
 
 const (
-	ServerMessageTypeReady = "ready"
+	ServerMessageTypeReady  = "ready"
 	ServerMessageTypeOutput = "output"
-	ServerMessageTypeExit = "exit"
-	ServerMessageTypeError = "error"
-	ServerMessageTypePong = "pong"
+	ServerMessageTypeExit   = "exit"
+	ServerMessageTypeError  = "error"
+	ServerMessageTypePong   = "pong"
 )
 
 const (
-	ServerErrorCodeSessionNotFound = "session_not_found"
-	ServerErrorCodeAttachForbidden = "attach_forbidden"
+	ServerErrorCodeSessionNotFound     = "session_not_found"
+	ServerErrorCodeAttachForbidden     = "attach_forbidden"
 	ServerErrorCodeIncompatibleVersion = "incompatible_version"
-	ServerErrorCodeAttachRequired = "attach_required"
-	ServerErrorCodeReadOnlyForbidden = "read_only_forbidden"
-	ServerErrorCodeSessionNotWritable = "session_not_writable"
+	ServerErrorCodeAttachRequired      = "attach_required"
+	ServerErrorCodeReadOnlyForbidden   = "read_only_forbidden"
+	ServerErrorCodeSessionNotWritable  = "session_not_writable"
 	ServerErrorCodeSessionNotResizable = "session_not_resizable"
 )
 
