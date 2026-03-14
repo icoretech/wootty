@@ -12,11 +12,6 @@
   "timezone": "Europe/Rome",
   "packageRules": [
     {
-      "description": "Keep major updates manual",
-      "matchUpdateTypes": ["major"],
-      "enabled": false
-    },
-    {
       "description": "Group frontend runtime updates",
       "matchManagers": ["npm"],
       "matchPackageNames": ["/^react$/", "/^react-dom$/", "/^@xterm\\//"],
