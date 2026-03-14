@@ -70,14 +70,16 @@ jobs:
             has_v_prefix=true
           fi
 
-          echo "release_tag=$release_tag" >>"$GITHUB_OUTPUT"
-          echo "checkout_ref=refs/tags/$release_tag" >>"$GITHUB_OUTPUT"
-          echo "version_tag=$semver_tag" >>"$GITHUB_OUTPUT"
-          echo "noversion_tag=$nov_tag" >>"$GITHUB_OUTPUT"
-          echo "has_v_prefix=$has_v_prefix" >>"$GITHUB_OUTPUT"
-          echo "publish_latest=$publish_latest" >>"$GITHUB_OUTPUT"
-          echo "push=$push" >>"$GITHUB_OUTPUT"
-          echo "platforms=$platforms" >>"$GITHUB_OUTPUT"
+          {
+            echo "release_tag=$release_tag"
+            echo "checkout_ref=refs/tags/$release_tag"
+            echo "version_tag=$semver_tag"
+            echo "noversion_tag=$nov_tag"
+            echo "has_v_prefix=$has_v_prefix"
+            echo "publish_latest=$publish_latest"
+            echo "push=$push"
+            echo "platforms=$platforms"
+          } >>"$GITHUB_OUTPUT"
 
       - name: Checkout release tag
         uses: actions/checkout@v6
@@ -86,14 +88,14 @@ jobs:
 
       - name: Set up QEMU
         if: steps.prepare.outputs.push == 'true'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Login to GHCR
         if: steps.prepare.outputs.push == 'true'
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -101,7 +103,7 @@ jobs:
 
       - name: Docker metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
         with:
@@ -122,7 +124,7 @@ jobs:
             org.opencontainers.image.licenses=MIT
 
       - name: Build and publish image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./Dockerfile
