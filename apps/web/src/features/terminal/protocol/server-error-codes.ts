@@ -3,6 +3,7 @@ import {
   TERMINAL_SERVER_ERROR_CODE,
   TERMINAL_UNKNOWN_SERVER_ERROR_POLICY,
 } from "./generated-wire-contract";
+
 export { TERMINAL_SERVER_ERROR_CODE };
 
 export type TerminalServerErrorCode =

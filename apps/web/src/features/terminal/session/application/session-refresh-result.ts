@@ -3,8 +3,8 @@ import {
   type SessionRefreshFailure,
 } from "../protocol/session-refresh-failure-contract";
 
-export { SESSION_REFRESH_FAILURE_REASONS };
 export type { SessionRefreshFailure };
+export { SESSION_REFRESH_FAILURE_REASONS };
 
 export type SessionRefreshTrigger = "poll" | "transport_event" | "manual";
 

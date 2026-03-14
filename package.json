@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.2.10",
   "description": "WooTTY: modern web terminal with resilient PTY sessions",
-  "packageManager": "pnpm@10.31.0",
+  "packageManager": "pnpm@10.32.1",
   "engines": {
     "node": ">=24.14.0"
   },
@@ -34,7 +34,7 @@
     ]
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.6",
+    "@biomejs/biome": "^2.4.7",
     "concurrently": "^9.2.1"
   }
 }
