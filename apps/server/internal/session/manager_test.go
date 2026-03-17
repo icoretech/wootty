@@ -87,7 +87,7 @@ func TestManagerReconnectReplaysHistory(t *testing.T) {
 	if ok := manager.Write(firstAttach.SessionID, "abc\r"); !ok {
 		t.Fatal("expected write to succeed")
 	}
-	_ = waitForOutputContaining(t, clientConnA, "a", 2*time.Second)
+	_ = waitForOutputContaining(t, clientConnA, "$ ", 2*time.Second)
 
 	manager.Detach(firstAttach.SessionID, serverConnA)
 
