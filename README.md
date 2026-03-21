@@ -39,10 +39,13 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 Stable image from GitHub Container Registry:
 
 ```bash
-docker run --rm -it -p 8080:8080 ghcr.io/icoretech/wootty:latest
+docker run --rm -it \
+  -p 8080:8080 \
+  -e WOOTTY_AUTH_TOKEN=change-me-local \
+  ghcr.io/icoretech/wootty:latest
 ```
 
-Then open `http://127.0.0.1:8080`.
+Then open `http://127.0.0.1:8080/?token=change-me-local`.
 
 For image flavors, SSH usage, direct command args, compose profiles, and custom images, see [Run with Docker](#run-with-docker).
 
@@ -93,7 +96,10 @@ Build locally:
 
 ```bash
 docker build -t wootty:dev .
-docker run --rm -it -p 8080:8080 wootty:dev
+docker run --rm -it \
+  -p 8080:8080 \
+  -e WOOTTY_AUTH_TOKEN=change-me-local \
+  wootty:dev
 ```
 
 Run profile-based examples from the root `docker-compose.yml`:
@@ -281,7 +287,7 @@ Session controls:
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `WOOTTY_HOST` | `0.0.0.0` | Bind address |
+| `WOOTTY_HOST` | `127.0.0.1` | Bind address for direct host runs |
 | `WOOTTY_PORT` | `8080` | HTTP/WebSocket port |
 | `WOOTTY_DETACHED_TTL_MS` | `86400000` | Hard TTL for running detached sessions (24h). `0` disables this TTL |
 | `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
@@ -289,8 +295,9 @@ Session controls:
 | `WOOTTY_COMMAND_ARGS` | _empty_ | Shell-like command args string (supports quotes and escapes) |
 | `WOOTTY_CWD` | current directory | Process working directory |
 | `WOOTTY_STATIC_DIR` | auto-detected | Directory with built web assets |
-| `WOOTTY_AUTH_TOKEN` | _empty_ | Optional bearer token required by `/api/sessions` and `/api/terminal` when set |
+| `WOOTTY_AUTH_TOKEN` | _empty_ | Required when binding to a non-loopback host; used for `/api/sessions` and `/api/terminal` auth |
 | `WOOTTY_ALLOWED_ORIGINS` | _empty_ | Optional comma-separated websocket origin allowlist |
+| `WOOTTY_ALLOW_INSECURE_NO_AUTH` | _empty_ | Set to `1` only to allow explicit unauthenticated non-loopback binds on trusted local networks |
 | `WOOTTY_FAKE_PTY` | `0` | Set to `1` for deterministic fake PTY mode |
 
 `WOOTTY_COMMAND_ARGS` examples:
@@ -317,7 +324,7 @@ If `WOOTTY_COMMAND_ARGS` has invalid quoting (for example an unterminated quote)
 
 CLI equivalent is available for detached retention timing: `--detached-ttl-ms`.
 
-For non-local deployments, set `WOOTTY_AUTH_TOKEN` (and optionally `WOOTTY_ALLOWED_ORIGINS`) to protect session and websocket endpoints.
+For non-local deployments, WooTTY now fails fast unless `WOOTTY_AUTH_TOKEN` is set. Use `WOOTTY_ALLOWED_ORIGINS` as an extra browser-side guard. `WOOTTY_ALLOW_INSECURE_NO_AUTH=1` is only for trusted local networks and should not be used for published services.
 
 ### Session Retention Model
 

@@ -52,7 +52,7 @@ LABEL org.opencontainers.image.source="https://github.com/icoretech/wootty" \
 
 EXPOSE 8080
 
-CMD ["wootty", "run"]
+CMD ["wootty", "run", "--host", "0.0.0.0"]
 
 FROM runtime-base AS final
 
@@ -69,4 +69,4 @@ LABEL org.opencontainers.image.source="https://github.com/icoretech/wootty" \
 
 EXPOSE 8080
 
-CMD ["wootty", "run"]
+CMD ["wootty", "run", "--host", "0.0.0.0"]

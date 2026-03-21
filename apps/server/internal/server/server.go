@@ -31,6 +31,16 @@ type Server struct {
 	sessions *session.Manager
 }
 
+const (
+	readHeaderTimeout         = 5 * time.Second
+	readTimeout               = 30 * time.Second
+	writeTimeout              = 30 * time.Second
+	idleTimeout               = 2 * time.Minute
+	maxHeaderBytes            = 1 << 20
+	websocketHandshakeTimeout = 10 * time.Second
+	maxWebsocketMessageBytes  = 64 * 1024
+)
+
 func New(cfg config.RuntimeConfig) *Server {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
@@ -52,8 +62,13 @@ func New(cfg config.RuntimeConfig) *Server {
 		log:      logger,
 		sessions: manager,
 		http: &http.Server{
-			Addr:    cfg.Host + ":" + strconv.Itoa(cfg.Port),
-			Handler: mux,
+			Addr:              cfg.Host + ":" + strconv.Itoa(cfg.Port),
+			Handler:           mux,
+			ReadHeaderTimeout: readHeaderTimeout,
+			ReadTimeout:       readTimeout,
+			WriteTimeout:      writeTimeout,
+			IdleTimeout:       idleTimeout,
+			MaxHeaderBytes:    maxHeaderBytes,
 		},
 	}
 
@@ -97,7 +112,9 @@ func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-var baseUpgrader = websocket.Upgrader{}
+var baseUpgrader = websocket.Upgrader{
+	HandshakeTimeout: websocketHandshakeTimeout,
+}
 
 func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 	if !s.isAuthorizedTerminalRequest(r) {
@@ -112,6 +129,7 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
+	conn.SetReadLimit(maxWebsocketMessageBytes)
 
 	activeSessionID := ""
 	activeReadOnly := false

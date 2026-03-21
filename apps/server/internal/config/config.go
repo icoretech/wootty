@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"net"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -16,7 +17,7 @@ const (
 	DefaultPort          = 8080
 	DefaultHistoryBytes  = 5 * 1024 * 1024
 	DefaultDetachedTTLMS = 86_400_000
-	DefaultHost          = "0.0.0.0"
+	DefaultHost          = "127.0.0.1"
 )
 
 var ErrHelpRequested = errors.New("help requested")
@@ -127,6 +128,11 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 	}
 
 	authToken := strings.TrimSpace(env["WOOTTY_AUTH_TOKEN"])
+	if requiresAuthToken(host, authToken, env) {
+		return RuntimeConfig{}, errors.New(
+			"WOOTTY_AUTH_TOKEN is required when binding to a non-loopback host; set WOOTTY_ALLOW_INSECURE_NO_AUTH=1 only for trusted local networks",
+		)
+	}
 
 	return RuntimeConfig{
 		Host:           host,
@@ -172,7 +178,7 @@ Examples:
 Flags:
   -h, --help                  Show this help and exit
   -p, --port <port>           HTTP/WebSocket listen port (default 8080)
-      --host <host>           Bind address (default 0.0.0.0)
+      --host <host>           Bind address (default 127.0.0.1)
       --detached-ttl-ms <ms>  Detached session hard TTL in milliseconds (default 86400000; 0 disables)
       --history-bytes <bytes> Replay buffer size in bytes (default 5242880)
       --naked                 Compatibility no-op flag accepted for legacy callers
@@ -188,6 +194,7 @@ Environment overrides:
   WOOTTY_STATIC_DIR
   WOOTTY_AUTH_TOKEN
   WOOTTY_ALLOWED_ORIGINS
+  WOOTTY_ALLOW_INSECURE_NO_AUTH
   WOOTTY_FAKE_PTY
 `,
 		name,
@@ -349,6 +356,28 @@ func normalizeHost(value string, fallback string) string {
 		return fallback
 	}
 	return trimmed
+}
+
+func requiresAuthToken(host string, authToken string, env map[string]string) bool {
+	if strings.TrimSpace(authToken) != "" {
+		return false
+	}
+	if env["WOOTTY_ALLOW_INSECURE_NO_AUTH"] == "1" {
+		return false
+	}
+	return !isLoopbackHost(host)
+}
+
+func isLoopbackHost(host string) bool {
+	normalized := strings.TrimSpace(strings.Trim(host, "[]"))
+	if normalized == "" {
+		return false
+	}
+	if strings.EqualFold(normalized, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(normalized)
+	return ip != nil && ip.IsLoopback()
 }
 
 func parseCSVList(value string) []string {

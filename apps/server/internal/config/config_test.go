@@ -58,9 +58,9 @@ func TestParseRunConfigWithFlagsAndCommand(t *testing.T) {
 	}
 }
 
-func TestParseRunConfigAllowsNonLoopbackHostWithoutAuthToken(t *testing.T) {
+func TestParseRunConfigAllowsLoopbackHostWithoutAuthToken(t *testing.T) {
 	cfg, err := ParseRunConfig(
-		[]string{"run", "--host", "0.0.0.0"},
+		[]string{"run", "--host", "127.0.0.1"},
 		map[string]string{},
 		"/tmp/wootty/apps/server",
 	)
@@ -69,6 +69,52 @@ func TestParseRunConfigAllowsNonLoopbackHostWithoutAuthToken(t *testing.T) {
 	}
 	if cfg.AuthToken != "" {
 		t.Fatalf("expected empty auth token by default, got %q", cfg.AuthToken)
+	}
+}
+
+func TestParseRunConfigRejectsNonLoopbackHostWithoutAuthToken(t *testing.T) {
+	_, err := ParseRunConfig(
+		[]string{"run", "--host", "0.0.0.0"},
+		map[string]string{},
+		"/tmp/wootty/apps/server",
+	)
+	if err == nil {
+		t.Fatal("expected non-loopback host without auth token to be rejected")
+	}
+	if !strings.Contains(err.Error(), "WOOTTY_AUTH_TOKEN") {
+		t.Fatalf("expected auth token guidance in error, got %v", err)
+	}
+}
+
+func TestParseRunConfigAllowsNonLoopbackHostWithAuthToken(t *testing.T) {
+	cfg, err := ParseRunConfig(
+		[]string{"run", "--host", "0.0.0.0"},
+		map[string]string{
+			"WOOTTY_AUTH_TOKEN": "token",
+		},
+		"/tmp/wootty/apps/server",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.AuthToken != "token" {
+		t.Fatalf("expected auth token to be preserved, got %q", cfg.AuthToken)
+	}
+}
+
+func TestParseRunConfigAllowsExplicitInsecureNonLoopbackWithoutAuthToken(t *testing.T) {
+	cfg, err := ParseRunConfig(
+		[]string{"run", "--host", "0.0.0.0"},
+		map[string]string{
+			"WOOTTY_ALLOW_INSECURE_NO_AUTH": "1",
+		},
+		"/tmp/wootty/apps/server",
+	)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.AuthToken != "" {
+		t.Fatalf("expected empty auth token for explicit insecure mode, got %q", cfg.AuthToken)
 	}
 }
 

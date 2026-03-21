@@ -221,6 +221,59 @@ func TestSessionsAPIListsActiveSessions(t *testing.T) {
 	}
 }
 
+func TestNewConfiguresHTTPServerLimits(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	if server.http.ReadHeaderTimeout != readHeaderTimeout {
+		t.Fatalf(
+			"expected ReadHeaderTimeout %s, got %s",
+			readHeaderTimeout,
+			server.http.ReadHeaderTimeout,
+		)
+	}
+	if server.http.ReadTimeout != readTimeout {
+		t.Fatalf("expected ReadTimeout %s, got %s", readTimeout, server.http.ReadTimeout)
+	}
+	if server.http.WriteTimeout != writeTimeout {
+		t.Fatalf("expected WriteTimeout %s, got %s", writeTimeout, server.http.WriteTimeout)
+	}
+	if server.http.IdleTimeout != idleTimeout {
+		t.Fatalf("expected IdleTimeout %s, got %s", idleTimeout, server.http.IdleTimeout)
+	}
+	if server.http.MaxHeaderBytes != maxHeaderBytes {
+		t.Fatalf("expected MaxHeaderBytes %d, got %d", maxHeaderBytes, server.http.MaxHeaderBytes)
+	}
+}
+
+func TestTerminalWebsocketRejectsOversizedMessages(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	wsConn := dialTerminalWebsocket(t, httpServer.URL)
+	defer wsConn.Close()
+
+	if err := wsConn.WriteMessage(
+		websocket.TextMessage,
+		[]byte(strings.Repeat("x", maxWebsocketMessageBytes+1)),
+	); err != nil {
+		t.Fatalf("failed writing oversized websocket payload: %v", err)
+	}
+
+	if err := wsConn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+		t.Fatalf("failed setting websocket read deadline: %v", err)
+	}
+	_, _, err := wsConn.ReadMessage()
+	if err == nil {
+		t.Fatal("expected oversized websocket payload to close the connection")
+	}
+}
+
 func TestSessionsAPIRequiresTokenWhenConfigured(t *testing.T) {
 	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
 	cfg.AuthToken = "secret-token"
