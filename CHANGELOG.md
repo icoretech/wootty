@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.11](https://github.com/icoretech/wootty/compare/wootty-v0.2.10...wootty-v0.2.11) (2026-03-21)
+
+
+### Bug Fixes
+
+* **auth:** switch browser bootstrap to cookie-only ([f9caf3d](https://github.com/icoretech/wootty/commit/f9caf3d56e341298cc4ebf235e98fbb42eb2661b))
+* **ci:** allow renovate major update prs refs https://github.com/icoretech/wootty/issues/25 ([bab16b0](https://github.com/icoretech/wootty/commit/bab16b01fb99eed2e56fa21fae8324f6a6dd264f))
+* **ci:** bump docker publish actions refs https://github.com/icoretech/wootty/issues/25 ([5ac2b18](https://github.com/icoretech/wootty/commit/5ac2b188966317118f183d26979f3d199b03a486))
+* **server:** eliminate race in TestManagerReconnectReplaysHistory ([f336f4d](https://github.com/icoretech/wootty/commit/f336f4d09acabdc5ffd507c6c51c0db67bfa5a6f))
+* **server:** harden unauthenticated startup and socket limits ([79fb960](https://github.com/icoretech/wootty/commit/79fb960591841047588d4a6bbfc7dfd5a2c731f0))
+
 ## [0.2.10](https://github.com/icoretech/wootty/compare/wootty-v0.2.9...wootty-v0.2.10) (2026-03-04)
 
 
