@@ -1,5 +1,5 @@
 import { SquareTerminal } from "lucide-react";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createTerminalAppEnvironment } from "../bootstrap/terminal-environment";
 import { FloatingControls } from "../components/FloatingControls";
 import { SessionMenu } from "../components/SessionMenu";
@@ -13,18 +13,12 @@ type TerminalAppProps = {
 
 export type { TerminalAppEnvironment };
 
-export function TerminalApp({ environment }: TerminalAppProps = {}) {
-  const defaultEnvironmentRef = useRef<TerminalAppEnvironment | null>(null);
-  const effectiveEnvironment = (() => {
-    if (environment) {
-      return environment;
-    }
-    if (!defaultEnvironmentRef.current) {
-      defaultEnvironmentRef.current = createTerminalAppEnvironment();
-    }
-    return defaultEnvironmentRef.current;
-  })();
-  const controller = useTerminalController(effectiveEnvironment);
+function TerminalAppShell({
+  environment,
+}: {
+  environment: TerminalAppEnvironment;
+}) {
+  const controller = useTerminalController(environment);
 
   return (
     <main
@@ -97,4 +91,95 @@ export function TerminalApp({ environment }: TerminalAppProps = {}) {
       />
     </main>
   );
+}
+
+function TerminalBootstrapState({ message }: { message: string }) {
+  return (
+    <main className="shell">
+      <div className="shell__background" />
+      <section className="workspace">
+        <section
+          className="terminal-wrap"
+          data-testid="terminal-wrap"
+          aria-busy="true"
+          aria-label="Terminal viewport"
+        >
+          <div className="terminal-overlay" aria-live="polite">
+            <div className="empty-state">
+              <div className="empty-state__icon" aria-hidden="true">
+                <SquareTerminal size={20} />
+              </div>
+              <p>{message}</p>
+              <small>Preparing terminal access.</small>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+export function TerminalApp({ environment }: TerminalAppProps = {}) {
+  const defaultEnvironmentRef = useRef<TerminalAppEnvironment | null>(null);
+  const effectiveEnvironment = (() => {
+    if (environment) {
+      return environment;
+    }
+    if (!defaultEnvironmentRef.current) {
+      defaultEnvironmentRef.current = createTerminalAppEnvironment();
+    }
+    return defaultEnvironmentRef.current;
+  })();
+  const [authBootstrapState, setAuthBootstrapState] = useState<{
+    status: "pending" | "ready" | "error";
+    message: string;
+  }>(() => {
+    return effectiveEnvironment.bootstrapAuth
+      ? { status: "pending", message: "Establishing terminal authentication" }
+      : { status: "ready", message: "" };
+  });
+
+  useEffect(() => {
+    let active = true;
+    if (!effectiveEnvironment.bootstrapAuth) {
+      return () => {
+        active = false;
+      };
+    }
+
+    setAuthBootstrapState({
+      status: "pending",
+      message: "Establishing terminal authentication",
+    });
+    void effectiveEnvironment
+      .bootstrapAuth()
+      .then(() => {
+        if (!active) {
+          return;
+        }
+        setAuthBootstrapState({ status: "ready", message: "" });
+      })
+      .catch((error: unknown) => {
+        if (!active) {
+          return;
+        }
+        setAuthBootstrapState({
+          status: "error",
+          message:
+            error instanceof Error && error.message.length > 0
+              ? error.message
+              : "Unable to establish terminal authentication",
+        });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [effectiveEnvironment]);
+
+  if (authBootstrapState.status !== "ready") {
+    return <TerminalBootstrapState message={authBootstrapState.message} />;
+  }
+
+  return <TerminalAppShell environment={effectiveEnvironment} />;
 }

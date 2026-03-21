@@ -14,6 +14,7 @@ export type TerminalAppEnvironment = {
   documentRef: Document | null;
   windowRef: Window | null;
   scheduler: Scheduler;
+  bootstrapAuth?: () => Promise<void>;
   resolveBackendEndpoints: (
     windowRef: Window | null,
   ) => TerminalBackendResolution;

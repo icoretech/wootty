@@ -306,8 +306,8 @@ func TestSessionsAPIRequiresTokenWhenConfigured(t *testing.T) {
 		t.Fatalf("authorized sessions request failed: %v", err)
 	}
 	defer authorizedResp.Body.Close()
-	if authorizedResp.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 for authorized sessions request, got %d", authorizedResp.StatusCode)
+	if authorizedResp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for header-authorized sessions request, got %d", authorizedResp.StatusCode)
 	}
 
 	queryAuthorizedResp, err := http.Get(httpServer.URL + "/api/sessions?token=secret-token")
@@ -351,8 +351,8 @@ func TestStaticRoutesRequireTokenWhenConfigured(t *testing.T) {
 		t.Fatalf("unauthorized static request failed: %v", err)
 	}
 	defer unauthorizedResponse.Body.Close()
-	if unauthorizedResponse.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("expected 401 for unauthorized static request, got %d", unauthorizedResponse.StatusCode)
+	if unauthorizedResponse.StatusCode != http.StatusOK {
+		t.Fatalf("expected 200 for static request without auth cookie, got %d", unauthorizedResponse.StatusCode)
 	}
 
 	authorizedByQuery, err := http.Get(httpServer.URL + "/?token=secret-token")
@@ -361,14 +361,11 @@ func TestStaticRoutesRequireTokenWhenConfigured(t *testing.T) {
 	}
 	defer authorizedByQuery.Body.Close()
 	if authorizedByQuery.StatusCode != http.StatusOK {
-		t.Fatalf("expected 200 for authorized static request, got %d", authorizedByQuery.StatusCode)
+		t.Fatalf("expected 200 for static request with query token, got %d", authorizedByQuery.StatusCode)
 	}
 	issuedCookie := authorizedByQuery.Cookies()
-	if len(issuedCookie) == 0 || issuedCookie[0].Name != "wootty_auth" {
-		t.Fatalf("expected auth cookie to be issued from request token, got %#v", issuedCookie)
-	}
-	if issuedCookie[0].Value != "secret-token" {
-		t.Fatalf("expected auth cookie to mirror provided token, got %q", issuedCookie[0].Value)
+	if len(issuedCookie) != 0 {
+		t.Fatalf("expected static request query token to be ignored, got %#v", issuedCookie)
 	}
 }
 
@@ -399,24 +396,23 @@ func TestTerminalWebsocketRequiresTokenWhenConfigured(t *testing.T) {
 		)
 	}
 
-	authorizedConn, _, err := websocket.DefaultDialer.Dial(
+	authorizedConn, authorizedResponse, err := websocket.DefaultDialer.Dial(
 		websocketURL(httpServer.URL)+"?token=secret-token",
 		nil,
 	)
-	if err != nil {
-		t.Fatalf("failed to dial terminal websocket with query token: %v", err)
+	if authorizedConn != nil {
+		authorizedConn.Close()
 	}
-	defer authorizedConn.Close()
-
-	if err := authorizedConn.WriteJSON(map[string]any{
-		"type":    "attach",
-		"version": 1,
-		"cols":    80,
-		"rows":    24,
-	}); err != nil {
-		t.Fatalf("failed writing attach payload with auth token: %v", err)
+	if err == nil {
+		t.Fatal("expected websocket dial with query token to fail")
 	}
-	_ = waitForWSMessageType(t, authorizedConn, "ready", 2*time.Second)
+	if authorizedResponse == nil || authorizedResponse.StatusCode != http.StatusUnauthorized {
+		t.Fatalf(
+			"expected 401 for websocket upgrade using query token, got response=%#v err=%v",
+			authorizedResponse,
+			err,
+		)
+	}
 
 	headerAuthorizedConn, headerAuthorizedResponse, err := websocket.DefaultDialer.Dial(
 		websocketURL(httpServer.URL),
@@ -453,6 +449,50 @@ func TestTerminalWebsocketRequiresTokenWhenConfigured(t *testing.T) {
 		t.Fatalf("failed writing attach payload with auth cookie: %v", err)
 	}
 	_ = waitForWSMessageType(t, cookieAuthorizedConn, "ready", 2*time.Second)
+}
+
+func TestAuthBootstrapEndpointSetsCookieFromBearerToken(t *testing.T) {
+	cfg := testRuntimeConfig(t, true, "sh", filepath.Join(t.TempDir(), "missing-static"))
+	cfg.AuthToken = "secret-token"
+	server := New(cfg)
+	defer server.Shutdown()
+
+	httpServer := httptest.NewServer(server.http.Handler)
+	defer httpServer.Close()
+
+	unauthorizedReq, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/auth/bootstrap", nil)
+	if err != nil {
+		t.Fatalf("failed building unauthorized auth bootstrap request: %v", err)
+	}
+	unauthorizedResp, err := http.DefaultClient.Do(unauthorizedReq)
+	if err != nil {
+		t.Fatalf("unauthorized auth bootstrap request failed: %v", err)
+	}
+	defer unauthorizedResp.Body.Close()
+	if unauthorizedResp.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401 for unauthorized auth bootstrap request, got %d", unauthorizedResp.StatusCode)
+	}
+
+	authorizedReq, err := http.NewRequest(http.MethodPost, httpServer.URL+"/api/auth/bootstrap", nil)
+	if err != nil {
+		t.Fatalf("failed building authorized auth bootstrap request: %v", err)
+	}
+	authorizedReq.Header.Set("Authorization", "Bearer secret-token")
+	authorizedResp, err := http.DefaultClient.Do(authorizedReq)
+	if err != nil {
+		t.Fatalf("authorized auth bootstrap request failed: %v", err)
+	}
+	defer authorizedResp.Body.Close()
+	if authorizedResp.StatusCode != http.StatusNoContent {
+		t.Fatalf("expected 204 for authorized auth bootstrap request, got %d", authorizedResp.StatusCode)
+	}
+	issuedCookie := authorizedResp.Cookies()
+	if len(issuedCookie) == 0 || issuedCookie[0].Name != "wootty_auth" {
+		t.Fatalf("expected auth bootstrap cookie, got %#v", issuedCookie)
+	}
+	if issuedCookie[0].Value != "secret-token" {
+		t.Fatalf("expected auth bootstrap cookie to mirror configured token, got %q", issuedCookie[0].Value)
+	}
 }
 
 func TestTerminalWebsocketRejectsDisallowedOrigin(t *testing.T) {

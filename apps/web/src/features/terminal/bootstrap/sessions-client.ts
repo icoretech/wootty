@@ -3,23 +3,16 @@ import type {
   SessionsFetchResult,
 } from "../contracts/session/sessions-fetch";
 import { SESSIONS_ENVELOPE_FIELD } from "../protocol/generated-wire-contract";
-import { TERMINAL_AUTH_POLICY } from "./auth-policy";
-import type { AuthTokenProvider } from "./auth-token-provider";
 
-function createSessionFetchHeaders(authToken?: string): HeadersInit {
+function createSessionFetchHeaders(): HeadersInit {
   const headers: Record<string, string> = {
     Accept: "application/json",
   };
-  const normalized = authToken?.trim();
-  if (TERMINAL_AUTH_POLICY.sessionsHttp === "bearer_header" && normalized) {
-    headers.Authorization = `Bearer ${normalized}`;
-  }
   return headers;
 }
 
 function fetchSessionsFromEndpoint(
   sessionsHttpUrl: string,
-  authToken?: string,
   options?: {
     signal?: AbortSignal;
   },
@@ -92,7 +85,8 @@ function fetchSessionsFromEndpoint(
 
   return fetch(sessionsHttpUrl, {
     method: "GET",
-    headers: createSessionFetchHeaders(authToken),
+    headers: createSessionFetchHeaders(),
+    credentials: "include",
     cache: "no-store",
     signal: options?.signal,
   })
@@ -118,30 +112,13 @@ function fetchSessionsFromEndpoint(
     });
 }
 
-export function createBrowserSessionsClient(
-  authTokenProvider: AuthTokenProvider,
-): (
+export function createBrowserSessionsClient(): (
   sessionsHttpUrl: string,
   options?: {
     signal?: AbortSignal;
   },
 ) => Promise<SessionsFetchResult> {
   return (sessionsHttpUrl, options) => {
-    const tokenResolution = authTokenProvider();
-    if (tokenResolution.issue) {
-      return Promise.resolve({
-        ok: false,
-        failure: {
-          source: "fetch",
-          reason: "bootstrap_error",
-          issue: tokenResolution.issue,
-        },
-      });
-    }
-    return fetchSessionsFromEndpoint(
-      sessionsHttpUrl,
-      tokenResolution.token,
-      options,
-    );
+    return fetchSessionsFromEndpoint(sessionsHttpUrl, options);
   };
 }

@@ -1,8 +1,8 @@
 /**
- * Authentication policy: WebSocket uses cookies (browser limitation),
- * HTTP sessions use Bearer tokens (standard REST API).
+ * Authentication policy: both WebSocket and HTTP requests rely on the
+ * authenticated cookie established during browser bootstrap.
  */
 export const TERMINAL_AUTH_POLICY = {
   websocket: "cookie",
-  sessionsHttp: "bearer_header",
+  sessionsHttp: "cookie",
 } as const;

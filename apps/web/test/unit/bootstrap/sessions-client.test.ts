@@ -8,7 +8,7 @@ describe("sessions client", () => {
     vi.unstubAllGlobals();
   });
 
-  it("sends auth header and parses successful JSON payloads", async () => {
+  it("uses cookie credentials and parses successful JSON payloads", async () => {
     const fetchMock = vi.fn(async () => {
       return {
         ok: true,
@@ -17,7 +17,7 @@ describe("sessions client", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = createBrowserSessionsClient(() => ({ token: "secret" }));
+    const client = createBrowserSessionsClient();
     const result = await client(SESSIONS_ENDPOINT);
 
     expect(result).toEqual({
@@ -29,9 +29,9 @@ describe("sessions client", () => {
       expect.objectContaining({
         method: "GET",
         cache: "no-store",
+        credentials: "include",
         headers: expect.objectContaining({
           Accept: "application/json",
-          Authorization: "Bearer secret",
         }),
       }),
     );
@@ -54,7 +54,7 @@ describe("sessions client", () => {
       .mockRejectedValueOnce(new Error("network down"));
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = createBrowserSessionsClient(() => ({ token: undefined }));
+    const client = createBrowserSessionsClient();
 
     await expect(client(SESSIONS_ENDPOINT)).resolves.toEqual({
       ok: false,
@@ -96,7 +96,7 @@ describe("sessions client", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = createBrowserSessionsClient(() => ({ token: "secret" }));
+    const client = createBrowserSessionsClient();
     const result = await client(SESSIONS_ENDPOINT);
 
     expect(result).toEqual({
@@ -107,29 +107,25 @@ describe("sessions client", () => {
     });
   });
 
-  it("surfaces auth token resolution issues as bootstrap errors", async () => {
-    const fetchMock = vi.fn();
+  it("does not send bearer auth headers", async () => {
+    const fetchMock = vi.fn(async () => {
+      return {
+        ok: true,
+        text: async () => JSON.stringify({ sessions: [] }),
+      } as const;
+    });
     vi.stubGlobal("fetch", fetchMock);
 
-    const client = createBrowserSessionsClient(() => ({
-      token: undefined,
-      issue: {
-        code: "socket_url_invalid_format",
-        details: "unable to parse websocket URL",
-      },
-    }));
+    const client = createBrowserSessionsClient();
+    await client(SESSIONS_ENDPOINT);
 
-    await expect(client(SESSIONS_ENDPOINT)).resolves.toEqual({
-      ok: false,
-      failure: {
-        source: "fetch",
-        reason: "bootstrap_error",
-        issue: {
-          code: "socket_url_invalid_format",
-          details: "unable to parse websocket URL",
+    expect(fetchMock).toHaveBeenCalledWith(
+      SESSIONS_ENDPOINT,
+      expect.objectContaining({
+        headers: {
+          Accept: "application/json",
         },
-      },
-    });
-    expect(fetchMock).not.toHaveBeenCalled();
+      }),
+    );
   });
 });

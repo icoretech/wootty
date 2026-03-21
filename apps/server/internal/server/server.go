@@ -73,6 +73,7 @@ func New(cfg config.RuntimeConfig) *Server {
 	}
 
 	mux.HandleFunc("/api/health", s.handleHealth)
+	mux.HandleFunc("/api/auth/bootstrap", s.handleAuthBootstrap)
 	mux.HandleFunc(protocol.SessionsHTTPRoute, s.handleSessions)
 	mux.HandleFunc(protocol.TerminalWSRoute, s.handleTerminal)
 	s.registerStaticRoutes(mux)
@@ -95,6 +96,24 @@ func (s *Server) Shutdown() {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
+}
+
+func (s *Server) handleAuthBootstrap(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	if strings.TrimSpace(s.cfg.AuthToken) == "" {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	token := readBearerAuthorizationToken(r)
+	if token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AuthToken)) != 1 {
+		writeUnauthorized(w)
+		return
+	}
+	setAuthCookie(w, r, token)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleSessions(w http.ResponseWriter, r *http.Request) {
@@ -295,25 +314,11 @@ func (s *Server) registerStaticRoutes(mux *http.ServeMux) {
 	s.registerFallbackRoute(mux)
 }
 
-func (s *Server) isAuthorizedRequest(r *http.Request) bool {
-	if strings.TrimSpace(s.cfg.AuthToken) == "" {
-		return true
-	}
-	token := readStaticAuthorizationToken(r)
-	if token == "" {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AuthToken)) == 1
-}
-
 func (s *Server) isAuthorizedSessionsRequest(r *http.Request) bool {
 	if strings.TrimSpace(s.cfg.AuthToken) == "" {
 		return true
 	}
-	token := readBearerAuthorizationToken(r)
-	if token == "" {
-		token = readCookieAuthorizationToken(r)
-	}
+	token := readCookieAuthorizationToken(r)
 	if token == "" {
 		return false
 	}
@@ -324,10 +329,7 @@ func (s *Server) isAuthorizedTerminalRequest(r *http.Request) bool {
 	if strings.TrimSpace(s.cfg.AuthToken) == "" {
 		return true
 	}
-	token := readQueryAuthorizationToken(r)
-	if token == "" {
-		token = readCookieAuthorizationToken(r)
-	}
+	token := readCookieAuthorizationToken(r)
 	if token == "" {
 		return false
 	}
@@ -371,26 +373,8 @@ func readCookieAuthorizationToken(r *http.Request) string {
 	return ""
 }
 
-func readQueryAuthorizationToken(r *http.Request) string {
-	return strings.TrimSpace(r.URL.Query().Get("token"))
-}
-
-func readStaticAuthorizationToken(r *http.Request) string {
-	if token := readBearerAuthorizationToken(r); token != "" {
-		return token
-	}
-	if token := readCookieAuthorizationToken(r); token != "" {
-		return token
-	}
-	return readQueryAuthorizationToken(r)
-}
-
 func (s *Server) registerFallbackRoute(mux *http.ServeMux) {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if !s.authorizeStaticRequest(w, r) {
-			return
-		}
-		setAuthCookieFromRequest(w, r)
 		writeJSON(w, http.StatusOK, map[string]string{
 			"service": "wootty-server",
 			"message": "Web app is not built yet. Run `pnpm --filter @icoretech/wootty-web build`.",
@@ -408,10 +392,6 @@ func (s *Server) registerDirectoryRoutes(mux *http.ServeMux, staticDir string) {
 			http.NotFound(w, r)
 			return
 		}
-		if !s.authorizeStaticRequest(w, r) {
-			return
-		}
-		setAuthCookieFromRequest(w, r)
 
 		if path := cleanPath(staticDir, r.URL.Path); path != "" {
 			if fileInfo, statErr := os.Stat(path); statErr == nil && !fileInfo.IsDir() {
@@ -436,10 +416,6 @@ func (s *Server) registerEmbeddedRoutes(mux *http.ServeMux, assets fs.FS) {
 			http.NotFound(w, r)
 			return
 		}
-		if !s.authorizeStaticRequest(w, r) {
-			return
-		}
-		setAuthCookieFromRequest(w, r)
 
 		if assetPath := cleanEmbeddedPath(r.URL.Path); assetPath != "" && embeddedAssetExists(assets, assetPath) {
 			clone := cloneRequestWithPath(r, "/"+assetPath)
@@ -531,19 +507,7 @@ func writeUnauthorized(w http.ResponseWriter) {
 	})
 }
 
-func (s *Server) authorizeStaticRequest(w http.ResponseWriter, r *http.Request) bool {
-	if !s.isAuthorizedRequest(r) {
-		writeUnauthorized(w)
-		return false
-	}
-	return true
-}
-
-func setAuthCookieFromRequest(w http.ResponseWriter, r *http.Request) {
-	token := strings.TrimSpace(readStaticAuthorizationToken(r))
-	if token == "" {
-		return
-	}
+func setAuthCookie(w http.ResponseWriter, r *http.Request, token string) {
 	if existingCookie, err := r.Cookie("wootty_auth"); err == nil {
 		if subtle.ConstantTimeCompare([]byte(strings.TrimSpace(existingCookie.Value)), []byte(token)) == 1 {
 			return

@@ -38,10 +38,7 @@ describe("terminal environment backend endpoint resolution", () => {
   });
 
   it("returns a bootstrap issue when websocket config is invalid", () => {
-    const resolved = resolveTerminalBackendEndpoints(
-      null,
-      "ftp://invalid-url?token=token-123",
-    );
+    const resolved = resolveTerminalBackendEndpoints(null, "ftp://invalid-url");
 
     expect(resolved.ok).toBe(false);
     expect(resolved).toMatchObject({
@@ -50,12 +47,6 @@ describe("terminal environment backend endpoint resolution", () => {
         code: "env_socket_url_unsupported_protocol",
       },
     });
-    expect(
-      (resolved as { issue: { details: string } }).issue.details,
-    ).not.toContain("token-123");
-    expect(
-      (resolved as { issue: { details: string } }).issue.details,
-    ).toContain("redacted");
   });
 
   it("does not inject auth token into websocket endpoint query by default", () => {
@@ -87,8 +78,8 @@ describe("terminal environment backend endpoint resolution", () => {
     });
   });
 
-  it("retains token already present in configured websocket URL", () => {
-    const configuredSocketUrl = `${WSS_PROTOCOL}//${WS_HOST}/api/terminal?token=config-token`;
+  it("retains non-auth query params already present in configured websocket URL", () => {
+    const configuredSocketUrl = `${WSS_PROTOCOL}//${WS_HOST}/api/terminal?mode=watch`;
     const resolved = resolveTerminalBackendEndpoints(
       createWindowLikeRef(`${HTTPS_PROTOCOL}//${APP_HOST}`),
       configuredSocketUrl,

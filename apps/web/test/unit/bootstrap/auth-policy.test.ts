@@ -6,12 +6,12 @@ describe("TERMINAL_AUTH_POLICY", () => {
     expect(TERMINAL_AUTH_POLICY.websocket).toBe("cookie");
   });
 
-  it("should define sessionsHttp auth as bearer_header", () => {
-    expect(TERMINAL_AUTH_POLICY.sessionsHttp).toBe("bearer_header");
+  it("should define sessionsHttp auth as cookie", () => {
+    expect(TERMINAL_AUTH_POLICY.sessionsHttp).toBe("cookie");
   });
 
-  it("should have distinct auth strategies for websocket and HTTP", () => {
-    expect(TERMINAL_AUTH_POLICY.websocket).not.toBe(
+  it("should use cookie auth consistently across websocket and HTTP", () => {
+    expect(TERMINAL_AUTH_POLICY.websocket).toBe(
       TERMINAL_AUTH_POLICY.sessionsHttp,
     );
   });

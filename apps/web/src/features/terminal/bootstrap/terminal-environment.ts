@@ -1,7 +1,7 @@
 import { createBrowserTransport } from "../adapters/browser-transport";
 import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
 import { browserScheduler } from "../platform/scheduler";
-import { createBrowserAuthTokenProvider } from "./auth-token-provider";
+import { bootstrapBrowserAuth } from "./auth-bootstrap";
 import {
   readDocument,
   readStorageResult,
@@ -30,17 +30,17 @@ export const createTerminalAppEnvironment = (
   options: TerminalEnvironmentOptions = {},
 ): TerminalAppEnvironment => {
   const envSocketUrl = resolveConfiguredSocketUrl(options);
-  const authTokenProvider = createBrowserAuthTokenProvider(envSocketUrl);
   const windowRef = readWindow();
   const loadRuntime = createRuntimeLoader();
   return {
     documentRef: readDocument(),
     windowRef,
     scheduler: browserScheduler,
+    bootstrapAuth: () => bootstrapBrowserAuth(windowRef, envSocketUrl),
     resolveBackendEndpoints: (targetWindowRef) => {
       return resolveBrowserBackendEndpoints(targetWindowRef, envSocketUrl);
     },
-    fetchSessionsPayload: createBrowserSessionsClient(authTokenProvider),
+    fetchSessionsPayload: createBrowserSessionsClient(),
     createTransport: createBrowserTransport,
     loadRuntime,
     getLocalStorage: () => readStorageResult("localStorage"),
