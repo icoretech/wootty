@@ -30,7 +30,7 @@
     "jsdom": "^29.0.1",
     "typescript": "^5.9.3",
     "vite": "^8.0.2",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.1"
   },
   "engines": {
     "node": ">=24.14.0"
