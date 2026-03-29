@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.12](https://github.com/icoretech/wootty/compare/wootty-v0.2.11...wootty-v0.2.12) (2026-03-29)
+
+
+### Features
+
+* add session naming and shortcuts help ([283133d](https://github.com/icoretech/wootty/commit/283133d34b516778768344725786580d00607f3c))
+* replace shortcuts panel with about dialog ([c1c49ff](https://github.com/icoretech/wootty/commit/c1c49ff6f0baaa7866d9078ab601a374bf347cc3))
+
+
+### Bug Fixes
+
+* **deps:** update dependency lucide-react to ^1.7.0 ([#49](https://github.com/icoretech/wootty/issues/49)) ([0c6e569](https://github.com/icoretech/wootty/commit/0c6e5693372ced23c41d2181ff5dc160fb9ef546))
+* **deps:** update dependency lucide-react to v1 ([dd0368a](https://github.com/icoretech/wootty/commit/dd0368a47c86250fbde41f097ed8df108152ce0e))
+* ignore node engine version in renovate ([21ddf58](https://github.com/icoretech/wootty/commit/21ddf58141566c0a0e25e48c34ac6bdb8e24d7a2))
+
 ## [0.2.11](https://github.com/icoretech/wootty/compare/wootty-v0.2.10...wootty-v0.2.11) (2026-03-21)
 
 
