@@ -10,6 +10,7 @@
   "rebaseWhen": "conflicted",
   "rangeStrategy": "bump",
   "timezone": "Europe/Rome",
+  "ignoreDeps": ["node"],
   "packageRules": [
     {
       "description": "Group frontend runtime updates",
