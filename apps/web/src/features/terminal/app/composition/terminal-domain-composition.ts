@@ -114,6 +114,11 @@ export function useTerminalDomainController({
     readFontSize: session.uiState.readFontSize,
     setControlsOpen: session.uiState.setControlsOpen,
     setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
+    setHelpOpen: session.uiState.setHelpOpen,
+    sendNow: connection.transport.sendNow,
+    requestSessionRefresh: () => {
+      void session.sessionActions.requestTransportRefresh();
+    },
   });
 
   const closeSessionMenu = useCallback(() => {

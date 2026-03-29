@@ -12,7 +12,8 @@ export type FloatingControlIconToken =
   | "fontIncrease"
   | "fontReset"
   | "fullscreenEnter"
-  | "fullscreenExit";
+  | "fullscreenExit"
+  | "help";
 
 export type FloatingControlPolicyState = {
   terminalReady: boolean;

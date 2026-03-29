@@ -15,13 +15,15 @@ type FloatingControlBinding = {
     | "decreaseFont"
     | "increaseFont"
     | "resetFont"
-    | "fullscreen";
+    | "fullscreen"
+    | "help";
 };
 
 type RuntimeCommandManifestEntry = {
   id: TerminalRuntimeCommand;
   handler: "runtime";
   shortcutCode: string;
+  label?: string;
   floatingControl?: FloatingControlBinding;
 };
 
@@ -29,6 +31,7 @@ type ViewportCommandManifestEntry = {
   id: ViewportUiCommand;
   handler: "viewport";
   shortcutCode: string;
+  label?: string;
   floatingControl?: FloatingControlBinding;
 };
 
@@ -41,6 +44,7 @@ export const COMMAND_MANIFEST = [
     id: TERMINAL_RUNTIME_COMMAND.RECONNECT,
     handler: "runtime",
     shortcutCode: "KeyR",
+    label: "Reconnect",
     floatingControl: {
       testId: "reconnect-button",
       metadataKey: "reconnect",
@@ -50,6 +54,7 @@ export const COMMAND_MANIFEST = [
     id: TERMINAL_RUNTIME_COMMAND.CLEAR,
     handler: "runtime",
     shortcutCode: "KeyK",
+    label: "Clear terminal",
     floatingControl: {
       testId: "clear-button",
       metadataKey: "clear",
@@ -59,6 +64,7 @@ export const COMMAND_MANIFEST = [
     id: VIEWPORT_UI_COMMAND.DECREASE_FONT,
     handler: "viewport",
     shortcutCode: "Minus",
+    label: "Decrease font size",
     floatingControl: {
       testId: "font-decrease-button",
       metadataKey: "decreaseFont",
@@ -68,6 +74,7 @@ export const COMMAND_MANIFEST = [
     id: VIEWPORT_UI_COMMAND.INCREASE_FONT,
     handler: "viewport",
     shortcutCode: "Equal",
+    label: "Increase font size",
     floatingControl: {
       testId: "font-increase-button",
       metadataKey: "increaseFont",
@@ -77,6 +84,7 @@ export const COMMAND_MANIFEST = [
     id: VIEWPORT_UI_COMMAND.RESET_FONT,
     handler: "viewport",
     shortcutCode: "Digit0",
+    label: "Reset font size",
     floatingControl: {
       testId: "font-reset-button",
       metadataKey: "resetFont",
@@ -86,6 +94,7 @@ export const COMMAND_MANIFEST = [
     id: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
     handler: "viewport",
     shortcutCode: "KeyF",
+    label: "Toggle fullscreen",
     floatingControl: {
       testId: "fullscreen-button",
       metadataKey: "fullscreen",
@@ -95,6 +104,17 @@ export const COMMAND_MANIFEST = [
     id: VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS,
     handler: "viewport",
     shortcutCode: "KeyB",
+    label: "Toggle controls",
+  },
+  {
+    id: VIEWPORT_UI_COMMAND.TOGGLE_HELP,
+    handler: "viewport",
+    shortcutCode: "Period",
+    label: "Keyboard shortcuts",
+    floatingControl: {
+      testId: "help-button",
+      metadataKey: "help",
+    },
   },
 ] as const satisfies readonly CommandManifestEntry[];
 
@@ -162,6 +182,11 @@ export const COMMAND_FLOATING_CONTROL_METADATA = Object.freeze({
   fullscreen: {
     tooltip: "Fullscreen",
     ariaLabel: "Toggle fullscreen terminal",
+  },
+  help: {
+    tooltip: "Shortcuts",
+    ariaLabel: "Show keyboard shortcuts",
+    ariaKeyShortcuts: "Control+Shift+. Meta+Shift+.",
   },
 } satisfies Record<
   CommandManifestFloatingControlMetadataKey,

@@ -20,6 +20,8 @@ import {
 import type { AttachMode } from "../contracts/session/session";
 import { assertNever } from "../lib/assert-never";
 import { DEFAULT_FONT_SIZE } from "../preferences/font-size-policy";
+import { createRenameMessage } from "../protocol/terminal-client-messages";
+import type { TerminalClientMessage } from "../protocol/terminal-wire-schema";
 
 type UseSessionMenuActionsArgs = {
   lastSessionId: string | null;
@@ -98,6 +100,9 @@ type UseTerminalCommandActionsArgs = {
   readFontSize: () => number;
   setControlsOpen: Dispatch<SetStateAction<boolean>>;
   setSessionMenuOpen: Dispatch<SetStateAction<boolean>>;
+  setHelpOpen: Dispatch<SetStateAction<boolean>>;
+  sendNow: (payload: TerminalClientMessage) => boolean;
+  requestSessionRefresh: () => void;
 };
 
 export function useTerminalCommandActions({
@@ -108,6 +113,9 @@ export function useTerminalCommandActions({
   readFontSize,
   setControlsOpen,
   setSessionMenuOpen,
+  setHelpOpen,
+  sendNow,
+  requestSessionRefresh,
 }: UseTerminalCommandActionsArgs): {
   dispatchShortcutAction: (action: ShortcutAction) => void;
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
@@ -140,8 +148,17 @@ export function useTerminalCommandActions({
         [VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS]: () => {
           setControlsOpen((previous) => !previous);
         },
+        [VIEWPORT_UI_COMMAND.TOGGLE_HELP]: () => {
+          setHelpOpen((previous) => !previous);
+        },
       }) satisfies Record<ViewportUiCommand, () => void>,
-    [applyFontSize, readFontSize, setControlsOpen, toggleFullscreen],
+    [
+      applyFontSize,
+      readFontSize,
+      setControlsOpen,
+      setHelpOpen,
+      toggleFullscreen,
+    ],
   );
 
   const dispatchFloatingControls = useCallback(
@@ -173,11 +190,20 @@ export function useTerminalCommandActions({
         case "toggleSessionMenu":
           setSessionMenuOpen((previous) => !previous);
           return;
+        case "renameSession":
+          sendNow(createRenameMessage(action.name));
+          requestSessionRefresh();
+          return;
         default:
           assertNever(action);
       }
     },
-    [setSessionMenuOpen, viewportCommandHandlers],
+    [
+      requestSessionRefresh,
+      sendNow,
+      setSessionMenuOpen,
+      viewportCommandHandlers,
+    ],
   );
 
   return {

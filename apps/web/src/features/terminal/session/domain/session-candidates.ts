@@ -41,6 +41,7 @@ export function deriveSessionCandidates(
       id: live.id,
       mode: live.canControl ? "control" : "watch",
       command: live.command,
+      name: live.name,
       watchers: live.watchers,
       lastActivityMs: live.lastActivityMs,
     });

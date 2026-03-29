@@ -1,4 +1,10 @@
-import { Check, ChevronDown, Copy, SlidersHorizontal } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Copy,
+  Pencil,
+  SlidersHorizontal,
+} from "lucide-react";
 import { type RefObject, useEffect, useRef, useState } from "react";
 import type { StatusBarAction } from "../commands/status-bar-actions";
 import { VIEWPORT_UI_COMMAND } from "../commands/viewport-commands";
@@ -17,6 +23,9 @@ export function StatusBar({
 }: StatusBarProps) {
   const [copyConfirmed, setCopyConfirmed] = useState(false);
   const copyResetTimerRef = useRef<number | null>(null);
+  const [renaming, setRenaming] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const renameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     return () => {
@@ -55,6 +64,27 @@ export function StatusBar({
       });
   };
 
+  const startRenaming = () => {
+    if (!model.sessionName || model.attachMode === "watch") {
+      return;
+    }
+    setRenameDraft(model.sessionDisplay);
+    setRenaming(true);
+    queueMicrotask(() => renameInputRef.current?.focus());
+  };
+
+  const commitRename = () => {
+    const trimmed = renameDraft.trim();
+    if (trimmed.length > 0) {
+      dispatch({ type: "renameSession", name: trimmed });
+    }
+    setRenaming(false);
+  };
+
+  const cancelRename = () => {
+    setRenaming(false);
+  };
+
   return (
     <footer className="statusbar">
       <div className="statusbar__group">
@@ -87,25 +117,60 @@ export function StatusBar({
         </span>
 
         <div className="status-session" ref={sessionButtonRef}>
-          <button
-            type="button"
-            className="status-item status-item--button status-session__button"
-            data-testid="session-menu-button"
-            aria-expanded={model.sessionMenuOpen}
-            aria-label="Open session menu"
-            onClick={() => {
-              dispatch({ type: "toggleSessionMenu" });
-            }}
-          >
-            <span>Session</span>
-            <strong
-              className="status-session__value"
-              data-testid="session-value"
-            >
-              {model.sessionDisplay}
-            </strong>
-            <ChevronDown size={12} aria-hidden="true" />
-          </button>
+          {renaming ? (
+            <div className="status-item status-session__rename-wrap">
+              <span>Session</span>
+              <input
+                ref={renameInputRef}
+                className="status-session__rename-input"
+                data-testid="session-rename-input"
+                type="text"
+                maxLength={32}
+                value={renameDraft}
+                onChange={(event) => setRenameDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    commitRename();
+                  } else if (event.key === "Escape") {
+                    cancelRename();
+                  }
+                }}
+                onBlur={() => cancelRename()}
+              />
+            </div>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="status-item status-item--button status-session__button"
+                data-testid="session-menu-button"
+                aria-expanded={model.sessionMenuOpen}
+                aria-label="Open session menu"
+                onClick={() => {
+                  dispatch({ type: "toggleSessionMenu" });
+                }}
+              >
+                <span>Session</span>
+                <strong
+                  className="status-session__value"
+                  data-testid="session-value"
+                >
+                  {model.sessionDisplay}
+                </strong>
+                <ChevronDown size={12} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="status-item status-item--button status-session__rename"
+                data-testid="session-rename-button"
+                aria-label="Rename session"
+                onClick={startRenaming}
+                disabled={!model.sessionName || model.attachMode === "watch"}
+              >
+                <Pencil size={12} aria-hidden="true" />
+              </button>
+            </>
+          )}
           <button
             type="button"
             className="status-item status-item--button status-session__copy"

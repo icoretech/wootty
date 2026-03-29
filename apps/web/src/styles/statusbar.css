@@ -182,6 +182,36 @@
   color: var(--ink-0);
   text-transform: none;
   letter-spacing: normal;
+  cursor: default;
+}
+
+.status-session__rename-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-session__rename-input {
+  width: 120px;
+  padding: 2px 4px;
+  border: none;
+  border-bottom: 1px solid var(--accent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  outline: none;
+}
+
+.status-session__rename {
+  padding: 0 4px;
+}
+
+.status-session__rename:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .status-item strong {

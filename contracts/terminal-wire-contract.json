@@ -5,7 +5,7 @@
     "max": 2000
   },
   "client_messages": {
-    "types": ["attach", "input", "resize", "ping"],
+    "types": ["attach", "input", "resize", "ping", "rename"],
     "schemas": {
       "attach": {
         "required": ["type", "version", "cols", "rows"],
@@ -21,6 +21,10 @@
       },
       "ping": {
         "required": ["type"],
+        "optional": []
+      },
+      "rename": {
+        "required": ["type", "name"],
         "optional": []
       }
     }

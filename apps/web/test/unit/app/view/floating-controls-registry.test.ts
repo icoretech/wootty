@@ -36,6 +36,11 @@ describe("floating controls registry", () => {
         metadataKey: "fullscreen",
         action: VIEWPORT_UI_COMMAND.TOGGLE_FULLSCREEN,
       },
+      {
+        testId: "help-button",
+        metadataKey: "help",
+        action: VIEWPORT_UI_COMMAND.TOGGLE_HELP,
+      },
     ]);
   });
 });

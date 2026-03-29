@@ -291,6 +291,58 @@ func TestManagerDetachedSessionExpiresWithDetachedTTL(t *testing.T) {
 	}
 }
 
+func TestManagerRename(t *testing.T) {
+	manager := NewManager(ManagerOptions{
+		HistoryBytes: 4096,
+		FakePTY:      true,
+		ProcessOptions: ProcessOptions{
+			Command: "sh",
+			Args:    []string{},
+			Cwd:     t.TempDir(),
+			Env:     map[string]string{"TERM": "xterm-256color"},
+		},
+	})
+	defer manager.Shutdown()
+
+	serverConn, _, cleanup := newWebsocketPair(t)
+	defer cleanup()
+
+	attachResult, err := manager.Attach("", serverConn, 80, 24, false)
+	if err != nil {
+		t.Fatalf("attach failed: %v", err)
+	}
+
+	if ok := manager.Rename(attachResult.SessionID, "deploy-prod"); !ok {
+		t.Fatal("expected rename to succeed")
+	}
+
+	sessions := manager.ListSessions()
+	if len(sessions) != 1 {
+		t.Fatalf("expected one session, got %d", len(sessions))
+	}
+	if sessions[0].Name != "deploy-prod" {
+		t.Fatalf("expected name 'deploy-prod', got %q", sessions[0].Name)
+	}
+}
+
+func TestManagerRenameNonExistent(t *testing.T) {
+	manager := NewManager(ManagerOptions{
+		HistoryBytes: 4096,
+		FakePTY:      true,
+		ProcessOptions: ProcessOptions{
+			Command: "sh",
+			Args:    []string{},
+			Cwd:     t.TempDir(),
+			Env:     map[string]string{"TERM": "xterm-256color"},
+		},
+	})
+	defer manager.Shutdown()
+
+	if ok := manager.Rename("nonexistent-id", "test"); ok {
+		t.Fatal("expected rename of nonexistent session to fail")
+	}
+}
+
 func TestManagerSendJSONAndShutdown(t *testing.T) {
 	manager := NewManager(ManagerOptions{
 		HistoryBytes: 1024,

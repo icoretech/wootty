@@ -17,6 +17,7 @@ export const TERMINAL_CLIENT_MESSAGE_TYPE = {
   INPUT: "input",
   RESIZE: "resize",
   PING: "ping",
+  RENAME: "rename",
 } as const;
 
 export const TERMINAL_SERVER_MESSAGE_TYPE = {
@@ -61,4 +62,4 @@ export const SESSION_SNAPSHOT_REQUIRED_FIELDS = [
   "lastActivityMs",
 ] as const;
 
-export const SESSION_SNAPSHOT_OPTIONAL_FIELDS = ["command"] as const;
+export const SESSION_SNAPSHOT_OPTIONAL_FIELDS = ["command", "name"] as const;

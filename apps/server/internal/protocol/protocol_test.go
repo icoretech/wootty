@@ -83,6 +83,47 @@ func TestParseInvalidPayloads(t *testing.T) {
 	}
 }
 
+func TestParseRename(t *testing.T) {
+	msg, err := ParseClientMessage([]byte(`{"type":"rename","name":"deploy-prod"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rename, ok := msg.(RenameMessage)
+	if !ok {
+		t.Fatalf("expected RenameMessage, got %T", msg)
+	}
+	if rename.Name != "deploy-prod" {
+		t.Fatalf("expected name 'deploy-prod', got %q", rename.Name)
+	}
+}
+
+func TestParseRenameRejectsEmptyName(t *testing.T) {
+	_, err := ParseClientMessage([]byte(`{"type":"rename","name":""}`))
+	if err == nil {
+		t.Fatal("expected error for empty name")
+	}
+	_, err = ParseClientMessage([]byte(`{"type":"rename","name":"   "}`))
+	if err == nil {
+		t.Fatal("expected error for whitespace-only name")
+	}
+	_, err = ParseClientMessage([]byte(`{"type":"rename"}`))
+	if err == nil {
+		t.Fatal("expected error for missing name")
+	}
+}
+
+func TestParseRenameTruncatesLongName(t *testing.T) {
+	longName := "abcdefghijklmnopqrstuvwxyz-abcdefghij"
+	msg, err := ParseClientMessage([]byte(`{"type":"rename","name":"` + longName + `"}`))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	rename := msg.(RenameMessage)
+	if len(rename.Name) != 32 {
+		t.Fatalf("expected name truncated to 32 chars, got %d: %q", len(rename.Name), rename.Name)
+	}
+}
+
 func TestParseRejectsUnsupportedWireVersion(t *testing.T) {
 	_, err := ParseClientMessage([]byte(`{"type":"attach","version":99,"sessionId":"abc","cols":120,"rows":40}`))
 	if err == nil {

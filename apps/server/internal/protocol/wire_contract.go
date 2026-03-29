@@ -18,6 +18,7 @@ const (
 	ClientMessageTypeInput  = "input"
 	ClientMessageTypeResize = "resize"
 	ClientMessageTypePing   = "ping"
+	ClientMessageTypeRename = "rename"
 )
 
 const (
@@ -45,6 +46,7 @@ var ClientMessageTypes = []string{
 	"input",
 	"resize",
 	"ping",
+	"rename",
 }
 
 var ServerMessageTypes = []string{
@@ -78,4 +80,5 @@ var SessionSnapshotRequiredFields = []string{
 
 var SessionSnapshotOptionalFields = []string{
 	"command",
+	"name",
 }

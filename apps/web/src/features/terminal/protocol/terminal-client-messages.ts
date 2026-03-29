@@ -74,3 +74,10 @@ export function createPingMessage(): TerminalClientMessage {
     type: TERMINAL_CLIENT_MESSAGE_TYPE.PING,
   };
 }
+
+export function createRenameMessage(name: string): TerminalClientMessage {
+  return {
+    type: TERMINAL_CLIENT_MESSAGE_TYPE.RENAME,
+    name,
+  };
+}

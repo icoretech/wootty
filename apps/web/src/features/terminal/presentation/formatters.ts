@@ -71,3 +71,7 @@ export function shortSessionId(value: string): string {
   }
   return `${value.slice(0, 8)}…${value.slice(-4)}`;
 }
+
+export function sessionDisplayName(name: string | null, id: string): string {
+  return name ?? shortSessionId(id);
+}

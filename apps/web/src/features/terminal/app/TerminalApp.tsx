@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createTerminalAppEnvironment } from "../bootstrap/terminal-environment";
 import { FloatingControls } from "../components/FloatingControls";
 import { SessionMenu } from "../components/SessionMenu";
+import { ShortcutsPanel } from "../components/ShortcutsPanel";
 import { StatusBar } from "../components/StatusBar";
 import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
 import { useTerminalController } from "./controller/use-terminal-controller";
@@ -88,6 +89,11 @@ function TerminalAppShell({
         model={controller.statusBarModel}
         sessionButtonRef={controller.sessionButtonRef}
         dispatch={controller.dispatchStatusBar}
+      />
+
+      <ShortcutsPanel
+        open={controller.helpOpen}
+        onClose={() => controller.setHelpOpen(false)}
       />
     </main>
   );

@@ -1,4 +1,9 @@
-import { type RefObject, useRef } from "react";
+import {
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+  useRef,
+} from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
 import type { SessionMenuAction } from "../../commands/session-menu-actions";
 import type { StatusBarAction } from "../../commands/status-bar-actions";
@@ -18,6 +23,8 @@ type TerminalController = {
   sessionButtonRef: RefObject<HTMLDivElement | null>;
   sessionMenuOpen: boolean;
   isFullscreen: boolean;
+  helpOpen: boolean;
+  setHelpOpen: Dispatch<SetStateAction<boolean>>;
   status: ConnectionStatus;
   terminalReady: boolean;
   statusText: string;
@@ -54,6 +61,8 @@ export function useTerminalController(
     sessionButtonRef,
     sessionMenuOpen: domain.sessionState.sessionMenuOpen,
     isFullscreen: domain.uiState.isFullscreen,
+    helpOpen: domain.uiState.helpOpen,
+    setHelpOpen: domain.uiState.setHelpOpen,
     status: domain.connectionTransport.status,
     terminalReady: domain.connectionRuntime.terminalReady,
     statusText: presentation.statusText,

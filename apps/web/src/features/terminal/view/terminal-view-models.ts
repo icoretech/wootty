@@ -10,6 +10,7 @@ import {
 import {
   ageLabel,
   latencyTone,
+  sessionDisplayName,
   shortSessionId,
   statusLabel,
 } from "../presentation/formatters";
@@ -60,8 +61,14 @@ export function buildTerminalViewModels(
   const { ui, session, connection, telemetry } = input;
 
   const statusText = statusLabel(connection.status);
-  const sessionName = session.sessionId;
-  const sessionDisplay = sessionName ? shortSessionId(sessionName) : "pending";
+  const currentLiveSession = session.sessionId
+    ? session.liveSessions.find((s) => s.id === session.sessionId)
+    : null;
+  const currentSessionName = currentLiveSession?.name ?? null;
+  const sessionName = currentSessionName ?? session.sessionId;
+  const sessionDisplay = session.sessionId
+    ? sessionDisplayName(currentSessionName, session.sessionId)
+    : "pending";
   const { liveSessionCandidates, historySessionCandidates } =
     deriveSessionCandidates({
       liveSessions: session.liveSessions,
@@ -75,7 +82,7 @@ export function buildTerminalViewModels(
     return {
       id: row.id,
       mode: row.mode,
-      primaryText: shortSessionId(row.id),
+      primaryText: sessionDisplayName(candidate.name, row.id),
       secondaryText: row.secondaryText,
       actionLabel: row.actionLabel,
     };

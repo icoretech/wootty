@@ -284,6 +284,25 @@ func (s *Server) handleTerminal(w http.ResponseWriter, r *http.Request) {
 				})
 			}
 
+		case protocol.RenameMessage:
+			if activeSessionID == "" {
+				send(map[string]string{
+					"type":    protocol.ServerMessageTypeError,
+					"message": "Attach first",
+					"code":    protocol.ServerErrorCodeAttachRequired,
+				})
+				continue
+			}
+			if activeReadOnly {
+				send(map[string]string{
+					"type":    protocol.ServerMessageTypeError,
+					"message": "Session is read-only",
+					"code":    protocol.ServerErrorCodeSessionNotWritable,
+				})
+				continue
+			}
+			s.sessions.Rename(activeSessionID, message.Name)
+
 		case protocol.PingMessage:
 			send(map[string]string{
 				"type": protocol.ServerMessageTypePong,

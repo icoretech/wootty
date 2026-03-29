@@ -112,6 +112,10 @@ describe("terminal wire contract parity", () => {
         required: ["type"],
         optional: [],
       },
+      rename: {
+        required: ["type", "name"],
+        optional: [],
+      },
     });
 
     expect(contract.server_messages.schemas).toEqual({

@@ -41,6 +41,7 @@ describe("session candidates and payload contract", () => {
         createdAtMs: 100,
         lastActivityMs: 200,
         command: "bash",
+        name: null,
       },
     ]);
     expect(parsed.invalidEntries).toBe(2);

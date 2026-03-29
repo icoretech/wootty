@@ -25,4 +25,5 @@ export type TerminalClientMessage =
       cols: number;
       rows: number;
     }
-  | { type: typeof TERMINAL_CLIENT_MESSAGE_TYPE.PING };
+  | { type: typeof TERMINAL_CLIENT_MESSAGE_TYPE.PING }
+  | { type: typeof TERMINAL_CLIENT_MESSAGE_TYPE.RENAME; name: string };

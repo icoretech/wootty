@@ -42,6 +42,7 @@ type SessionInfo struct {
 	CreatedAtMs    int64  `json:"createdAtMs"`
 	LastActivityMs int64  `json:"lastActivityMs"`
 	Command        string `json:"command"`
+	Name           string `json:"name,omitempty"`
 }
 
 type Manager struct {
@@ -66,6 +67,7 @@ type managedSession struct {
 	createdAt      time.Time
 	lastActivity   time.Time
 	command        string
+	name           string
 }
 
 func NewManager(options ManagerOptions) *Manager {
@@ -221,6 +223,18 @@ func (m *Manager) Resize(sessionID string, cols, rows int) bool {
 	return true
 }
 
+func (m *Manager) Rename(sessionID, name string) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	session, ok := m.sessions[sessionID]
+	if !ok {
+		return false
+	}
+	session.name = name
+	session.lastActivity = time.Now()
+	return true
+}
+
 func (m *Manager) Detach(sessionID string, conn *websocket.Conn) {
 	m.mu.Lock()
 	session, ok := m.sessions[sessionID]
@@ -306,6 +320,7 @@ func (m *Manager) ListSessions() []SessionInfo {
 			CreatedAtMs:    current.createdAt.UnixMilli(),
 			LastActivityMs: current.lastActivity.UnixMilli(),
 			Command:        current.command,
+			Name:           current.name,
 		})
 	}
 

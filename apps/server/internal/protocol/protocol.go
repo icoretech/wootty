@@ -3,6 +3,7 @@ package protocol
 import (
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 var (
@@ -40,6 +41,12 @@ type PingMessage struct{}
 
 func (PingMessage) Type() string { return ClientMessageTypePing }
 
+type RenameMessage struct {
+	Name string
+}
+
+func (RenameMessage) Type() string { return ClientMessageTypeRename }
+
 type envelope struct {
 	Type      string  `json:"type"`
 	Version   *int    `json:"version,omitempty"`
@@ -48,6 +55,7 @@ type envelope struct {
 	Rows      *int    `json:"rows,omitempty"`
 	Data      *string `json:"data,omitempty"`
 	Watch     *bool   `json:"watch,omitempty"`
+	Name      *string `json:"name,omitempty"`
 }
 
 func ParseClientMessage(raw []byte) (ClientMessage, error) {
@@ -92,6 +100,19 @@ func ParseClientMessage(raw []byte) (ClientMessage, error) {
 		return ResizeMessage{Cols: *msg.Cols, Rows: *msg.Rows}, nil
 	case ClientMessageTypePing:
 		return PingMessage{}, nil
+	case ClientMessageTypeRename:
+		if msg.Name == nil {
+			return nil, ErrInvalidMessage
+		}
+		name := strings.TrimSpace(*msg.Name)
+		if name == "" {
+			return nil, ErrInvalidMessage
+		}
+		runes := []rune(name)
+		if len(runes) > 32 {
+			name = string(runes[:32])
+		}
+		return RenameMessage{Name: name}, nil
 	default:
 		return nil, ErrInvalidMessage
 	}

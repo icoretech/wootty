@@ -61,6 +61,10 @@ function parseSessionSnapshot(entry: unknown): SessionSnapshot | null {
       typeof record.command === "string" && record.command.length > 0
         ? record.command
         : null,
+    name:
+      typeof record.name === "string" && record.name.length > 0
+        ? record.name
+        : null,
   };
 }
 

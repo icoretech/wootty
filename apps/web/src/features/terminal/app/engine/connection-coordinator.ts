@@ -68,6 +68,7 @@ type ConnectionCoordinatorState = {
     lastSocketFailure: TransportFailureContext | null;
     reconnectNow: () => void;
     scheduleFreshConnection: () => void;
+    sendNow: (payload: TerminalClientMessage) => boolean;
   };
   telemetry: {
     outputBytes: number;
@@ -322,6 +323,7 @@ export function useConnectionCoordinator({
       lastSocketFailure: transportState.lastSocketFailure,
       reconnectNow,
       scheduleFreshConnection,
+      sendNow,
     },
     telemetry: {
       outputBytes: runtimeBridge.outputBytes,

@@ -26,8 +26,10 @@ export type ControllerUiState = {
   fontSize: number;
   controlsOpen: boolean;
   isFullscreen: boolean;
+  helpOpen: boolean;
   setControlsOpen: (value: boolean | ((previous: boolean) => boolean)) => void;
   setIsFullscreen: Dispatch<SetStateAction<boolean>>;
+  setHelpOpen: Dispatch<SetStateAction<boolean>>;
   readFontSize: () => number;
   applyFontSize: (
     next: number,
@@ -83,6 +85,7 @@ function useControllerUiState(
   const [fontSize, setFontSize] = useState<number>(initialFontSize);
   const [controlsOpen, setControlsOpen] = useState<boolean>(true);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [helpOpen, setHelpOpen] = useState<boolean>(false);
 
   const applyFontSize = useCallback(
     (
@@ -114,8 +117,10 @@ function useControllerUiState(
     fontSize,
     controlsOpen,
     isFullscreen,
+    helpOpen,
     setControlsOpen,
     setIsFullscreen,
+    setHelpOpen,
     readFontSize: () => fontSizeRef.current,
     applyFontSize,
   };

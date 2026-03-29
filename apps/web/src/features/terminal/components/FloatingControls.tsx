@@ -1,4 +1,5 @@
 import {
+  CircleHelp,
   Eraser,
   Maximize2,
   Minimize2,
@@ -30,6 +31,7 @@ const FLOATING_CONTROL_ICONS: Record<FloatingControlIconToken, ReactNode> = {
   fontReset: <RefreshCcw size={16} />,
   fullscreenEnter: <Maximize2 size={16} />,
   fullscreenExit: <Minimize2 size={16} />,
+  help: <CircleHelp size={16} />,
 };
 
 export function FloatingControls({ model, dispatch }: FloatingControlsProps) {

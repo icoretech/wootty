@@ -9,6 +9,6 @@
       "createdAtMs",
       "lastActivityMs"
     ],
-    "optional": ["command"]
+    "optional": ["command", "name"]
   }
 }

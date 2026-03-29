@@ -48,6 +48,10 @@ const FLOATING_CONTROL_POLICY: Record<
     resolveTooltip: (model, defaultTooltip) =>
       model.isFullscreen ? "Exit fullscreen" : defaultTooltip,
   },
+  help: {
+    isDisabled: () => false,
+    resolveIcon: () => "help",
+  },
 };
 
 type FloatingControlLookup = {

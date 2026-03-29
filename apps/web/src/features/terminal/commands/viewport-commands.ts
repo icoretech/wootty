@@ -4,6 +4,7 @@ export const VIEWPORT_UI_COMMAND = {
   RESET_FONT: "resetFont",
   TOGGLE_FULLSCREEN: "toggleFullscreen",
   TOGGLE_CONTROLS: "toggleControls",
+  TOGGLE_HELP: "toggleHelp",
 } as const;
 
 export type ViewportUiCommand =
