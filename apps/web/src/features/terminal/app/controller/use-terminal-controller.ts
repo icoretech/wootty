@@ -2,6 +2,7 @@ import {
   type Dispatch,
   type RefObject,
   type SetStateAction,
+  useMemo,
   useRef,
 } from "react";
 import type { FloatingControlsAction } from "../../commands/floating-controls/actions";
@@ -32,6 +33,14 @@ type TerminalController = {
   floatingControlsModel: FloatingControlsModel;
   sessionMenuModel: SessionMenuModel;
   statusBarModel: StatusBarModel;
+  aboutSession: {
+    id: string | null;
+    name: string | null;
+    command: string | null;
+    attachMode: "control" | "watch";
+    status: string;
+    watchers: number;
+  };
   dispatchFloatingControls: (action: FloatingControlsAction) => void;
   dispatchSessionMenu: (action: SessionMenuAction) => void;
   dispatchStatusBar: (action: StatusBarAction) => void;
@@ -54,6 +63,27 @@ export function useTerminalController(
   });
   const presentation = buildTerminalPresentationModel(domain);
 
+  const aboutSession = useMemo(() => {
+    const currentSession = domain.sessionState.sessionId
+      ? domain.sessionState.liveSessions.find(
+          (s) => s.id === domain.sessionState.sessionId,
+        )
+      : null;
+    return {
+      id: domain.sessionState.sessionId,
+      name: currentSession?.name ?? null,
+      command: currentSession?.command ?? null,
+      attachMode: domain.sessionState.attachMode,
+      status: presentation.statusText,
+      watchers: currentSession?.watchers ?? 0,
+    };
+  }, [
+    domain.sessionState.sessionId,
+    domain.sessionState.liveSessions,
+    domain.sessionState.attachMode,
+    presentation.statusText,
+  ]);
+
   return {
     appViewportRef,
     terminalElementRef: domain.connectionRuntime.terminalElementRef,
@@ -70,6 +100,7 @@ export function useTerminalController(
     floatingControlsModel: presentation.floatingControlsModel,
     sessionMenuModel: presentation.sessionMenuModel,
     statusBarModel: presentation.statusBarModel,
+    aboutSession,
     dispatchFloatingControls: domain.dispatchFloatingControls,
     dispatchSessionMenu: domain.dispatchSessionMenu,
     dispatchStatusBar: domain.dispatchStatusBar,

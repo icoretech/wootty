@@ -184,8 +184,8 @@ export const COMMAND_FLOATING_CONTROL_METADATA = Object.freeze({
     ariaLabel: "Toggle fullscreen terminal",
   },
   help: {
-    tooltip: "Shortcuts",
-    ariaLabel: "Show keyboard shortcuts",
+    tooltip: "About",
+    ariaLabel: "About WooTTY",
     ariaKeyShortcuts: "Control+Shift+. Meta+Shift+.",
   },
 } satisfies Record<

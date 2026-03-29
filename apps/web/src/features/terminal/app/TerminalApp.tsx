@@ -1,9 +1,9 @@
 import { SquareTerminal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createTerminalAppEnvironment } from "../bootstrap/terminal-environment";
+import { AboutDialog } from "../components/AboutDialog";
 import { FloatingControls } from "../components/FloatingControls";
 import { SessionMenu } from "../components/SessionMenu";
-import { ShortcutsPanel } from "../components/ShortcutsPanel";
 import { StatusBar } from "../components/StatusBar";
 import type { TerminalAppEnvironment } from "../environment/terminal-environment-contract";
 import { useTerminalController } from "./controller/use-terminal-controller";
@@ -91,9 +91,10 @@ function TerminalAppShell({
         dispatch={controller.dispatchStatusBar}
       />
 
-      <ShortcutsPanel
+      <AboutDialog
         open={controller.helpOpen}
         onClose={() => controller.setHelpOpen(false)}
+        session={controller.aboutSession}
       />
     </main>
   );

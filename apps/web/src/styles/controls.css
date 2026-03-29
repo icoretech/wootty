@@ -305,9 +305,9 @@
   font-size: 0.66rem;
 }
 
-/* ---- Shortcuts panel ---- */
+/* ---- About dialog ---- */
 
-.shortcuts-panel__backdrop {
+.about-dialog__backdrop {
   position: fixed;
   inset: 0;
   z-index: 20;
@@ -317,66 +317,156 @@
   backdrop-filter: blur(4px);
 }
 
-.shortcuts-panel {
-  width: min(400px, 90vw);
-  padding: 16px 20px;
+.about-dialog {
+  width: min(380px, 90vw);
+  padding: 16px 18px;
   border: 1px solid var(--glass-border);
   border-radius: 14px;
   background: var(--glass);
   backdrop-filter: blur(24px);
   box-shadow: var(--shadow-panel);
   animation: fade-in-up 180ms ease-out;
+  display: grid;
+  gap: 12px;
 }
 
-.shortcuts-panel__header {
+.about-dialog__header {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
   color: var(--ink-0);
+}
+
+.about-dialog__title {
   font-family: var(--font-ui);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   letter-spacing: 0.02em;
 }
 
-.shortcuts-panel__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0;
+.about-dialog__version {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--ink-1);
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(52, 209, 184, 0.08);
+  border: 1px solid rgba(52, 209, 184, 0.15);
+  color: var(--accent);
 }
 
-.shortcuts-panel__row {
+.about-dialog__section {
+  display: grid;
+  gap: 4px;
+}
+
+.about-dialog__section-label {
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.about-dialog__meta {
+  display: grid;
+  gap: 2px;
+}
+
+.about-dialog__meta-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.about-dialog__meta-row--dim {
+  color: var(--ink-2);
+  font-style: italic;
+}
+
+.about-dialog__meta-key {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  min-width: 56px;
+  flex-shrink: 0;
+}
+
+.about-dialog__meta-value {
+  color: var(--ink-0);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.about-dialog__shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 12px;
+}
+
+.about-dialog__shortcut {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--line-soft);
+  gap: 6px;
+  padding: 2px 0;
 }
 
-.shortcuts-panel__row:last-child {
-  border-bottom: none;
-}
-
-.shortcuts-panel__label {
+.about-dialog__shortcut-label {
   color: var(--ink-0);
   font-family: var(--font-ui);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.shortcuts-panel__key {
-  padding: 3px 8px;
-  border-radius: 6px;
-  background: rgba(52, 209, 184, 0.08);
-  border: 1px solid rgba(52, 209, 184, 0.18);
-  color: var(--accent);
+.about-dialog__shortcut-key {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(52, 209, 184, 0.1);
+  border: 1px solid rgba(52, 209, 184, 0.2);
+  color: var(--ink-0);
   font-family: var(--font-mono);
-  font-size: 0.64rem;
+  font-size: 0.58rem;
   font-weight: 500;
-  letter-spacing: 0.03em;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.about-dialog__links {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.about-dialog__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--ink-1);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  text-decoration: none;
+  transition: color 100ms ease;
+}
+
+.about-dialog__link:hover {
+  color: var(--accent);
+}
+
+.about-dialog__license {
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
 }
 
 @media (max-width: 640px) {
