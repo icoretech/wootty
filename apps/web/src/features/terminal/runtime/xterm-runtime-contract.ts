@@ -21,9 +21,29 @@ export type TerminalRuntimeTerminalOptions = {
   theme?: Record<string, string>;
 };
 
+export interface TerminalRuntimeBufferLine {
+  isWrapped: boolean;
+  translateToString(
+    trimRight?: boolean,
+    startColumn?: number,
+    endColumn?: number,
+  ): string;
+}
+
+export interface TerminalRuntimeBuffer {
+  viewportY: number;
+  length: number;
+  getLine(y: number): TerminalRuntimeBufferLine | undefined;
+}
+
+export interface TerminalRuntimeBufferNamespace {
+  active: TerminalRuntimeBuffer;
+}
+
 export interface TerminalRuntimeTerminal {
   cols: number;
   rows: number;
+  buffer: TerminalRuntimeBufferNamespace;
   options: { fontSize?: number };
   loadAddon(addon: TerminalRuntimeAddon): void;
   open(element: TerminalRuntimeMountElement): void;

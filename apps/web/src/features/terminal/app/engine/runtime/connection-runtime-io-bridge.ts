@@ -25,6 +25,7 @@ type ConnectionRuntimeIoBridge = {
   queuedInputBytes: number;
   droppedInputBytes: number;
   clearTerminal: () => void;
+  readTranscript: () => string;
   updateFontSize: (fontSize: number, onResized: () => void) => void;
   fitAndSyncSize: () => void;
   flushAfterReady: () => void;
@@ -81,6 +82,7 @@ export function useConnectionRuntimeIoBridge({
     terminalElementRef,
     terminalReady,
     clearTerminal,
+    readTranscript,
     writeOutput,
     writeExit,
     writeServerError,
@@ -119,6 +121,7 @@ export function useConnectionRuntimeIoBridge({
     queuedInputBytes,
     droppedInputBytes,
     clearTerminal,
+    readTranscript,
     updateFontSize,
     fitAndSyncSize,
     flushAfterReady,

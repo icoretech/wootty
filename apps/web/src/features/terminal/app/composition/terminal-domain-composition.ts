@@ -24,6 +24,24 @@ type TerminalDomainController = {
   dispatchStatusBar: (action: StatusBarAction) => void;
 };
 
+function normalizeTranscriptFilenamePart(value: string | null): string {
+  const normalized = (value ?? "terminal")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized.length > 0 ? normalized : "terminal";
+}
+
+function buildTranscriptFilename(sessionLabel: string | null): string {
+  const timestamp = new Date()
+    .toISOString()
+    .replaceAll(":", "-")
+    .replaceAll(".", "-");
+  return `wootty-${normalizeTranscriptFilenamePart(sessionLabel)}-${timestamp}.txt`;
+}
+
 /**
  * Consolidated domain controller hook.
  * Directly composes session and connection hooks without excessive forwarding layers.
@@ -102,6 +120,50 @@ export function useTerminalDomainController({
     [connection.runtime, session.uiState],
   );
 
+  const activeSession = session.sessionState.sessionId
+    ? session.sessionState.liveSessions.find(
+        (liveSession) => liveSession.id === session.sessionState.sessionId,
+      )
+    : null;
+
+  const downloadTranscript = useCallback(() => {
+    const transcript = connection.runtime.readTranscript();
+    if (transcript.length === 0) {
+      return;
+    }
+
+    const documentRef = platform.documentRef;
+    const urlApi = globalThis.URL;
+    if (
+      !documentRef ||
+      typeof urlApi.createObjectURL !== "function" ||
+      typeof urlApi.revokeObjectURL !== "function"
+    ) {
+      return;
+    }
+
+    const downloadUrl = urlApi.createObjectURL(
+      new Blob([transcript], { type: "text/plain;charset=utf-8" }),
+    );
+    const link = documentRef.createElement("a");
+    link.href = downloadUrl;
+    link.download = buildTranscriptFilename(
+      activeSession?.name ?? session.sessionState.sessionId,
+    );
+    link.rel = "noopener";
+
+    try {
+      link.click();
+    } finally {
+      urlApi.revokeObjectURL(downloadUrl);
+    }
+  }, [
+    activeSession?.name,
+    connection.runtime,
+    platform.documentRef,
+    session.sessionState.sessionId,
+  ]);
+
   const {
     dispatchShortcutAction,
     dispatchFloatingControls,
@@ -116,6 +178,7 @@ export function useTerminalDomainController({
     setSessionMenuOpen: session.sessionActions.setSessionMenuOpen,
     setHelpOpen: session.uiState.setHelpOpen,
     sendNow: connection.transport.sendNow,
+    downloadVisibleTranscript: downloadTranscript,
     requestSessionRefresh: () => {
       void session.sessionActions.requestTransportRefresh();
     },

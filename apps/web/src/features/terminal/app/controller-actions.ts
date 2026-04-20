@@ -102,6 +102,7 @@ type UseTerminalCommandActionsArgs = {
   setSessionMenuOpen: Dispatch<SetStateAction<boolean>>;
   setHelpOpen: Dispatch<SetStateAction<boolean>>;
   sendNow: (payload: TerminalClientMessage) => boolean;
+  downloadVisibleTranscript: () => void;
   requestSessionRefresh: () => void;
 };
 
@@ -115,6 +116,7 @@ export function useTerminalCommandActions({
   setSessionMenuOpen,
   setHelpOpen,
   sendNow,
+  downloadVisibleTranscript,
   requestSessionRefresh,
 }: UseTerminalCommandActionsArgs): {
   dispatchShortcutAction: (action: ShortcutAction) => void;
@@ -190,6 +192,9 @@ export function useTerminalCommandActions({
         case "toggleSessionMenu":
           setSessionMenuOpen((previous) => !previous);
           return;
+        case "downloadTranscript":
+          downloadVisibleTranscript();
+          return;
         case "renameSession":
           sendNow(createRenameMessage(action.name));
           requestSessionRefresh();
@@ -199,6 +204,7 @@ export function useTerminalCommandActions({
       }
     },
     [
+      downloadVisibleTranscript,
       requestSessionRefresh,
       sendNow,
       setSessionMenuOpen,

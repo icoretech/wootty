@@ -26,6 +26,7 @@ type RuntimeOrchestrator = {
   terminalElementRef: RefObject<HTMLDivElement | null>;
   terminalReady: boolean;
   clearTerminal: () => void;
+  readTranscript: () => string;
   writeOutput: (data: string) => number;
   writeExit: (code: number, signal: number) => void;
   writeServerError: (message: string) => void;
@@ -57,6 +58,43 @@ export function useRuntimeOrchestrator({
 
   const clearTerminal = useCallback(() => {
     termRef.current?.clear();
+  }, []);
+
+  const readTranscript = useCallback((): string => {
+    const term = termRef.current;
+    if (!term) {
+      return "";
+    }
+
+    const buffer = term.buffer.active;
+    const lines: string[] = [];
+    let currentLine = "";
+
+    for (let lineIndex = 0; lineIndex < buffer.length; lineIndex += 1) {
+      const line = buffer.getLine(lineIndex);
+      if (!line) {
+        continue;
+      }
+
+      const text = line.translateToString(true);
+      if (line.isWrapped) {
+        currentLine += text;
+        continue;
+      }
+
+      if (lineIndex > 0) {
+        lines.push(currentLine);
+      }
+      currentLine = text;
+    }
+
+    lines.push(currentLine);
+
+    while (lines.length > 1 && lines.at(-1) === "") {
+      lines.pop();
+    }
+
+    return lines.join("\n");
   }, []);
 
   const writeOutput = useCallback((data: string): number => {
@@ -181,6 +219,7 @@ export function useRuntimeOrchestrator({
     terminalElementRef,
     terminalReady,
     clearTerminal,
+    readTranscript,
     writeOutput,
     writeExit,
     writeServerError,

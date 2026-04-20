@@ -57,6 +57,7 @@ type ConnectionCoordinatorState = {
     terminalElementRef: RefObject<HTMLDivElement | null>;
     terminalReady: boolean;
     clearTerminal: () => void;
+    readTranscript: () => string;
     updateFontSize: (fontSize: number, onResized: () => void) => void;
     fitAndSyncSize: () => void;
     resetRuntimeBuffers: () => void;
@@ -312,6 +313,7 @@ export function useConnectionCoordinator({
       terminalElementRef: runtimeBridge.terminalElementRef,
       terminalReady: runtimeBridge.terminalReady,
       clearTerminal: runtimeBridge.clearTerminal,
+      readTranscript: runtimeBridge.readTranscript,
       updateFontSize: runtimeBridge.updateFontSize,
       fitAndSyncSize: runtimeBridge.fitAndSyncSize,
       resetRuntimeBuffers: runtimeBridge.resetRuntimeBuffers,
