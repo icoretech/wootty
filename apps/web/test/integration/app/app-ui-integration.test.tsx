@@ -87,4 +87,77 @@ describe("App integration - UI behavior", () => {
       });
     }
   });
+
+  it("downloads session transcript with scrollback", async () => {
+    const ws = await harness.bootConnected("session-a");
+    const createObjectURL = vi.fn(() => "blob:wootty-transcript");
+    const revokeObjectURL = vi.fn();
+    const originalURL = window.URL;
+    const originalCreateElement = document.createElement.bind(document);
+    const anchorClick = vi.fn();
+
+    Object.defineProperty(window, "URL", {
+      configurable: true,
+      value: {
+        createObjectURL,
+        revokeObjectURL,
+      },
+    });
+
+    const createElementSpy = vi
+      .spyOn(document, "createElement")
+      .mockImplementation(
+        (tagName: string, options?: ElementCreationOptions) => {
+          const element = originalCreateElement(tagName, options);
+          if (tagName === "a") {
+            Object.defineProperty(element, "click", {
+              configurable: true,
+              value: anchorClick,
+            });
+          }
+          return element;
+        },
+      );
+
+    try {
+      const output = Array.from({ length: 40 }, (_, index) => {
+        return `line-${index.toString().padStart(3, "0")}`;
+      }).join("\n");
+
+      await act(async () => {
+        ws.triggerMessage({
+          type: "output",
+          data: `${output}\n`,
+        });
+      });
+
+      harness.runtime.terminals[0]!.viewportY = 12;
+
+      await waitFor(() => {
+        expect(screen.getByTestId("output-value").textContent).not.toBe("0 B");
+      });
+
+      await act(async () => {
+        fireEvent.click(screen.getByTestId("session-download-button"));
+      });
+
+      const blob = await waitFor(() => {
+        expect(createObjectURL).toHaveBeenCalledTimes(1);
+        const blobCandidate = createObjectURL.mock.calls[0]?.[0];
+        return blobCandidate as Blob;
+      });
+
+      expect(blob).toBeInstanceOf(Blob);
+      await expect(blob.text()).resolves.toContain("line-000");
+      await expect(blob.text()).resolves.toContain("line-039");
+      expect(anchorClick).toHaveBeenCalledTimes(1);
+      expect(revokeObjectURL).toHaveBeenCalledWith("blob:wootty-transcript");
+    } finally {
+      createElementSpy.mockRestore();
+      Object.defineProperty(window, "URL", {
+        configurable: true,
+        value: originalURL,
+      });
+    }
+  });
 });

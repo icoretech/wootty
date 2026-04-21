@@ -40,6 +40,7 @@ describe("connection runtime io bridge", () => {
     terminalElementRef: { current: null as HTMLDivElement | null },
     terminalReady: true,
     clearTerminal: vi.fn<() => void>(),
+    readTranscript: vi.fn<() => string>(() => "buffer output"),
     writeOutput: vi.fn<(data: string) => number>(),
     writeExit: vi.fn<(code: number, signal: number) => void>(),
     writeServerError: vi.fn<(message: string) => void>(),
@@ -128,6 +129,7 @@ describe("connection runtime io bridge", () => {
     expect(runtimeState.clearTerminal).toHaveBeenCalledTimes(1);
     expect(backpressureState.resetQueuedBuffers).toHaveBeenCalledTimes(1);
     expect(result.current.outputBytes).toBe(0);
+    expect(result.current.readTranscript()).toBe("buffer output");
 
     const bootError = new Error("loader exploded");
     act(() => {

@@ -14,6 +14,7 @@ vi.mock(
         terminalElementRef: { current: null },
         terminalReady: false,
         clearTerminal: vi.fn(),
+        readTranscript: vi.fn(() => ""),
         updateFontSize: vi.fn(),
         fitAndSyncSize: vi.fn(),
         resetRuntimeBuffers: vi.fn(),

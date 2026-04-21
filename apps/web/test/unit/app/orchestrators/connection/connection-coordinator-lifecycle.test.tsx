@@ -13,6 +13,7 @@ let runtimeBridgeMock: {
   queuedInputBytes: number;
   droppedInputBytes: number;
   clearTerminal: ReturnType<typeof vi.fn>;
+  readTranscript: ReturnType<typeof vi.fn>;
   updateFontSize: ReturnType<typeof vi.fn>;
   fitAndSyncSize: ReturnType<typeof vi.fn>;
   flushAfterReady: ReturnType<typeof vi.fn>;
@@ -49,6 +50,7 @@ function buildRuntimeBridgeMock() {
     queuedInputBytes: 0,
     droppedInputBytes: 0,
     clearTerminal: vi.fn(),
+    readTranscript: vi.fn(() => ""),
     updateFontSize: vi.fn(),
     fitAndSyncSize: vi.fn(),
     flushAfterReady: vi.fn(),

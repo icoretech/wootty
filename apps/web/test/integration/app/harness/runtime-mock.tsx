@@ -25,16 +25,49 @@ class FakeFitAddon {
 
 class FakeWebLinksAddon {}
 
+class FakeBufferLine {
+  constructor(
+    private readonly value: string,
+    readonly isWrapped: boolean,
+  ) {}
+
+  translateToString(): string {
+    return this.value;
+  }
+}
+
 class FakeTerminal {
   cols = 80;
   rows = 24;
   options: { fontSize: number };
   clearCalls = 0;
+  viewportY = 0;
+  readonly lines: Array<{ text: string; isWrapped: boolean }> = [
+    { text: "", isWrapped: false },
+  ];
+  readonly buffer;
 
   private readonly dataHandlers = new Set<(data: string) => void>();
 
   constructor(options: RuntimeTerminalOptions = {}) {
+    const terminal = this;
     this.options = { fontSize: options.fontSize ?? 11 };
+    this.buffer = {
+      active: {
+        get viewportY() {
+          return terminal.viewportY;
+        },
+        get length() {
+          return terminal.lines.length;
+        },
+        getLine(y: number) {
+          const line = terminal.lines[y];
+          return line
+            ? new FakeBufferLine(line.text, line.isWrapped)
+            : undefined;
+        },
+      },
+    };
   }
 
   loadAddon(_addon: TerminalRuntimeAddon): void {
@@ -45,16 +78,19 @@ class FakeTerminal {
     // no-op for tests
   }
 
-  write(_data: string): void {
-    // no-op for tests
+  write(data: string): void {
+    this.appendOutput(data);
   }
 
-  writeln(_data: string): void {
-    // no-op for tests
+  writeln(data: string): void {
+    this.appendOutput(`${data}\n`);
   }
 
   clear(): void {
     this.clearCalls += 1;
+    this.lines.length = 0;
+    this.lines.push({ text: "", isWrapped: false });
+    this.viewportY = 0;
   }
 
   dispose(): void {
@@ -73,6 +109,16 @@ class FakeTerminal {
   emitInput(data: string): void {
     for (const handler of this.dataHandlers) {
       handler(data);
+    }
+  }
+
+  private appendOutput(data: string): void {
+    const normalized = data.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+    const parts = normalized.split("\n");
+    this.lines[this.lines.length - 1]!.text += parts[0] ?? "";
+
+    for (let index = 1; index < parts.length; index += 1) {
+      this.lines.push({ text: parts[index] ?? "", isWrapped: false });
     }
   }
 }
