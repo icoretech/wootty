@@ -39,6 +39,7 @@ describe("terminal view-model mappers", () => {
     expect(models.sessionMenuModel.sessionNotice).toBe("updated");
     expect(models.statusBarModel.latencyText).toBe("22ms");
     expect(models.statusBarModel.sessionName).toBe("session-current");
+    expect(models.statusBarModel.canDownloadTranscript).toBe(true);
     expect(models.statusBarModel.queuedInputText).toBe("128 B");
   });
 

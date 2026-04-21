@@ -125,6 +125,7 @@ export function buildTerminalViewModels(
     reconnectAttempt: connection.reconnectAttempt,
     queuedInputText: formatBytes(telemetry.queuedInputBytes),
     droppedInputText: formatBytes(telemetry.droppedInputBytes),
+    canDownloadTranscript: telemetry.outputBytes > 0,
     outputText: formatBytes(telemetry.outputBytes),
     outputBytes: telemetry.outputBytes,
   };

@@ -14,6 +14,7 @@ export type StatusBarModel = {
   reconnectAttempt: number;
   queuedInputText: string;
   droppedInputText: string;
+  canDownloadTranscript: boolean;
   outputText: string;
   outputBytes: number;
 };

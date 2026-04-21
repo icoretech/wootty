@@ -25,11 +25,12 @@ describe("view contracts", () => {
     const status: StatusBarAction[] = [
       { type: "toggleControls" },
       { type: "toggleSessionMenu" },
+      { type: "downloadTranscript" },
     ];
 
     expect(floating).toHaveLength(6);
     expect(session).toHaveLength(4);
-    expect(status).toHaveLength(2);
+    expect(status).toHaveLength(3);
   });
 
   it("exposes model structures required by the terminal view", () => {
@@ -63,6 +64,7 @@ describe("view contracts", () => {
       reconnectAttempt: 0,
       queuedInputText: "0 B",
       droppedInputText: "0 B",
+      canDownloadTranscript: false,
       outputText: "0 B",
       outputBytes: 0,
     };

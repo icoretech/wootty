@@ -30,6 +30,7 @@ describe("StatusBar", () => {
           reconnectAttempt: 3,
           queuedInputText: "1.0 KiB",
           droppedInputText: "0 B",
+          canDownloadTranscript: true,
           outputText: "4.0 KiB",
           outputBytes: 4096,
         }}
@@ -41,9 +42,11 @@ describe("StatusBar", () => {
     fireEvent.click(screen.getByTestId("controls-toggle"));
     fireEvent.click(screen.getByTestId("session-menu-button"));
     fireEvent.click(screen.getByTestId("session-copy-button"));
+    fireEvent.click(screen.getByTestId("session-download-button"));
 
     expect(dispatch).toHaveBeenCalledWith({ type: "toggleControls" });
     expect(dispatch).toHaveBeenCalledWith({ type: "toggleSessionMenu" });
+    expect(dispatch).toHaveBeenCalledWith({ type: "downloadTranscript" });
     expect(screen.getByTestId("status-label").textContent).toBe("Connected");
     expect(screen.getByTestId("output-value").getAttribute("data-bytes")).toBe(
       "4096",
@@ -79,6 +82,7 @@ describe("StatusBar", () => {
           reconnectAttempt: 3,
           queuedInputText: "1.0 KiB",
           droppedInputText: "0 B",
+          canDownloadTranscript: false,
           outputText: "4.0 KiB",
           outputBytes: 4096,
         }}
@@ -89,6 +93,9 @@ describe("StatusBar", () => {
 
     expect(
       screen.getByTestId("session-copy-button").hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByTestId("session-download-button").hasAttribute("disabled"),
     ).toBe(true);
   });
 });

@@ -13,8 +13,12 @@ describe("controller actions", () => {
     const clearTerminal = vi.fn();
     const reconnectNow = vi.fn();
     const toggleFullscreen = vi.fn(async () => {});
+    const downloadVisibleTranscript = vi.fn();
     const setControlsOpen = vi.fn();
     const setSessionMenuOpen = vi.fn();
+    const setHelpOpen = vi.fn();
+    const sendNow = vi.fn(() => true);
+    const requestSessionRefresh = vi.fn();
 
     const { result } = renderHook(() => {
       return useTerminalCommandActions({
@@ -25,6 +29,10 @@ describe("controller actions", () => {
         readFontSize: () => 12,
         setControlsOpen,
         setSessionMenuOpen,
+        setHelpOpen,
+        sendNow,
+        downloadVisibleTranscript,
+        requestSessionRefresh,
       });
     });
 
@@ -39,6 +47,7 @@ describe("controller actions", () => {
         type: VIEWPORT_UI_COMMAND.TOGGLE_CONTROLS,
       });
       result.current.dispatchStatusBar({ type: "toggleSessionMenu" });
+      result.current.dispatchStatusBar({ type: "downloadTranscript" });
       result.current.dispatchShortcutAction(VIEWPORT_UI_COMMAND.RESET_FONT);
     });
 
@@ -46,6 +55,7 @@ describe("controller actions", () => {
     expect(reconnectNow).toHaveBeenCalledTimes(1);
     expect(setControlsOpen).toHaveBeenCalledTimes(1);
     expect(setSessionMenuOpen).toHaveBeenCalledTimes(1);
+    expect(downloadVisibleTranscript).toHaveBeenCalledTimes(1);
     expect(applyFontSize).toHaveBeenCalledWith(11);
   });
 

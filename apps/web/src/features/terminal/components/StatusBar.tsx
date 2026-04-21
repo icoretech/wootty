@@ -2,6 +2,7 @@ import {
   Check,
   ChevronDown,
   Copy,
+  Download,
   Pencil,
   SlidersHorizontal,
 } from "lucide-react";
@@ -189,6 +190,18 @@ export function StatusBar({
             ) : (
               <Copy size={12} aria-hidden="true" />
             )}
+          </button>
+          <button
+            type="button"
+            className="status-item status-item--button status-session__download"
+            data-testid="session-download-button"
+            aria-label="Download session transcript"
+            onClick={() => {
+              dispatch({ type: "downloadTranscript" });
+            }}
+            disabled={!model.canDownloadTranscript}
+          >
+            <Download size={12} aria-hidden="true" />
           </button>
         </div>
         <span className="status-item" data-mode={model.attachMode}>
