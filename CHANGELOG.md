@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.14](https://github.com/icoretech/wootty/compare/wootty-v0.2.13...wootty-v0.2.14) (2026-04-21)
+
+
+### Features
+
+* **web:** add session dashboard filters ([41f89a5](https://github.com/icoretech/wootty/commit/41f89a54ffaf5784e8ed8d09493e382d557ea48c))
+* **web:** add transcript status controls ([2b732c5](https://github.com/icoretech/wootty/commit/2b732c5baa6ae8ad74aa8fb41f917457d4e5fb29))
+* **web:** export transcript with scrollback ([cf8b49d](https://github.com/icoretech/wootty/commit/cf8b49d2f3af0ec5f587a4f81c11d51cd3924e0c))
+
 ## [0.2.13](https://github.com/icoretech/wootty/compare/wootty-v0.2.12...wootty-v0.2.13) (2026-04-20)
 
 
