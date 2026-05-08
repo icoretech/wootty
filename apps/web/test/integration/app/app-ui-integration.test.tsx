@@ -131,7 +131,13 @@ describe("App integration - UI behavior", () => {
         });
       });
 
-      harness.runtime.terminals[0]!.viewportY = 12;
+      const terminal = harness.runtime.terminals[0];
+      if (terminal === undefined) {
+        throw new Error(
+          "Expected the integration harness to create a terminal",
+        );
+      }
+      terminal.viewportY = 12;
 
       await waitFor(() => {
         expect(screen.getByTestId("output-value").textContent).not.toBe("0 B");

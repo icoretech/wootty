@@ -115,7 +115,13 @@ class FakeTerminal {
   private appendOutput(data: string): void {
     const normalized = data.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     const parts = normalized.split("\n");
-    this.lines[this.lines.length - 1]!.text += parts[0] ?? "";
+    const currentLine = this.lines.at(-1);
+    if (currentLine === undefined) {
+      throw new Error(
+        "Expected a current terminal line before appending output",
+      );
+    }
+    currentLine.text += parts[0] ?? "";
 
     for (let index = 1; index < parts.length; index += 1) {
       this.lines.push({ text: parts[index] ?? "", isWrapped: false });
