@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.15](https://github.com/icoretech/wootty/compare/wootty-v0.2.14...wootty-v0.2.15) (2026-05-08)
+
+
+### Bug Fixes
+
+* allow pnpm 11 esbuild builds ([6e34aa7](https://github.com/icoretech/wootty/commit/6e34aa75e653139c685265dce9aa86b1df009b33))
+* **deps:** update dependency lucide-react to ^1.11.0 ([#80](https://github.com/icoretech/wootty/issues/80)) ([4a6c6b6](https://github.com/icoretech/wootty/commit/4a6c6b6cf0f2b906f7c780e429266c1a3de21c4f))
+* **deps:** update dependency lucide-react to ^1.12.0 ([#82](https://github.com/icoretech/wootty/issues/82)) ([4b35cb1](https://github.com/icoretech/wootty/commit/4b35cb136400376e32d42d6fc643ebea45a02c9b))
+* **deps:** update dependency lucide-react to ^1.14.0 ([#83](https://github.com/icoretech/wootty/issues/83)) ([36b9dfd](https://github.com/icoretech/wootty/commit/36b9dfdaa84d1093b0792a05ce9941b1e920ece4))
+* **deps:** update dependency lucide-react to ^1.9.0 ([#78](https://github.com/icoretech/wootty/issues/78)) ([418b080](https://github.com/icoretech/wootty/commit/418b0800dbaca3f54cfda83940ddbe9ad6b2060f))
+* **deps:** update frontend-runtime to ^19.2.6 ([#88](https://github.com/icoretech/wootty/issues/88)) ([09d790a](https://github.com/icoretech/wootty/commit/09d790a7d4b11f89f196cb650519150fde8b34a0))
+
 ## [0.2.14](https://github.com/icoretech/wootty/compare/wootty-v0.2.13...wootty-v0.2.14) (2026-04-21)
 
 
