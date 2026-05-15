@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.16](https://github.com/icoretech/wootty/compare/wootty-v0.2.15...wootty-v0.2.16) (2026-05-15)
+
+
+### Bug Fixes
+
+* **deps:** update dependency lucide-react to ^1.16.0 ([#102](https://github.com/icoretech/wootty/issues/102)) ([f880a65](https://github.com/icoretech/wootty/commit/f880a65afe61434a10d077d1ca7c5b2d1859c82d))
+
 ## [0.2.15](https://github.com/icoretech/wootty/compare/wootty-v0.2.14...wootty-v0.2.15) (2026-05-08)
 
 
