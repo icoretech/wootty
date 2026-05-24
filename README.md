@@ -453,7 +453,7 @@ pnpm test:e2e
 One-shot local CI parity:
 
 ```bash
-pnpm ci
+pnpm run ci
 ```
 
 Cross-browser browser matrix (Chromium + Firefox + WebKit):

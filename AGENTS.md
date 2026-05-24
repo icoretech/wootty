@@ -53,7 +53,7 @@ wootty/
 ## CONVENTIONS
 - Root `pnpm lint` is intentionally mutating: Biome write mode, `go fix`, docs path verification, governance verification, then typecheck
 - `pnpm lint:ci` is the non-mutating CI path; do not substitute it for local fix-up work
-- `pnpm ci` is the local parity sequence: lint:ci -> test -> build -> e2e
+- `pnpm run ci` is the local parity sequence: lint:ci -> test -> build -> e2e
 - The repo does not use a shared package/library layer; cross-runtime truth flows through `contracts/*.json` plus generator scripts
 - Governance is enforced, not aspirational: ownership and traceability manifests under `docs/governance/` must stay in sync with docs and executable tests
 
@@ -79,7 +79,7 @@ pnpm test
 pnpm build
 pnpm test:e2e
 pnpm test:e2e:cross
-pnpm ci
+pnpm run ci
 pnpm generate:terminal-contracts
 pnpm generate:governance
 ```
