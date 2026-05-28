@@ -13,6 +13,11 @@
   "ignoreDeps": ["node"],
   "packageRules": [
     {
+      "description": "Delay npm updates for pnpm minimum release age",
+      "matchDatasources": ["npm"],
+      "minimumReleaseAge": "1 day"
+    },
+    {
       "description": "Group frontend runtime updates",
       "matchManagers": ["npm"],
       "matchPackageNames": ["/^react$/", "/^react-dom$/", "/^@xterm\\//"],
