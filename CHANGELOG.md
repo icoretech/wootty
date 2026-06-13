@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.18](https://github.com/icoretech/wootty/compare/wootty-v0.2.17...wootty-v0.2.18) (2026-06-13)
+
+
+### Bug Fixes
+
+* **deps:** update lucide monorepo to ^1.18.0 ([#133](https://github.com/icoretech/wootty/issues/133)) ([342a3ea](https://github.com/icoretech/wootty/commit/342a3ea0f0a9086482796e23f2fcbff01164bfd7))
+
 ## [0.2.17](https://github.com/icoretech/wootty/compare/wootty-v0.2.16...wootty-v0.2.17) (2026-06-04)
 
 
