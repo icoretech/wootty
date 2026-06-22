@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "enabledManagers": ["github-actions", "gomod", "npm"],
+  "enabledManagers": ["dockerfile", "github-actions", "gomod", "npm"],
   "dependencyDashboard": true,
   "labels": ["dependencies"],
   "platformAutomerge": false,
@@ -35,6 +35,22 @@
       ],
       "groupName": "frontend-tooling",
       "groupSlug": "frontend-tooling"
+    },
+    {
+      "description": "Group Go toolchain updates",
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "rangeStrategy": "bump",
+      "groupName": "go-toolchain",
+      "groupSlug": "go-toolchain"
+    },
+    {
+      "description": "Group Go Docker builder updates",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["golang"],
+      "groupName": "go-toolchain",
+      "groupSlug": "go-toolchain"
     },
     {
       "description": "Group server Go module updates",
