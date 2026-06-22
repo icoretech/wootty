@@ -13,7 +13,7 @@ RUN pnpm install --frozen-lockfile
 
 RUN pnpm --filter @icoretech/wootty-web build
 
-FROM golang:1.26.1-bookworm AS server-builder
+FROM golang:1.26.4-bookworm AS server-builder
 
 WORKDIR /src
 
