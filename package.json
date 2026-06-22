@@ -16,7 +16,7 @@
     "format": "biome format --write .",
     "format:check": "biome format --no-write .",
     "lint:go": "cd apps/server && go fix ./...",
-    "lint:go:ci": "sh -c 'out=$(cd apps/server && gofmt -l .); if [ -n \"$out\" ]; then printf \"%s\\n\" \"$out\"; exit 1; fi'",
+    "lint:go:ci": "sh -c 'cd apps/server && go fix -diff ./... && out=$(gofmt -l .); if [ -n \"$out\" ]; then printf \"%s\\n\" \"$out\"; exit 1; fi'",
     "lint": "biome check --write --assist-enabled=true . && pnpm lint:go && pnpm verify:docs-paths && pnpm verify:governance && pnpm typecheck",
     "lint:ci": "pnpm biome:ci && pnpm lint:go:ci && pnpm verify:docs-paths && pnpm verify:governance && pnpm typecheck",
     "check": "biome check .",
