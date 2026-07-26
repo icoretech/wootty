@@ -77,11 +77,32 @@ test("new tab starts a distinct active session by default", async ({
 });
 
 // @trace FR-5 e2e-viewport-resize-stability
-test("stays stable through viewport resizes", async ({ page }) => {
+test("keeps terminal and status bar stable through viewport resizes", async ({
+  page,
+}) => {
   await page.goto("/");
   await waitUntilConnected(page);
 
-  await page.setViewportSize({ width: 420, height: 900 });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.setViewportSize({ width: 375, height: 812 });
+
+  const mobileLayout = await page.evaluate(() => {
+    const statusbar = document.querySelector(".statusbar");
+    if (!(statusbar instanceof HTMLElement)) {
+      throw new Error("Status bar was not rendered");
+    }
+
+    return {
+      viewportWidth: window.innerWidth,
+      statusbarRight: statusbar.getBoundingClientRect().right,
+    };
+  });
+
+  expect(
+    mobileLayout.statusbarRight,
+    "status bar should stay within the viewport while shrinking to mobile",
+  ).toBeLessThanOrEqual(mobileLayout.viewportWidth);
+
   await waitUntilConnected(page);
   await expect(page.getByTestId("terminal-wrap")).toBeVisible();
 
