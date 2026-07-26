@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.19](https://github.com/icoretech/wootty/compare/wootty-v0.2.18...wootty-v0.2.19) (2026-07-26)
+
+
+### Bug Fixes
+
+* **ci:** accept setup-go major upgrades in toolchain checks ([3024327](https://github.com/icoretech/wootty/commit/30243273ea37f146a6dc8c4c6f51c2eeb3999c10))
+* **deps:** update dependency lucide-react to ^1.22.0 ([#149](https://github.com/icoretech/wootty/issues/149)) ([d1a5171](https://github.com/icoretech/wootty/commit/d1a5171e3ba69686fe8cb1744a066b322c9c1850))
+* **deps:** update dependency lucide-react to ^1.23.0 ([#152](https://github.com/icoretech/wootty/issues/152)) ([55a2af2](https://github.com/icoretech/wootty/commit/55a2af2bad5b4c491cd1d70f18629be3aaefc8ca))
+* **deps:** update dependency lucide-react to ^1.24.0 ([#161](https://github.com/icoretech/wootty/issues/161)) ([d3d65f1](https://github.com/icoretech/wootty/commit/d3d65f1bf3b066ef9a55b419ae98df613a8a24a2))
+* **deps:** update dependency lucide-react to ^1.25.0 ([#169](https://github.com/icoretech/wootty/issues/169)) ([f04d6ad](https://github.com/icoretech/wootty/commit/f04d6ad7790223f5e12c92a65a00f686710ea0c7))
+* **deps:** update dependency lucide-react to ^1.26.0 ([#177](https://github.com/icoretech/wootty/issues/177)) ([1cc66eb](https://github.com/icoretech/wootty/commit/1cc66ebe5377572d84096964b4c37e23f293496d))
+* **deps:** update frontend dependencies ([997ae1b](https://github.com/icoretech/wootty/commit/997ae1bc6ef6b904b1f0d67a8e2e43f01014bd0d))
+* **deps:** update frontend-runtime to ^19.2.8 ([#174](https://github.com/icoretech/wootty/issues/174)) ([2857d94](https://github.com/icoretech/wootty/commit/2857d94f08dc9c1d1eb1792d7c211f11e40a838f))
+* **deps:** update lucide monorepo to ^1.20.0 ([#137](https://github.com/icoretech/wootty/issues/137)) ([21ab0d3](https://github.com/icoretech/wootty/commit/21ab0d3b44a51e69c5e1401b5e2499f09a339f7c))
+* **deps:** update lucide monorepo to ^1.21.0 ([#141](https://github.com/icoretech/wootty/issues/141)) ([09d803e](https://github.com/icoretech/wootty/commit/09d803eb034ffd69e1bbe30a29f7e0fcf841fa3a))
+* **ui:** keep status bar inside resized viewport ([e9d6624](https://github.com/icoretech/wootty/commit/e9d66242cb50ce88471bb0f2cecf73add730c8d6))
+
 ## [0.2.18](https://github.com/icoretech/wootty/compare/wootty-v0.2.17...wootty-v0.2.18) (2026-06-13)
 
 
