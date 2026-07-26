@@ -2,3 +2,5 @@ packages:
   - apps/*
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - lucide-react@1.27.0
