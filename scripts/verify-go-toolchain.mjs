@@ -7,6 +7,7 @@ const goModPath = path.join(repoRoot, "apps", "server", "go.mod");
 const dockerfilePath = path.join(repoRoot, "Dockerfile");
 const goVersionFile = "apps/server/go.mod";
 const goCachePath = "apps/server/go.sum";
+const setupGoAction = "uses: actions/setup-go@";
 
 const goMod = await fs.readFile(goModPath, "utf8");
 const goDirectiveMatch = /^go\s+(?<version>\d+\.\d+(?:\.\d+)?)$/m.exec(goMod);
@@ -69,7 +70,7 @@ for (const fileName of workflowFiles) {
   const lines = content.split("\n");
 
   lines.forEach((line, index) => {
-    if (!line.includes("uses: actions/setup-go@v6")) {
+    if (!line.includes(setupGoAction)) {
       return;
     }
 
@@ -102,7 +103,7 @@ for (const fileName of workflowFiles) {
 }
 
 if (setupGoSteps === 0) {
-  failures.push("No actions/setup-go@v6 steps found in GitHub workflows");
+  failures.push("No actions/setup-go steps found in GitHub workflows");
 }
 
 const dockerfile = await fs.readFile(dockerfilePath, "utf8");

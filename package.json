@@ -26,7 +26,8 @@
     "verify:docs-paths": "node scripts/verify-readme-paths.mjs",
     "verify:governance": "node scripts/generate-terminal-governance-docs.mjs --check",
     "verify:go-toolchain": "node scripts/verify-go-toolchain.mjs",
-    "test": "pnpm --filter @icoretech/wootty-web test && cd apps/server && go test ./...",
+    "test": "pnpm test:scripts && pnpm --filter @icoretech/wootty-web test && cd apps/server && go test ./...",
+    "test:scripts": "node --test scripts/*.test.mjs",
     "test:e2e": "pnpm --filter @icoretech/wootty-web test:e2e",
     "test:e2e:cross": "pnpm --filter @icoretech/wootty-web test:e2e:cross",
     "typecheck": "pnpm --filter @icoretech/wootty-web typecheck && pnpm --filter @icoretech/wootty-web typecheck:contracts"
