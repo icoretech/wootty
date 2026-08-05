@@ -33,7 +33,7 @@
     "typecheck": "pnpm --filter @icoretech/wootty-web typecheck && pnpm --filter @icoretech/wootty-web typecheck:contracts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.6",
+    "@biomejs/biome": "^2.5.7",
     "concurrently": "^10.0.4"
   }
 }
