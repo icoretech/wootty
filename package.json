@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.2.19",
   "description": "WooTTY: modern web terminal with resilient PTY sessions",
-  "packageManager": "pnpm@11.20.0",
+  "packageManager": "pnpm@11.21.0",
   "engines": {
     "node": ">=24"
   },
