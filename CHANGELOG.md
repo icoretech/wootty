@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.20](https://github.com/icoretech/wootty/compare/wootty-v0.2.19...wootty-v0.2.20) (2026-09-12)
+
+
+### Bug Fixes
+
+* **deps:** update dependency lucide-react to ^1.28.0 ([#185](https://github.com/icoretech/wootty/issues/185)) ([69def12](https://github.com/icoretech/wootty/commit/69def125d68208946c3fa722f822f22549a1469d))
+* **deps:** update dependency lucide-react to ^1.29.0 ([#192](https://github.com/icoretech/wootty/issues/192)) ([a89d478](https://github.com/icoretech/wootty/commit/a89d478de8736e413676fb46886306f1e2d16fbf))
+* **deps:** update dependency lucide-react to ^1.30.0 ([#194](https://github.com/icoretech/wootty/issues/194)) ([c57a439](https://github.com/icoretech/wootty/commit/c57a4399624a59e7ea3dd1bdb6259fb44ca93ab8))
+* **deps:** update dependency lucide-react to ^1.31.0 ([#197](https://github.com/icoretech/wootty/issues/197)) ([045bc26](https://github.com/icoretech/wootty/commit/045bc26ae73b8cb2738bdcf5f3d3c0534e50c56f))
+* **deps:** update dependency lucide-react to ^1.32.0 ([#203](https://github.com/icoretech/wootty/issues/203)) ([4209048](https://github.com/icoretech/wootty/commit/4209048ecce1d5a103d0bee64c0569e649e330a3))
+* **deps:** update dependency lucide-react to ^1.33.0 ([#206](https://github.com/icoretech/wootty/issues/206)) ([74160e0](https://github.com/icoretech/wootty/commit/74160e00c42629fdec73d0748609c5af765d200a))
+* **deps:** update dependency lucide-react to ^1.34.0 ([#211](https://github.com/icoretech/wootty/issues/211)) ([704244e](https://github.com/icoretech/wootty/commit/704244eabce0a359edfe30cf7c9166f61130df0c))
+* **deps:** update dependency lucide-react to ^1.35.0 ([#217](https://github.com/icoretech/wootty/issues/217)) ([2d01a3e](https://github.com/icoretech/wootty/commit/2d01a3e3ff17c0006e963459b2af0577c34d7e9c))
+* **deps:** update dependency lucide-react to ^1.37.0 ([#218](https://github.com/icoretech/wootty/issues/218)) ([b433783](https://github.com/icoretech/wootty/commit/b433783811f32d9c223e1bb79e792f589d811100))
+* **deps:** update dependency lucide-react to ^1.38.0 ([#220](https://github.com/icoretech/wootty/issues/220)) ([7f01056](https://github.com/icoretech/wootty/commit/7f01056314d4f7b2518fcdbcded33b2ba1e83f1b))
+* **deps:** update dependency lucide-react to ^1.39.0 ([#223](https://github.com/icoretech/wootty/issues/223)) ([93dec9d](https://github.com/icoretech/wootty/commit/93dec9dd70247ccc1808897f233ae2c8bfc913f1))
+* **deps:** update dependency lucide-react to ^1.40.0 ([#226](https://github.com/icoretech/wootty/issues/226)) ([d71bd58](https://github.com/icoretech/wootty/commit/d71bd58a43b288b9bdd55306280d6766c893e3f6))
+* **deps:** update dependency lucide-react to ^1.41.0 ([#228](https://github.com/icoretech/wootty/issues/228)) ([2417737](https://github.com/icoretech/wootty/commit/2417737393d9b8b76291c30f3f401f495004f5cc))
+* **deps:** update dependency lucide-react to ^1.42.0 ([#232](https://github.com/icoretech/wootty/issues/232)) ([a376673](https://github.com/icoretech/wootty/commit/a3766737285b68e3f0f95e4a94b70dee0f45dd38))
+* **deps:** update dependency lucide-react to ^1.43.0 ([#234](https://github.com/icoretech/wootty/issues/234)) ([7774997](https://github.com/icoretech/wootty/commit/7774997506af0d412cffb5aa231a40054a313f0d))
+* **deps:** update dependency lucide-react to ^1.44.0 ([#240](https://github.com/icoretech/wootty/issues/240)) ([dce7fb7](https://github.com/icoretech/wootty/commit/dce7fb78fe9420fa6f0906b8d42f60c74ec76aa0))
+* **deps:** update dependency lucide-react to ^1.45.0 ([#241](https://github.com/icoretech/wootty/issues/241)) ([71a2bbb](https://github.com/icoretech/wootty/commit/71a2bbb156cbb0ef9b9246c2a9e13c2488ebd197))
+* **deps:** update frontend-runtime to ^19.3.0 ([#237](https://github.com/icoretech/wootty/issues/237)) ([90aad56](https://github.com/icoretech/wootty/commit/90aad565692b9140269874bb31e0584861664d28))
+
 ## [0.2.19](https://github.com/icoretech/wootty/compare/wootty-v0.2.18...wootty-v0.2.19) (2026-07-26)
 
 
