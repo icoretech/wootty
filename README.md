@@ -63,6 +63,8 @@ For image flavors, SSH usage, direct command args, compose profiles, and custom 
 
 ### Run from Source
 
+Requires Node.js 24+, Go 1.27.1, and pnpm 12.6.0 (pinned in `package.json`).
+
 ```bash
 pnpm install
 pnpm dev
@@ -462,8 +464,9 @@ Cross-browser browser matrix (Chromium + Firefox + WebKit):
 pnpm test:e2e:cross
 ```
 
-Notes:
+Install the matching Playwright browser before running E2E tests locally: `pnpm --filter @icoretech/wootty-web exec playwright install chromium`.
 
+Notes:
 - `pnpm lint` applies Biome fixes, runs `go fix` on the server module, and then runs typecheck.
 - `pnpm lint:ci` is the non-mutating CI variant: `biome ci`, `gofmt` verification, docs/governance checks, and typecheck.
 - Test environment ownership:
