@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.21](https://github.com/icoretech/wootty/compare/wootty-v0.2.20...wootty-v0.2.21) (2026-10-10)
+
+
+### Bug Fixes
+
+* **deps:** update dependency lucide-react to ^1.48.0 ([#249](https://github.com/icoretech/wootty/issues/249)) ([d6d5538](https://github.com/icoretech/wootty/commit/d6d5538211e1975d8b9e055fe13873025f1336cc))
+* **deps:** update dependency lucide-react to ^1.49.0 ([#255](https://github.com/icoretech/wootty/issues/255)) ([207d2d2](https://github.com/icoretech/wootty/commit/207d2d2355faa4676342d73d32ca444fde2395ad))
+* **deps:** update dependency lucide-react to ^1.50.0 ([#260](https://github.com/icoretech/wootty/issues/260)) ([a2b1df6](https://github.com/icoretech/wootty/commit/a2b1df61c2fb4062451319f7e20b30af2cec76ae))
+* **deps:** update dependency lucide-react to ^1.51.0 ([#262](https://github.com/icoretech/wootty/issues/262)) ([6585a3f](https://github.com/icoretech/wootty/commit/6585a3f412a4710da191be5e10d397027f544167))
+* **deps:** update dependency lucide-react to ^1.52.0 ([#265](https://github.com/icoretech/wootty/issues/265)) ([bc8718f](https://github.com/icoretech/wootty/commit/bc8718f01a0ecc80cd6a6e4983c1a1068ef25382))
+* **deps:** update dependency lucide-react to ^1.53.0 ([#271](https://github.com/icoretech/wootty/issues/271)) ([1185337](https://github.com/icoretech/wootty/commit/118533785c117af7bbb1cdaa881ac0728311d900))
+* **deps:** update dependency lucide-react to ^1.54.0 ([#274](https://github.com/icoretech/wootty/issues/274)) ([24cb79a](https://github.com/icoretech/wootty/commit/24cb79abe4147e80e8beb3311ba3577dda959ba0))
+
 ## [0.2.20](https://github.com/icoretech/wootty/compare/wootty-v0.2.19...wootty-v0.2.20) (2026-09-22)
 
 
