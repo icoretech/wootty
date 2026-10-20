@@ -1,6 +1,6 @@
 module github.com/icoretech/wootty/apps/server
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/creack/pty v1.1.24
