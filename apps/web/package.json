@@ -2,6 +2,7 @@
   "name": "@icoretech/wootty-web",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite --config config/build/vite.config.ts",
     "build": "tsc -p tsconfig.json --noEmit && vite build --config config/build/vite.config.ts",
@@ -15,7 +16,7 @@
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
-    "lucide-react": "^1.60.0",
+    "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
   },
@@ -29,7 +30,7 @@
     "babel-plugin-react-compiler": "1.0.0",
     "jsdom": "^30.1.3",
     "typescript": "^7.0.2",
-    "vite": "^8.3.4",
+    "vite": "^8.3.5",
     "vitest": "^5.0.5"
   },
   "engines": {

@@ -3,4 +3,16 @@ packages:
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - lucide-react@1.27.0
+  - lucide-react@1.27.0 || 1.61.0
+  - "@biomejs/biome@2.6.2"
+  - "@biomejs/cli-android-arm64@2.6.2"
+  - "@biomejs/cli-android-x64@2.6.2"
+  - "@biomejs/cli-darwin-arm64@2.6.2"
+  - "@biomejs/cli-darwin-x64@2.6.2"
+  - "@biomejs/cli-linux-arm64-musl@2.6.2"
+  - "@biomejs/cli-linux-arm64@2.6.2"
+  - "@biomejs/cli-linux-x64-musl@2.6.2"
+  - "@biomejs/cli-linux-x64@2.6.2"
+  - "@biomejs/cli-win32-arm64@2.6.2"
+  - "@biomejs/cli-win32-x64@2.6.2"
+  - vite@8.3.5

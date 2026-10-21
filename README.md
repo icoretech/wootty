@@ -63,7 +63,7 @@ For image flavors, SSH usage, direct command args, compose profiles, and custom 
 
 ### Run from Source
 
-Requires Node.js 24+, Go 1.27.1, and pnpm 12.6.0 (pinned in `package.json`).
+Requires Node.js 24.22.1+, Go 1.27.3, and pnpm 12.14.0 (pinned in `package.json`).
 
 ```bash
 pnpm install
@@ -175,7 +175,6 @@ docker run --rm -it -p 8080:8080 \
 Use this pattern whenever `WOOTTY_COMMAND` depends on binaries not present in the default image.
 
 The container serves:
-
 - backend API/websocket on `/api/*`
 - web UI bundled from `apps/web/src`
 
@@ -267,7 +266,6 @@ spec:
 ## Operator Controls
 
 Keyboard shortcuts:
-
 - `Ctrl/Cmd+Shift+R`: reconnect
 - `Ctrl/Cmd+Shift+K`: clear viewport
 - `Ctrl/Cmd+Shift+=`: increase font size
@@ -277,7 +275,6 @@ Keyboard shortcuts:
 - `Ctrl/Cmd+Shift+B`: toggle controls
 
 Status bar metrics:
-
 - connection status and latency
 - session id
 - attach mode (`Control` or `Read-only`)
@@ -286,7 +283,6 @@ Status bar metrics:
 - output size (humanized units)
 
 Session controls:
-
 - click the `Session` badge in the status bar to open the session menu.
 - `New session`: start a fresh session in the current tab.
 - `Resume last`: reattach the last session id seen in this browser.
@@ -299,20 +295,20 @@ Session controls:
 
 ## Configuration
 
-| Variable | Default | Description |
-| --- | --- | --- |
-| `WOOTTY_HOST` | `127.0.0.1` | Bind address for direct host runs |
-| `WOOTTY_PORT` | `8080` | HTTP/WebSocket port |
-| `WOOTTY_DETACHED_TTL_MS` | `86400000` | Hard TTL for running detached sessions (24h). `0` disables this TTL |
-| `WOOTTY_HISTORY_BYTES` | `5242880` | Buffered output bytes for replay |
-| `WOOTTY_COMMAND` | `$SHELL` or `bash` | Executed command in the `woottyd` runtime environment (host or container) |
-| `WOOTTY_COMMAND_ARGS` | _empty_ | Shell-like command args string (supports quotes and escapes) |
-| `WOOTTY_CWD` | current directory | Process working directory |
-| `WOOTTY_STATIC_DIR` | auto-detected | Directory with built web assets |
-| `WOOTTY_AUTH_TOKEN` | _empty_ | Required when binding to a non-loopback host; used to bootstrap the auth cookie consumed by `/api/sessions` and `/api/terminal` |
-| `WOOTTY_ALLOWED_ORIGINS` | _empty_ | Optional comma-separated websocket origin allowlist |
-| `WOOTTY_ALLOW_INSECURE_NO_AUTH` | _empty_ | Set to `1` only to allow explicit unauthenticated non-loopback binds on trusted local networks |
-| `WOOTTY_FAKE_PTY` | `0` | Set to `1` for deterministic fake PTY mode |
+| Variable                        | Default            | Description                                                                                                                     |
+| ------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `WOOTTY_HOST`                   | `127.0.0.1`        | Bind address for direct host runs                                                                                               |
+| `WOOTTY_PORT`                   | `8080`             | HTTP/WebSocket port                                                                                                             |
+| `WOOTTY_DETACHED_TTL_MS`        | `86400000`         | Hard TTL for running detached sessions (24h). `0` disables this TTL                                                             |
+| `WOOTTY_HISTORY_BYTES`          | `5242880`          | Buffered output bytes for replay                                                                                                |
+| `WOOTTY_COMMAND`                | `$SHELL` or `bash` | Executed command in the `woottyd` runtime environment (host or container)                                                       |
+| `WOOTTY_COMMAND_ARGS`           | _empty_            | Shell-like command args string (supports quotes and escapes)                                                                    |
+| `WOOTTY_CWD`                    | current directory  | Process working directory                                                                                                       |
+| `WOOTTY_STATIC_DIR`             | auto-detected      | Directory with built web assets                                                                                                 |
+| `WOOTTY_AUTH_TOKEN`             | _empty_            | Required when binding to a non-loopback host; used to bootstrap the auth cookie consumed by `/api/sessions` and `/api/terminal` |
+| `WOOTTY_ALLOWED_ORIGINS`        | _empty_            | Optional comma-separated websocket origin allowlist                                                                             |
+| `WOOTTY_ALLOW_INSECURE_NO_AUTH` | _empty_            | Set to `1` only to allow explicit unauthenticated non-loopback binds on trusted local networks                                  |
+| `WOOTTY_FAKE_PTY`               | `0`                | Set to `1` for deterministic fake PTY mode                                                                                      |
 
 `WOOTTY_COMMAND_ARGS` examples:
 
@@ -407,7 +403,6 @@ Frontend module ownership:
 ### Client Protocol Contract
 
 `apps/web/src/features/terminal/protocol/terminal-protocol.ts` is the client-side source of truth for websocket payload parsing.
-
 - Supported inbound message `type` values: `ready`, `output`, `exit`, `error`, `pong`.
 - Required fields:
   - `ready`: `sessionId` (string), `readOnly` (boolean), `version` (must match `TERMINAL_WIRE_CONTRACT_VERSION`)
@@ -423,7 +418,6 @@ Frontend module ownership:
 ### Transport Lifecycle Contract
 
 Transport responsibilities are split by contract:
-
 - `apps/web/src/features/terminal/contracts/transport/transport.ts` defines the transport surface and ready-state constants used by app runtime and test doubles.
 - `apps/web/src/features/terminal/app/engine/transport/state/transport-policy.ts` defines heartbeat intervals, close codes, and reconnect delay policy.
 - `apps/web/src/features/terminal/adapters/transport-event-normalizer.ts` adapts browser runtime events into typed contract payloads.
