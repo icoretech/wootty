@@ -46,4 +46,4 @@ body:
     id: environment
     attributes:
       label: Environment
-      placeholder: Node 24.x, Ubuntu 24.04, Chrome 122
+      placeholder: Node 26.x, Ubuntu 24.04, Chrome 122

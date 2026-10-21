@@ -2,9 +2,9 @@
 
 ## Development prerequisites
 
-- Node.js >= 24
-- pnpm >= 10
-- Go >= 1.26
+- Node.js >= 26
+- pnpm 12.14.0 (pinned in `package.json`)
+- Go >= 1.27.3
 
 ## Setup
 

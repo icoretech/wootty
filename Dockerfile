@@ -1,15 +1,14 @@
-FROM node:24-bookworm-slim AS web-builder
+FROM node:26-bookworm-slim AS web-builder
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
-
-RUN corepack enable
 
 WORKDIR /app
 
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN npm install --global --allow-scripts=pnpm "$(node -p 'require("./package.json").packageManager')" \
+  && pnpm install --frozen-lockfile
 
 RUN pnpm --filter @icoretech/wootty-web build
 

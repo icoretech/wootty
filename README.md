@@ -29,7 +29,7 @@ WooTTY is a clean-slate browser terminal designed for one non-negotiable outcome
 - Resize fidelity: client and PTY stay in sync during rapid window changes.
 - Operational defaults: high scrollback, keyboard-first controls, low-friction deployment.
 - Deployment flexibility: minimal image by default, plus `-openssh` image variant for SSH workflows.
-- Modern stack: Go 1.26+, Node 24+, React 19 + compiler, xterm.js.
+- Modern stack: Go 1.27+, Node 26+, React 19 + compiler, xterm.js.
 
 ## Table of Contents
 
@@ -63,7 +63,7 @@ For image flavors, SSH usage, direct command args, compose profiles, and custom 
 
 ### Run from Source
 
-Requires Node.js 24.22.1+, Go 1.27.3, and pnpm 12.14.0 (pinned in `package.json`).
+Requires Node.js 26.12.1+, Go 1.27.3, and pnpm 12.14.0 (pinned in `package.json`).
 
 ```bash
 pnpm install

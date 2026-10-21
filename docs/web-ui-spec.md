@@ -70,7 +70,7 @@ This spec defines the required behavior for the browser-side terminal UI only. K
 ## Non-functional requirements
 
 1. Go runtime target: `>=1.26` for server builds.
-2. Node runtime target: `>=24` for web build/test tooling.
+2. Node runtime target: `>=26` for web build/test tooling.
 3. React runtime target: `>=19` with React Compiler plugin `1.0.0` enabled.
 4. Formatting/linting gate: Biome unified command (`biome check --write --assist-enabled=true`) before typecheck.
 5. Tests: Vitest for web and `go test` for server.
