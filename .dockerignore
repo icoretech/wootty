@@ -2,6 +2,7 @@ node_modules
 .pnpm-store
 .git
 .github
+.omo
 
 .DS_Store
 *.log
