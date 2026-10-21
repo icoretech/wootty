@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.22](https://github.com/icoretech/wootty/compare/wootty-v0.2.21...wootty-v0.2.22) (2026-10-21)
+
+
+### Dependencies
+
+* upgrade development and build runtimes to Node 26 ([d4a3845](https://github.com/icoretech/wootty/commit/d4a3845b8e423c748ed93a1cea7e3b4ae32ce07e))
+
 ## [0.2.21](https://github.com/icoretech/wootty/compare/wootty-v0.2.20...wootty-v0.2.21) (2026-10-21)
 
 
