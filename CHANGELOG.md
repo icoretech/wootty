@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.23](https://github.com/icoretech/wootty/compare/wootty-v0.2.22...wootty-v0.2.23) (2026-10-23)
+
+
+### Dependencies
+
+* update pnpm to v12.15.0 ([#290](https://github.com/icoretech/wootty/issues/290)) ([d16814d](https://github.com/icoretech/wootty/commit/d16814dbfb1180b33e1a83faac30d7b373c38370))
+
 ## [0.2.22](https://github.com/icoretech/wootty/compare/wootty-v0.2.21...wootty-v0.2.22) (2026-10-21)
 
 
