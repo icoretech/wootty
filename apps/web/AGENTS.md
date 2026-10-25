@@ -25,7 +25,7 @@ apps/web/
 | dev proxy / React compiler | `config/build/vite.config.ts` | `/api` proxies to Go server |
 | Vite discovery entrypoint | `vite.config.ts` | delegates to the shared build config for dev, builds, and tooling |
 | build/test configuration types | `tsconfig.config.json` | included in root typecheck through `typecheck:config` |
-| unit/integration runner | `config/test/vitest.config.ts` | `jsdom` + shared setup file |
+| unit/integration runner | `config/test/vitest.config.ts` | isolated `vmThreads` + `jsdom`; native config contracts use Node/forks |
 | e2e runner | `config/e2e/playwright.config.ts` | Chromium + mobile by default |
 | e2e server boot | `config/e2e/e2e-env.ts` | launches Go server with fake PTY |
 | package scripts | `package.json` | build, typecheck, test, e2e |
@@ -43,6 +43,7 @@ apps/web/
 
 ## TESTING
 - `pnpm --filter @icoretech/wootty-web test` runs Vitest only
+- Keep browser tests isolated in the `browser-unit` project; `test/config/**` belongs to the native `tooling-contracts` project because Vite/Rolldown and Playwright require native Node module boundaries
 - `pnpm --filter @icoretech/wootty-web test:e2e` rebuilds the repo first, then runs Playwright
 - `pnpm --filter @icoretech/wootty-web test:e2e:cross` adds Firefox and WebKit via `WOOTTY_E2E_CROSS=1`
 - Unit/integration tests live under `test/**`; browser specs live under `e2e/**`
