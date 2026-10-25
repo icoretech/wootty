@@ -6,6 +6,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -23,8 +26,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
-        with:
-          version: 12.15.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
@@ -47,8 +48,11 @@ jobs:
       - name: Unit and integration tests
         run: pnpm test
 
-      - name: Build
-        run: pnpm build
+      - name: Go race tests
+        run: cd apps/server && go test -race -shuffle=on -count=1 ./...
+
+      - name: Build standalone binary
+        run: pnpm build:binary
 
   e2e:
     name: Playwright E2E
@@ -61,8 +65,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
-        with:
-          version: 12.15.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v7

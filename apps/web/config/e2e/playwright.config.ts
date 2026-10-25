@@ -38,7 +38,11 @@ export default defineConfig({
     command: e2eConfig.webServer.command,
     cwd: e2eConfig.webServer.cwd,
     env: {
-      ...process.env,
+      ...Object.fromEntries(
+        Object.entries(process.env).filter(
+          (entry): entry is [string, string] => typeof entry[1] === "string",
+        ),
+      ),
       ...e2eConfig.webServer.env,
     },
     url: e2eConfig.healthUrl,

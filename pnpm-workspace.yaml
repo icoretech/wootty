@@ -16,3 +16,6 @@ minimumReleaseAgeExclude:
   - "@biomejs/cli-win32-arm64@2.6.2"
   - "@biomejs/cli-win32-x64@2.6.2"
   - vite@8.3.5
+# OpenTelemetry 2.x used by React Doctor's Sentry 10 requires API <1.10.
+overrides:
+  "@opentelemetry/api": 1.9.0

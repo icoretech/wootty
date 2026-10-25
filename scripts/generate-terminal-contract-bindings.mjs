@@ -48,7 +48,9 @@ const terminalContract = readJson(
 const sessionsContract = readJson(
   resolve(repoRoot, "contracts/sessions-contract.json"),
 );
-const routesContract = readJson(resolve(repoRoot, "contracts/http-routes.json"));
+const routesContract = readJson(
+  resolve(repoRoot, "contracts/http-routes.json"),
+);
 
 const clientTypeEntries = terminalContract.client_messages.types.map((type) => {
   return `  ${toUpperSnake(type)}: ${tsString(type)}`;
@@ -185,13 +187,37 @@ const tsOutputPath = resolve(
   repoRoot,
   "apps/web/src/features/terminal/protocol/generated-wire-contract.ts",
 );
-const goOutputPath = resolve(repoRoot, "apps/server/internal/protocol/wire_contract.go");
+const goOutputPath = resolve(
+  repoRoot,
+  "apps/server/internal/protocol/wire_contract.go",
+);
 
-writeFileSync(tsOutputPath, tsOutput, "utf8");
-writeFileSync(goOutputPath, goOutput, "utf8");
-execFileSync("pnpm", ["exec", "biome", "format", "--write", tsOutputPath], {
-  cwd: repoRoot,
+const formattedTs = execFileSync(
+  "pnpm",
+  ["exec", "biome", "format", `--stdin-file-path=${tsOutputPath}`],
+  { cwd: repoRoot, input: tsOutput, encoding: "utf8" },
+);
+const formattedGo = execFileSync("gofmt", [], {
+  input: goOutput,
+  encoding: "utf8",
 });
-execFileSync("gofmt", ["-w", goOutputPath]);
-
-console.log("Generated terminal contract bindings for web and server.");
+const outputs = [
+  [tsOutputPath, formattedTs],
+  [goOutputPath, formattedGo],
+];
+if (process.argv.includes("--check")) {
+  const stale = outputs.filter(
+    ([path, expected]) => readFileSync(path, "utf8") !== expected,
+  );
+  if (stale.length > 0) {
+    console.error(
+      "Terminal contract bindings are stale. Run pnpm generate:terminal-contracts.",
+    );
+    for (const [path] of stale) console.error(path);
+    process.exit(1);
+  }
+  console.log("Terminal contract bindings are up to date.");
+} else {
+  for (const [path, content] of outputs) writeFileSync(path, content, "utf8");
+  console.log("Generated terminal contract bindings for web and server.");
+}

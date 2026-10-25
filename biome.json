@@ -16,7 +16,8 @@
       "Dockerfile",
       "README.md",
       "pnpm-workspace.yaml",
-      "biome.json"
+      "biome.json",
+      "scripts/**/*.mjs"
     ]
   },
   "formatter": {

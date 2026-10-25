@@ -3,7 +3,8 @@ x-wootty-common: &wootty-common
     context: .
     dockerfile: Dockerfile
   restart: unless-stopped
-  environment:
+  environment: &wootty-environment
+    WOOTTY_AUTH_TOKEN: ${WOOTTY_AUTH_TOKEN:?Set WOOTTY_AUTH_TOKEN before starting WooTTY}
     WOOTTY_HOST: 0.0.0.0
     WOOTTY_PORT: 8080
 
@@ -11,60 +12,51 @@ services:
   wootty:
     <<: *wootty-common
     image: wootty:local-default
-    container_name: wootty-default
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
 
   wootty-bash:
     <<: *wootty-common
     image: wootty:local-bash
-    container_name: wootty-bash
     profiles: ["bash"]
     ports:
-      - "8081:8080"
+      - "127.0.0.1:8081:8080"
     environment:
-      WOOTTY_HOST: 0.0.0.0
-      WOOTTY_PORT: 8080
+      <<: *wootty-environment
       WOOTTY_COMMAND: /bin/bash
       WOOTTY_COMMAND_ARGS: -l
 
   wootty-ssh:
     <<: *wootty-common
     image: wootty:local-ssh
-    container_name: wootty-ssh
     profiles: ["ssh"]
     build:
       context: .
       dockerfile: Dockerfile
       target: final-openssh
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080"
     environment:
-      WOOTTY_HOST: 0.0.0.0
-      WOOTTY_PORT: 8080
+      <<: *wootty-environment
       WOOTTY_COMMAND: /usr/bin/ssh
-      WOOTTY_COMMAND_ARGS: -o StrictHostKeyChecking=no user@example.com
+      WOOTTY_COMMAND_ARGS: ${WOOTTY_SSH_ARGS:--o StrictHostKeyChecking=accept-new user@example.com}
 
   wootty-retention:
     <<: *wootty-common
     image: wootty:local-retention
-    container_name: wootty-retention
     profiles: ["retention"]
     ports:
-      - "8083:8080"
+      - "127.0.0.1:8083:8080"
     environment:
-      WOOTTY_HOST: 0.0.0.0
-      WOOTTY_PORT: 8080
+      <<: *wootty-environment
       WOOTTY_DETACHED_TTL_MS: "259200000"
 
   wootty-fake-pty:
     <<: *wootty-common
     image: wootty:local-fake-pty
-    container_name: wootty-fake-pty
     profiles: ["test"]
     ports:
-      - "8084:8080"
+      - "127.0.0.1:8084:8080"
     environment:
-      WOOTTY_HOST: 0.0.0.0
-      WOOTTY_PORT: 8080
+      <<: *wootty-environment
       WOOTTY_FAKE_PTY: "1"

@@ -14,7 +14,9 @@ const verifierPath = fileURLToPath(
 
 test("accepts setup-go steps after a major action upgrade", async (context) => {
   // Given
-  const repoRoot = await fs.mkdtemp(path.join(os.tmpdir(), "wootty-go-toolchain-"));
+  const repoRoot = await fs.mkdtemp(
+    path.join(os.tmpdir(), "wootty-go-toolchain-"),
+  );
   context.after(() => fs.rm(repoRoot, { force: true, recursive: true }));
 
   await Promise.all([
@@ -40,7 +42,7 @@ test("accepts setup-go steps after a major action upgrade", async (context) => {
     ),
     fs.writeFile(
       path.join(repoRoot, "Dockerfile"),
-      "FROM golang:1.26.5-bookworm AS server-builder\n",
+      "FROM golang:1.26.5-trixie AS server-builder\n",
     ),
   ]);
 

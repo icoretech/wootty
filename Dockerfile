@@ -1,4 +1,4 @@
-FROM node:26-bookworm-slim AS web-builder
+FROM node:26-trixie-slim AS web-builder
 
 ENV PNPM_HOME=/pnpm
 ENV PATH=$PNPM_HOME:$PATH
@@ -12,7 +12,7 @@ RUN npm install --global --allow-scripts=pnpm "$(node -p 'require("./package.jso
 
 RUN pnpm --filter @icoretech/wootty-web build
 
-FROM golang:1.27.3-bookworm AS server-builder
+FROM golang:1.27.3-trixie AS server-builder
 
 WORKDIR /src
 
@@ -24,7 +24,7 @@ COPY --from=web-builder /app/apps/web/dist ./apps/server/internal/webassets/dist
 
 RUN cd apps/server && CGO_ENABLED=0 go build -o /out/woottyd ./cmd/woottyd
 
-FROM debian:bookworm-slim AS runtime-base
+FROM debian:trixie-slim AS runtime-base
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends bash ca-certificates \

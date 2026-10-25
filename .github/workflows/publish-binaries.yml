@@ -33,6 +33,11 @@ jobs:
             exit 1
           fi
 
+          if [[ ! "$tag" =~ ^(wootty-)?v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Expected a version tag such as wootty-v1.0.0 or v1.0.0-rc.1."
+            exit 1
+          fi
+
           release_tag="$tag"
           semver_tag="$tag"
           if [[ "$release_tag" != wootty-* && "$release_tag" == v* ]]; then
@@ -47,15 +52,29 @@ jobs:
             version_no_v="${version_no_v#v}"
           fi
 
-          echo "release_tag=$release_tag" >>"$GITHUB_OUTPUT"
-          echo "checkout_ref=refs/tags/$release_tag" >>"$GITHUB_OUTPUT"
-          echo "version_tag=$semver_tag" >>"$GITHUB_OUTPUT"
-          echo "version_no_v=$version_no_v" >>"$GITHUB_OUTPUT"
+          {
+            echo "release_tag=$release_tag"
+            echo "checkout_ref=refs/tags/$release_tag"
+            echo "version_tag=$semver_tag"
+            echo "version_no_v=$version_no_v"
+          } >>"$GITHUB_OUTPUT"
 
       - name: Checkout release tag
         uses: actions/checkout@v7
         with:
           ref: ${{ steps.prepare.outputs.checkout_ref }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 26.12.1
+          cache: pnpm
+
+      - name: Install dependencies and build frontend
+        run: pnpm install --frozen-lockfile && pnpm --filter @icoretech/wootty-web build
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -67,7 +86,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          ROOT_DIR="$PWD"
           mkdir -p dist
           VERSION="${{ steps.prepare.outputs.version_no_v }}"
 
@@ -76,8 +94,6 @@ jobs:
             "linux arm64"
             "darwin amd64"
             "darwin arm64"
-            "windows amd64"
-            "windows arm64"
           )
 
           for target in "${targets[@]}"; do
@@ -89,33 +105,17 @@ jobs:
 
             bin_name="woottyd"
             archive_ext=".tar.gz"
-            if [[ "$goos" == "windows" ]]; then
-              bin_name="woottyd.exe"
-              archive_ext=".zip"
-            fi
-
-            (
-              cd apps/server
-              CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" \
-                go build -trimpath -ldflags="-s -w" \
-                -o "$ROOT_DIR/$out_dir/$bin_name" ./cmd/woottyd
-            )
+            GOOS="$goos" GOARCH="$goarch" \
+              node scripts/build-binary.mjs "$out_dir/$bin_name"
 
             cp README.md LICENSE "$out_dir/"
 
-            if [[ "$archive_ext" == ".zip" ]]; then
-              (
-                cd "$out_dir"
-                zip -q "../${archive_base}${archive_ext}" "$bin_name" README.md LICENSE
-              )
-            else
-              tar -C "$out_dir" -czf "dist/${archive_base}${archive_ext}" "$bin_name" README.md LICENSE
-            fi
+            tar -C "$out_dir" -czf "dist/${archive_base}${archive_ext}" "$bin_name" README.md LICENSE
           done
 
           (
             cd dist
-            sha256sum woottyd_*.tar.gz woottyd_*.zip > woottyd_checksums.txt
+            sha256sum woottyd_*.tar.gz > woottyd_checksums.txt
           )
 
       - name: Upload release assets
@@ -124,5 +124,5 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          assets=(dist/woottyd_*.tar.gz dist/woottyd_*.zip dist/woottyd_checksums.txt)
+          assets=(dist/woottyd_*.tar.gz dist/woottyd_checksums.txt)
           gh release upload "${{ steps.prepare.outputs.release_tag }}" "${assets[@]}" --repo "${{ github.repository }}" --clobber

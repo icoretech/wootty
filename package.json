@@ -15,10 +15,10 @@
     "ci:act": "act pull_request -j e2e",
     "format": "biome format --write .",
     "format:check": "biome format --no-write .",
-    "lint:go": "cd apps/server && go fix ./...",
-    "lint:go:ci": "sh -c 'cd apps/server && go fix -diff ./... && out=$(gofmt -l .); if [ -n \"$out\" ]; then printf \"%s\\n\" \"$out\"; exit 1; fi'",
-    "lint": "biome check --write --assist-enabled=true . && pnpm lint:go && pnpm verify:docs-paths && pnpm verify:governance && pnpm verify:go-toolchain && pnpm typecheck",
-    "lint:ci": "pnpm biome:ci && pnpm lint:go:ci && pnpm verify:docs-paths && pnpm verify:governance && pnpm verify:go-toolchain && pnpm typecheck",
+    "lint:go": "node scripts/lint-go.mjs",
+    "lint:go:ci": "node scripts/lint-go.mjs --check",
+    "lint": "biome check --write --assist-enabled=true . && pnpm lint:go && pnpm verify:docs-paths && pnpm verify:governance && pnpm verify:go-toolchain && pnpm verify:terminal-contracts && pnpm lint:react && pnpm typecheck",
+    "lint:ci": "pnpm biome:ci && pnpm lint:go:ci && pnpm verify:docs-paths && pnpm verify:governance && pnpm verify:go-toolchain && pnpm verify:terminal-contracts && pnpm lint:react && pnpm typecheck",
     "check": "biome check .",
     "biome:ci": "biome ci .",
     "generate:terminal-contracts": "node scripts/generate-terminal-contract-bindings.mjs",
@@ -30,10 +30,13 @@
     "test:scripts": "node --test scripts/*.test.mjs",
     "test:e2e": "pnpm --filter @icoretech/wootty-web test:e2e",
     "test:e2e:cross": "pnpm --filter @icoretech/wootty-web test:e2e:cross",
-    "typecheck": "pnpm --filter @icoretech/wootty-web typecheck && pnpm --filter @icoretech/wootty-web typecheck:contracts"
+    "typecheck": "pnpm --filter @icoretech/wootty-web typecheck && pnpm --filter @icoretech/wootty-web typecheck:contracts && pnpm --filter @icoretech/wootty-web typecheck:config",
+    "build:binary": "pnpm --filter @icoretech/wootty-web build && node scripts/build-binary.mjs",
+    "verify:terminal-contracts": "node scripts/generate-terminal-contract-bindings.mjs --check",
+    "lint:react": "node scripts/lint-react.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.3",
-    "concurrently": "^10.0.6"
+    "react-doctor": "0.9.18"
   }
 }

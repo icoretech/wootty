@@ -85,17 +85,19 @@ for (const fileName of workflowFiles) {
     }
 
     if (
-      !new RegExp(`^\\s*go-version-file:\\s*${escapeRegExp(goVersionFile)}$`, "m").test(
-        block,
-      )
+      !new RegExp(
+        `^\\s*go-version-file:\\s*${escapeRegExp(goVersionFile)}$`,
+        "m",
+      ).test(block)
     ) {
       failures.push(`${location} must read Go from ${goVersionFile}`);
     }
 
     if (
-      !new RegExp(`^\\s*cache-dependency-path:\\s*${escapeRegExp(goCachePath)}$`, "m").test(
-        block,
-      )
+      !new RegExp(
+        `^\\s*cache-dependency-path:\\s*${escapeRegExp(goCachePath)}$`,
+        "m",
+      ).test(block)
     ) {
       failures.push(`${location} must cache modules from ${goCachePath}`);
     }
@@ -110,7 +112,7 @@ const dockerfile = await fs.readFile(dockerfilePath, "utf8");
 const goImageLines = dockerfile
   .split("\n")
   .filter((line) => /^FROM\s+golang:/i.test(line));
-const expectedGoImageLine = `FROM golang:${goVersion}-bookworm AS server-builder`;
+const expectedGoImageLine = `FROM golang:${goVersion}-trixie AS server-builder`;
 
 if (goImageLines.length === 0) {
   failures.push("Dockerfile does not declare a golang server-builder image");
@@ -133,5 +135,5 @@ if (failures.length > 0) {
 }
 
 console.log(
-  `Go toolchain check passed (${setupGoSteps} setup-go steps, golang:${goVersion}-bookworm).`,
+  `Go toolchain check passed (${setupGoSteps} setup-go steps, golang:${goVersion}-trixie).`,
 );

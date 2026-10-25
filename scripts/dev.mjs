@@ -6,9 +6,15 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_PORT = 8080;
 const MAX_PORT = 65535;
 const requestedPortRaw = process.env.WOOTTY_PORT;
-const requestedPort = requestedPortRaw ? Number(requestedPortRaw) : DEFAULT_PORT;
+const requestedPort = requestedPortRaw
+  ? Number(requestedPortRaw)
+  : DEFAULT_PORT;
 
-if (!Number.isInteger(requestedPort) || requestedPort < 1 || requestedPort > MAX_PORT) {
+if (
+  !Number.isInteger(requestedPort) ||
+  requestedPort < 1 ||
+  requestedPort > MAX_PORT
+) {
   console.error(`Invalid WOOTTY_PORT value: ${requestedPortRaw}`);
   process.exit(1);
 }
@@ -91,6 +97,7 @@ function startProcess(name, command, args, cwd) {
     cwd,
     env,
     stdio: ["inherit", "pipe", "pipe"],
+    detached: process.platform !== "win32",
   });
 
   if (child.stdout) {
@@ -103,22 +110,42 @@ function startProcess(name, command, args, cwd) {
   return child;
 }
 
-const server = startProcess("server", "go", ["run", "./cmd/woottyd", "run"], path.join(repoRoot, "apps/server"));
+const server = startProcess(
+  "server",
+  "go",
+  ["run", "./cmd/woottyd", "run"],
+  path.join(repoRoot, "apps/server"),
+);
 const web = startProcess(
   "web",
   "pnpm",
-  ["exec", "vite", "--config", "config/build/vite.config.ts"],
+  ["exec", "vite"],
   path.join(repoRoot, "apps/web"),
 );
 
 let shuttingDown = false;
 let remaining = 2;
 let finalExitCode = 0;
+let shutdownTimer;
 
 function stopChildren(signal) {
   for (const child of [server, web]) {
-    if (!child.killed && child.exitCode === null) {
-      child.kill(signal);
+    if (!child.pid) continue;
+    try {
+      if (process.platform === "win32") {
+        child.kill(signal);
+      } else {
+        // go run and pnpm spawn descendants; terminate the whole owned group.
+        process.kill(-child.pid, signal);
+      }
+    } catch (error) {
+      if (
+        !(error instanceof Error) ||
+        !("code" in error) ||
+        error.code !== "ESRCH"
+      ) {
+        throw error;
+      }
     }
   }
 }
@@ -132,6 +159,8 @@ function beginShutdown(signal, exitCode) {
   }
   shuttingDown = true;
   stopChildren(signal);
+  shutdownTimer = setTimeout(() => stopChildren("SIGKILL"), 5_000);
+  shutdownTimer.unref();
 }
 
 process.on("SIGINT", () => {
@@ -147,7 +176,7 @@ function bindLifecycle(name, child) {
     beginShutdown("SIGTERM", 1);
   });
 
-  child.on("exit", (code, signal) => {
+  child.on("close", (code, signal) => {
     if (!shuttingDown) {
       if (signal !== null || (code ?? 0) !== 0) {
         beginShutdown("SIGTERM", 1);
@@ -158,6 +187,7 @@ function bindLifecycle(name, child) {
 
     remaining -= 1;
     if (remaining === 0) {
+      clearTimeout(shutdownTimer);
       process.exit(finalExitCode);
     }
   });
