@@ -4,12 +4,14 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"math"
 	"net"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -44,14 +46,14 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 	}
 
 	host := normalizeHost(env["WOOTTY_HOST"], DefaultHost)
-	port := parsePositiveInt(env["WOOTTY_PORT"], DefaultPort)
+	portSetting := numericSetting{getOrDefault(env["WOOTTY_PORT"], strconv.Itoa(DefaultPort)), "WOOTTY_PORT"}
 	if strings.TrimSpace(env["WOOTTY_RECONNECT_GRACE_MS"]) != "" {
 		return RuntimeConfig{}, errors.New(
 			"WOOTTY_RECONNECT_GRACE_MS has been removed; use WOOTTY_DETACHED_TTL_MS",
 		)
 	}
-	detachedTTLMS := parseNonNegativeInt(env["WOOTTY_DETACHED_TTL_MS"], DefaultDetachedTTLMS)
-	historyBytes := parsePositiveInt(env["WOOTTY_HISTORY_BYTES"], DefaultHistoryBytes)
+	ttlSetting := numericSetting{getOrDefault(env["WOOTTY_DETACHED_TTL_MS"], strconv.Itoa(DefaultDetachedTTLMS)), "WOOTTY_DETACHED_TTL_MS"}
+	historySetting := numericSetting{getOrDefault(env["WOOTTY_HISTORY_BYTES"], strconv.Itoa(DefaultHistoryBytes)), "WOOTTY_HISTORY_BYTES"}
 
 	commandParts := make([]string, 0)
 
@@ -63,28 +65,23 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 			continue
 		case "-h", "--help":
 			return RuntimeConfig{}, ErrHelpRequested
-		case "-p", "--port":
+		case "-p", "--port", "--host", "--detached-ttl-ms", "--history-bytes":
 			i++
-			if i < len(args) {
-				port = parsePositiveInt(args[i], port)
+			if i >= len(args) || strings.TrimSpace(args[i]) == "" || strings.HasPrefix(args[i], "--") {
+				return RuntimeConfig{}, fmt.Errorf("%s requires a value", token)
 			}
-			continue
-		case "--host":
-			i++
-			if i < len(args) && strings.TrimSpace(args[i]) != "" {
+			switch token {
+			case "-p", "--port":
+				portSetting = numericSetting{args[i], token}
+			case "--host":
+				if strings.HasPrefix(strings.TrimSpace(args[i]), "-") {
+					return RuntimeConfig{}, fmt.Errorf("%s requires a host value", token)
+				}
 				host = strings.TrimSpace(args[i])
-			}
-			continue
-		case "--detached-ttl-ms":
-			i++
-			if i < len(args) {
-				detachedTTLMS = parseNonNegativeInt(args[i], detachedTTLMS)
-			}
-			continue
-		case "--history-bytes":
-			i++
-			if i < len(args) {
-				historyBytes = parsePositiveInt(args[i], historyBytes)
+			case "--detached-ttl-ms":
+				ttlSetting = numericSetting{args[i], token}
+			case "--history-bytes":
+				historySetting = numericSetting{args[i], token}
 			}
 			continue
 		default:
@@ -94,6 +91,19 @@ func ParseRunConfig(argv []string, env map[string]string, cwd string) (RuntimeCo
 			commandParts = append([]string(nil), args[i:]...)
 			i = len(args)
 		}
+	}
+
+	port, err := portSetting.parse(1, 65535)
+	if err != nil {
+		return RuntimeConfig{}, err
+	}
+	detachedTTLMS, err := ttlSetting.parse(0, math.MaxInt64/int64(time.Millisecond))
+	if err != nil {
+		return RuntimeConfig{}, err
+	}
+	historyBytes, err := historySetting.parse(1, math.MaxInt)
+	if err != nil {
+		return RuntimeConfig{}, err
 	}
 
 	if len(commandParts) == 0 {
@@ -201,30 +211,20 @@ Environment overrides:
 	)
 }
 
-func parsePositiveInt(value string, fallback int) int {
-	if strings.TrimSpace(value) == "" {
-		return fallback
-	}
-
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed <= 0 {
-		return fallback
-	}
-
-	return parsed
+type numericSetting struct {
+	value string
+	name  string
 }
 
-func parseNonNegativeInt(value string, fallback int) int {
-	if strings.TrimSpace(value) == "" {
-		return fallback
+func (setting numericSetting) parse(minimum, maximum int64) (int, error) {
+	parsed, err := strconv.Atoi(strings.TrimSpace(setting.value))
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", setting.name, err)
 	}
-
-	parsed, err := strconv.Atoi(value)
-	if err != nil || parsed < 0 {
-		return fallback
+	if int64(parsed) < minimum || int64(parsed) > maximum {
+		return 0, fmt.Errorf("%s must be between %d and %d", setting.name, minimum, maximum)
 	}
-
-	return parsed
+	return parsed, nil
 }
 
 func splitArgs(value string) ([]string, error) {
