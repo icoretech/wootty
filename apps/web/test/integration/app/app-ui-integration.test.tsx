@@ -157,7 +157,9 @@ describe("App integration - UI behavior", () => {
       await expect(blob.text()).resolves.toContain("line-000");
       await expect(blob.text()).resolves.toContain("line-039");
       expect(anchorClick).toHaveBeenCalledTimes(1);
-      expect(revokeObjectURL).toHaveBeenCalledWith("blob:wootty-transcript");
+      await waitFor(() =>
+        expect(revokeObjectURL).toHaveBeenCalledWith("blob:wootty-transcript"),
+      );
     } finally {
       createElementSpy.mockRestore();
       Object.defineProperty(window, "URL", {

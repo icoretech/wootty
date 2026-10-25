@@ -126,6 +126,7 @@ export function StatusBar({
                 className="status-session__rename-input"
                 data-testid="session-rename-input"
                 type="text"
+                aria-label="Session name"
                 maxLength={32}
                 value={renameDraft}
                 onChange={(event) => setRenameDraft(event.target.value)}

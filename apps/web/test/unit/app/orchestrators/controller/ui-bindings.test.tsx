@@ -17,6 +17,7 @@ import type {
   Scheduler,
   SchedulerTimerHandle,
 } from "../../../../../src/features/terminal/platform/scheduler";
+import { loadXtermRuntime } from "../../../../../src/features/terminal/runtime/xterm-runtime";
 import { useSessionRefreshBinding } from "../../../../../src/features/terminal/session/application/bindings/session-refresh-binding";
 
 const terminalRef: RefObject<HTMLDivElement | null> = { current: null };
@@ -92,6 +93,48 @@ function useBindingsProbe(): void {
 }
 
 describe("ui bindings", () => {
+  it("handles shortcuts before the focused xterm textarea can send them", async () => {
+    const { Terminal } = await loadXtermRuntime();
+    const root = document.createElement("div");
+    document.body.appendChild(root);
+    const terminal = new Terminal();
+    terminal.open(root);
+    const runShortcutAction = vi.fn();
+    const onData = vi.fn();
+    terminal.onData(onData);
+    const { unmount } = renderHook(() =>
+      useShortcutBinding({
+        windowRef: window,
+        terminalReady: true,
+        runShortcutAction,
+        terminalElementRef: { current: root },
+      }),
+    );
+    try {
+      const textarea = terminal.textarea;
+      expect(textarea).toBeDefined();
+      if (!textarea) throw new Error("xterm did not create its input textarea");
+      textarea.focus();
+
+      fireEvent.keyDown(textarea, {
+        key: "K",
+        code: "KeyK",
+        keyCode: 75,
+        ctrlKey: true,
+        shiftKey: true,
+      });
+
+      expect(runShortcutAction).toHaveBeenCalledWith("clear");
+      expect(onData).not.toHaveBeenCalled();
+      fireEvent.keyDown(textarea, { key: "Enter", code: "Enter", keyCode: 13 });
+      expect(onData).toHaveBeenCalledWith("\r");
+    } finally {
+      unmount();
+      terminal.dispose();
+      root.remove();
+    }
+  });
+
   it("mounts all binding hooks and updates the document title", () => {
     renderHook(() => {
       useBindingsProbe();
@@ -160,6 +203,41 @@ describe("ui bindings", () => {
     menuElement.remove();
     buttonElement.remove();
     outsideElement.remove();
+  });
+
+  it("focuses session search on open and restores the trigger on close", () => {
+    const menuElement = document.createElement("div");
+    const searchInput = document.createElement("input");
+    searchInput.type = "search";
+    menuElement.appendChild(searchInput);
+    const trigger = document.createElement("button");
+    document.body.append(menuElement, trigger);
+    trigger.focus();
+    const closeSessionMenu = vi.fn();
+    const { rerender, unmount } = renderHook(
+      ({ open }) =>
+        useSessionMenuDismissBinding({
+          documentRef: document,
+          sessionMenuOpen: open,
+          sessionMenuRef: { current: menuElement },
+          sessionButtonRef: { current: null },
+          closeSessionMenu,
+        }),
+      { initialProps: { open: true } },
+    );
+    try {
+      expect(document.activeElement).toBe(searchInput);
+
+      fireEvent.keyDown(searchInput, { key: "Escape" });
+      rerender({ open: false });
+
+      expect(closeSessionMenu).toHaveBeenCalledTimes(1);
+      expect(document.activeElement).toBe(trigger);
+    } finally {
+      unmount();
+      menuElement.remove();
+      trigger.remove();
+    }
   });
 
   it("clears pending fullscreen resize timer on unmount", () => {

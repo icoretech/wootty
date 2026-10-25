@@ -2,6 +2,7 @@ import type { RefObject } from "react";
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -26,7 +27,7 @@ import {
 import { useConnectionRuntimeIoBridge } from "./runtime/connection-runtime-io-bridge";
 import type { TransportFailureSink } from "./transport/contracts/transport-failure-contract";
 import {
-  type TransportLifecycleRuntimeRef,
+  type TransportLifecycleContext,
   TransportLifecycleService,
 } from "./transport/lifecycle/transport-lifecycle-service";
 import {
@@ -131,6 +132,23 @@ export function useConnectionCoordinator({
     publishNotice,
     onRuntimeBootError: handleRuntimeBootError,
   });
+  const {
+    clearTerminal,
+    droppedInputBytes,
+    fitAndSyncSize,
+    flushAfterReady,
+    outputBytes,
+    queuedInputBytes,
+    readTranscript,
+    resetRuntimeBuffers,
+    runtimeFitSizeRef,
+    terminalElementRef,
+    terminalReady,
+    updateFontSize,
+    writeExit,
+    writeOutputAndTrackBytes,
+    writeServerError,
+  } = runtimeBridge;
   const setStatusFlag = useCallback((next: ConnectionStatusFlag | null) => {
     dispatchStatusEvent({
       type: "status-flag",
@@ -160,10 +178,10 @@ export function useConnectionCoordinator({
       setSessionMode,
     },
     runtime: {
-      writeServerError: runtimeBridge.writeServerError,
-      flushAfterReady: runtimeBridge.flushAfterReady,
-      writeOutputAndTrackBytes: runtimeBridge.writeOutputAndTrackBytes,
-      writeExit: runtimeBridge.writeExit,
+      writeServerError: writeServerError,
+      flushAfterReady: flushAfterReady,
+      writeOutputAndTrackBytes: writeOutputAndTrackBytes,
+      writeExit: writeExit,
     },
     transport: {
       setStatusFlag,
@@ -176,7 +194,7 @@ export function useConnectionCoordinator({
     () => ({
       onOpen: () => {
         setStatusFlag(null);
-        const fitSize = runtimeBridge.runtimeFitSizeRef.current;
+        const fitSize = runtimeFitSizeRef.current;
         const attachSent = sendNow(
           createAttachMessage({
             sessionId,
@@ -209,7 +227,7 @@ export function useConnectionCoordinator({
       attachMode,
       handleSocketMessage,
       publishNotice,
-      runtimeBridge.runtimeFitSizeRef,
+      runtimeFitSizeRef,
       sendNow,
       sessionId,
       setStatusFlag,
@@ -222,7 +240,7 @@ export function useConnectionCoordinator({
     transportStateRef.current = nextState;
     setTransportState(nextState);
   }, []);
-  const runtimeContext = useMemo<TransportLifecycleRuntimeRef>(() => {
+  const runtimeContext = useMemo<TransportLifecycleContext>(() => {
     return {
       wsUrl,
       handlers: transportHandlers,
@@ -230,12 +248,16 @@ export function useConnectionCoordinator({
       onSocketFailure: reportSocketFailure,
     };
   }, [hasActiveSession, reportSocketFailure, transportHandlers, wsUrl]);
-  const initialRuntimeContextRef = useRef(runtimeContext);
   const transportLifecycle = useMemo(() => {
     return new TransportLifecycleService({
       createTransport,
       scheduler,
-      runtime: initialRuntimeContextRef.current,
+      runtime: {
+        wsUrl: null,
+        handlers: { onOpen: () => undefined, onMessage: () => undefined },
+        hasSessionContext: false,
+        onSocketFailure: () => undefined,
+      },
       getState: () => transportStateRef.current,
       dispatchEvent: dispatchTransportEvent,
     });
@@ -254,8 +276,10 @@ export function useConnectionCoordinator({
     reconnectWithEndpointChange,
     scheduleFreshConnection: scheduleFreshTransportConnection,
   } = transportLifecycle;
-  sendPayloadRef.current = sendPayload;
-  markPongRef.current = markPong;
+  useLayoutEffect(() => {
+    sendPayloadRef.current = sendPayload;
+    markPongRef.current = markPong;
+  }, [sendPayload, markPong]);
 
   const reconnectNow = useCallback(() => {
     dispatchStatusEvent({
@@ -274,18 +298,18 @@ export function useConnectionCoordinator({
   }, [scheduleFreshTransportConnection]);
 
   useEffect(() => {
-    if (!runtimeBridge.terminalReady || !transportEnabled) {
+    if (!terminalReady || !transportEnabled) {
       return;
     }
     connect();
     return () => {
       dispose();
     };
-  }, [connect, dispose, runtimeBridge.terminalReady, transportEnabled]);
+  }, [connect, dispose, terminalReady, transportEnabled]);
 
   const previousWsUrlRef = useRef<string | null>(wsUrl);
   useEffect(() => {
-    if (!runtimeBridge.terminalReady || !transportEnabled) {
+    if (!terminalReady || !transportEnabled) {
       previousWsUrlRef.current = wsUrl;
       return;
     }
@@ -294,12 +318,7 @@ export function useConnectionCoordinator({
     }
     previousWsUrlRef.current = wsUrl;
     reconnectWithEndpointChange();
-  }, [
-    reconnectWithEndpointChange,
-    runtimeBridge.terminalReady,
-    transportEnabled,
-    wsUrl,
-  ]);
+  }, [reconnectWithEndpointChange, terminalReady, transportEnabled, wsUrl]);
 
   useEffect(() => {
     dispatchStatusEvent({
@@ -310,13 +329,13 @@ export function useConnectionCoordinator({
 
   return {
     runtime: {
-      terminalElementRef: runtimeBridge.terminalElementRef,
-      terminalReady: runtimeBridge.terminalReady,
-      clearTerminal: runtimeBridge.clearTerminal,
-      readTranscript: runtimeBridge.readTranscript,
-      updateFontSize: runtimeBridge.updateFontSize,
-      fitAndSyncSize: runtimeBridge.fitAndSyncSize,
-      resetRuntimeBuffers: runtimeBridge.resetRuntimeBuffers,
+      terminalElementRef: terminalElementRef,
+      terminalReady: terminalReady,
+      clearTerminal: clearTerminal,
+      readTranscript: readTranscript,
+      updateFontSize: updateFontSize,
+      fitAndSyncSize: fitAndSyncSize,
+      resetRuntimeBuffers: resetRuntimeBuffers,
     },
     transport: {
       status: bootstrapFailure ? "error" : statusState.status,
@@ -328,9 +347,9 @@ export function useConnectionCoordinator({
       sendNow,
     },
     telemetry: {
-      outputBytes: runtimeBridge.outputBytes,
-      queuedInputBytes: runtimeBridge.queuedInputBytes,
-      droppedInputBytes: runtimeBridge.droppedInputBytes,
+      outputBytes: outputBytes,
+      queuedInputBytes: queuedInputBytes,
+      droppedInputBytes: droppedInputBytes,
     },
   };
 }

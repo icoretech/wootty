@@ -7,6 +7,53 @@ import {
 } from "../../../../../src/features/terminal/protocol/terminal-client-messages";
 
 describe("connection input backpressure", () => {
+  it("delivers queued keystrokes before new input when sending recovers", () => {
+    let writable = false;
+    const delivered: string[] = [];
+    const { result } = renderHook(() =>
+      useConnectionInputBackpressure({
+        attachMode: "control",
+        sendNow: (payload) => {
+          if (!writable) return false;
+          if (payload.type === "input") delivered.push(payload.data);
+          return true;
+        },
+      }),
+    );
+    act(() => result.current.handleRuntimeInput("echo "));
+
+    writable = true;
+    act(() => result.current.handleRuntimeInput("hello\r"));
+    act(() => result.current.flushQueuedInput());
+
+    expect(delivered).toEqual(["echo ", "hello\r"]);
+    expect(result.current.queuedInputBytes).toBe(0);
+  });
+
+  it("does not replay an older resize after a newer size was delivered", () => {
+    let writable = false;
+    const delivered: Array<{ cols: number; rows: number }> = [];
+    const { result } = renderHook(() =>
+      useConnectionInputBackpressure({
+        attachMode: "control",
+        sendNow: (payload) => {
+          if (!writable) return false;
+          if (payload.type === "resize") {
+            delivered.push({ cols: payload.cols, rows: payload.rows });
+          }
+          return true;
+        },
+      }),
+    );
+    act(() => result.current.sendResize(80, 24));
+
+    writable = true;
+    act(() => result.current.sendResize(120, 40));
+    act(() => result.current.flushPendingResize());
+
+    expect(delivered).toEqual([{ cols: 120, rows: 40 }]);
+  });
+
   it("skips input and resize sends in watch mode", () => {
     const sendNow = vi.fn(() => true);
     const { result } = renderHook(() => {

@@ -38,6 +38,7 @@ type UseSessionOrchestratorArgs = {
   getSessionStorage: () => StorageAccessResult;
   scheduler: Scheduler;
   formatNotice: (details: NoticeDetails) => string;
+  initialNotice?: string;
 };
 
 const REFRESH_FAILURE_NOTICE_COOLDOWN_MS = 15_000;
@@ -80,6 +81,7 @@ export function useSessionOrchestrator({
   getSessionStorage,
   scheduler,
   formatNotice,
+  initialNotice,
 }: UseSessionOrchestratorArgs): SessionOrchestratorState {
   const refreshFailureNoticeRef = useRef<FailureNoticeState>(null);
   const storageFailureNoticeRef = useRef<FailureNoticeState>(null);
@@ -98,6 +100,7 @@ export function useSessionOrchestrator({
     publishThrottledSessionNotice,
   } = useSessionNoticeChannel({
     scheduler,
+    initialNotice,
   });
   const publishNotice = useCallback(
     (details: NoticeDetails) => {

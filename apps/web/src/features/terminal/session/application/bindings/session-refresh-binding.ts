@@ -104,39 +104,39 @@ export function useSessionRefreshBinding({
       refreshInFlight = true;
       const refreshController = new AbortController();
       activeRefreshController = refreshController;
-      try {
-        const refreshResult = await requestSessionRefresh({
-          trigger: "poll",
-          signal: refreshController.signal,
+      return requestSessionRefresh({
+        trigger: "poll",
+        signal: refreshController.signal,
+      })
+        .then((refreshResult) => {
+          const pollingResult = classifyPollingRefreshResult(refreshResult);
+          if (pollingResult === "success") {
+            consecutiveFailures = 0;
+            return;
+          }
+          if (pollingResult === "ignored_failure") {
+            return;
+          }
+          if (pollingResult === "bootstrap_retry") {
+            consecutiveFailures = 0;
+            scheduleBootstrapRecoveryRetry();
+            return;
+          }
+
+          consecutiveFailures += 1;
+          if (consecutiveFailures >= SESSION_REFRESH_FAILURE_LIMIT) {
+            openCircuitBreaker();
+          }
+        })
+        .finally(() => {
+          if (activeRefreshController === refreshController) {
+            activeRefreshController = null;
+          }
+          refreshInFlight = false;
+          if (!circuitOpen && refreshTimer === null) {
+            scheduleNext();
+          }
         });
-
-        const pollingResult = classifyPollingRefreshResult(refreshResult);
-        if (pollingResult === "success") {
-          consecutiveFailures = 0;
-          return;
-        }
-        if (pollingResult === "ignored_failure") {
-          return;
-        }
-        if (pollingResult === "bootstrap_retry") {
-          consecutiveFailures = 0;
-          scheduleBootstrapRecoveryRetry();
-          return;
-        }
-
-        consecutiveFailures += 1;
-        if (consecutiveFailures >= SESSION_REFRESH_FAILURE_LIMIT) {
-          openCircuitBreaker();
-        }
-      } finally {
-        if (activeRefreshController === refreshController) {
-          activeRefreshController = null;
-        }
-        refreshInFlight = false;
-        if (!circuitOpen && refreshTimer === null) {
-          scheduleNext();
-        }
-      }
     };
 
     void runRefreshLoop();

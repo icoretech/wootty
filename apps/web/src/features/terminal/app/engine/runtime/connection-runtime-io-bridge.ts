@@ -28,7 +28,7 @@ type ConnectionRuntimeIoBridge = {
   readTranscript: () => string;
   updateFontSize: (fontSize: number, onResized: () => void) => void;
   fitAndSyncSize: () => void;
-  flushAfterReady: () => void;
+  flushAfterReady: (readOnly: boolean) => void;
   writeOutputAndTrackBytes: (data: string) => void;
   writeExit: (code: number, signal: number) => void;
   writeServerError: (message: string) => void;
@@ -82,6 +82,7 @@ export function useConnectionRuntimeIoBridge({
     terminalElementRef,
     terminalReady,
     clearTerminal,
+    resetTerminal,
     readTranscript,
     writeOutput,
     writeExit,
@@ -94,10 +95,19 @@ export function useConnectionRuntimeIoBridge({
     fitRuntimeAndSyncSize(sendResize);
   }, [fitRuntimeAndSyncSize, sendResize]);
 
-  const flushAfterReady = useCallback(() => {
-    flushQueuedInput();
-    flushPendingResize();
-  }, [flushPendingResize, flushQueuedInput]);
+  const flushAfterReady = useCallback(
+    (readOnly: boolean) => {
+      resetTerminal();
+      setOutputBytes(0);
+      if (readOnly) {
+        resetQueuedBuffers();
+        return;
+      }
+      flushQueuedInput();
+      flushPendingResize();
+    },
+    [flushPendingResize, flushQueuedInput, resetTerminal, resetQueuedBuffers],
+  );
 
   const writeOutputAndTrackBytes = useCallback(
     (data: string) => {
@@ -108,10 +118,10 @@ export function useConnectionRuntimeIoBridge({
   );
 
   const resetRuntimeBuffers = useCallback(() => {
-    clearTerminal();
+    resetTerminal();
     resetQueuedBuffers();
     setOutputBytes(0);
-  }, [clearTerminal, resetQueuedBuffers]);
+  }, [resetTerminal, resetQueuedBuffers]);
 
   return {
     terminalElementRef,

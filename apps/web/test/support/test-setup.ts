@@ -11,6 +11,8 @@ if (!window.matchMedia) {
       matches: false,
       media: query,
       onchange: null,
+      addListener: () => undefined,
+      removeListener: () => undefined,
       addEventListener: () => undefined,
       removeEventListener: () => undefined,
       dispatchEvent: () => false,
@@ -55,4 +57,14 @@ if (!window.ResizeObserver) {
 
 if (window.HTMLCanvasElement) {
   window.HTMLCanvasElement.prototype.getContext = () => null;
+}
+
+// jsdom has no top layer or focus trap; Playwright covers those browser behaviors.
+if (!HTMLDialogElement.prototype.showModal) {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
 }

@@ -12,6 +12,24 @@ const defaultSession = {
 };
 
 describe("AboutDialog", () => {
+  it("opens a native modal and provides a close button", () => {
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <AboutDialog open={true} onClose={onClose} session={defaultSession} />,
+    );
+    const dialog = screen.getByRole("dialog", { name: "About WooTTY" });
+    expect(dialog).toBeInstanceOf(HTMLDialogElement);
+    expect(dialog.hasAttribute("open")).toBe(true);
+
+    fireEvent.click(screen.getByRole("button", { name: "Close about dialog" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+    rerender(
+      <AboutDialog open={false} onClose={onClose} session={defaultSession} />,
+    );
+    expect(dialog.hasAttribute("open")).toBe(false);
+  });
+
   it("renders version, shortcuts, session info, and links when open", () => {
     render(
       <AboutDialog open={true} onClose={vi.fn()} session={defaultSession} />,
@@ -40,7 +58,10 @@ describe("AboutDialog", () => {
       <AboutDialog open={true} onClose={onClose} session={defaultSession} />,
     );
 
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent(
+      screen.getByRole("dialog", { name: "About WooTTY" }),
+      new Event("cancel", { bubbles: false, cancelable: true }),
+    );
 
     expect(onClose).toHaveBeenCalledTimes(1);
   });

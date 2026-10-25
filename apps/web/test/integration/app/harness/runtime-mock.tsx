@@ -79,6 +79,10 @@ class FakeTerminal {
   }
 
   write(data: string): void {
+    if (data === "\x1bc") {
+      this.clear();
+      return;
+    }
     this.appendOutput(data);
   }
 

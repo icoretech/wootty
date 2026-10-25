@@ -3,6 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import type { SessionsFetchResult } from "../../../../src/features/terminal/contracts/session/sessions-fetch";
 import type { Scheduler } from "../../../../src/features/terminal/platform/scheduler";
 import { useSessionRefreshCoordinator } from "../../../../src/features/terminal/session/application/session-refresh-coordinator";
+import { SESSION_REFRESH_CALL_TIMEOUT_MS } from "../../../../src/features/terminal/session/application/session-refresh-policy";
+import { FakeScheduler } from "../../../support/harness/fake-scheduler";
 
 const browserLikeScheduler: Scheduler = {
   now: () => Date.now(),
@@ -35,6 +37,101 @@ function validSessionsResponse(): SessionsFetchResult {
 }
 
 describe("session refresh coordinator", () => {
+  it("ignores obsolete timeouts when a newer refresh already succeeded", async () => {
+    const scheduler = new FakeScheduler();
+    const fetchSessions = vi
+      .fn<() => Promise<SessionsFetchResult>>()
+      .mockImplementationOnce(() => new Promise(() => {}))
+      .mockResolvedValue(validSessionsResponse());
+    const onRefreshFailure = vi.fn();
+    const onRefreshSuccess = vi.fn();
+    const { result } = renderHook(() =>
+      useSessionRefreshCoordinator({
+        fetchSessions,
+        scheduler,
+        onRefreshFailure,
+        onRefreshSuccess,
+        onInvalidEntries: vi.fn(),
+      }),
+    );
+    const oldRequest = result.current.requestSessionRefresh({
+      trigger: "poll",
+    });
+    await result.current.requestSessionRefresh({ trigger: "manual" });
+
+    scheduler.advanceBy(SESSION_REFRESH_CALL_TIMEOUT_MS);
+    const oldResult = await oldRequest;
+
+    expect(oldResult).toEqual({
+      ok: false,
+      failure: { source: "lifecycle", reason: "request_superseded" },
+    });
+    expect(onRefreshFailure).not.toHaveBeenCalled();
+    expect(onRefreshSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("aborts refreshes and drops queued work on unmount", async () => {
+    const scheduler = new FakeScheduler();
+    const pending = Promise.withResolvers<SessionsFetchResult>();
+    const signals: AbortSignal[] = [];
+    const fetchSessions = vi.fn((options?: { signal?: AbortSignal }) => {
+      if (options?.signal) signals.push(options.signal);
+      return pending.promise;
+    });
+    const onRefreshFailure = vi.fn();
+    const onRefreshSuccess = vi.fn();
+    const { result, unmount } = renderHook(() =>
+      useSessionRefreshCoordinator({
+        fetchSessions,
+        scheduler,
+        onRefreshFailure,
+        onRefreshSuccess,
+        onInvalidEntries: vi.fn(),
+      }),
+    );
+    const request = result.current.requestSessionRefresh({ trigger: "poll" });
+    await result.current.requestSessionRefresh({ trigger: "transport_event" });
+
+    unmount();
+    pending.resolve(validSessionsResponse());
+    await request;
+    scheduler.advanceBy(SESSION_REFRESH_CALL_TIMEOUT_MS);
+
+    expect(signals[0]?.aborted).toBe(true);
+    expect(fetchSessions).toHaveBeenCalledTimes(1);
+    expect(onRefreshSuccess).not.toHaveBeenCalled();
+    expect(onRefreshFailure).not.toHaveBeenCalled();
+  });
+
+  it("does not publish a response that completes after its caller aborts", async () => {
+    const pending = Promise.withResolvers<SessionsFetchResult>();
+    const controller = new AbortController();
+    const onRefreshSuccess = vi.fn();
+    const { result } = renderHook(() =>
+      useSessionRefreshCoordinator({
+        fetchSessions: () => pending.promise,
+        scheduler: browserLikeScheduler,
+        onRefreshFailure: vi.fn(),
+        onRefreshSuccess,
+        onInvalidEntries: vi.fn(),
+      }),
+    );
+    const request = result.current.requestSessionRefresh({
+      trigger: "manual",
+      signal: controller.signal,
+    });
+
+    controller.abort();
+    pending.resolve(validSessionsResponse());
+    const response = await request;
+
+    expect(response).toEqual({
+      ok: false,
+      failure: { source: "lifecycle", reason: "request_aborted" },
+    });
+    expect(onRefreshSuccess).not.toHaveBeenCalled();
+  });
+
   it("reports successful refreshes and invalid entry counts", async () => {
     const fetchSessions = vi.fn(async () => {
       return {

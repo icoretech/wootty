@@ -24,7 +24,7 @@ export type TransportHandlers = {
   onMessage: (event: TerminalTransportMessageEvent) => void;
 };
 
-export type TransportLifecycleRuntimeRef = {
+export type TransportLifecycleContext = {
   wsUrl: string | null;
   handlers: TransportHandlers;
   hasSessionContext: boolean;
@@ -34,7 +34,7 @@ export type TransportLifecycleRuntimeRef = {
 type TransportLifecycleServiceDeps = {
   createTransport: (url: string) => TerminalTransport;
   scheduler: Scheduler;
-  runtime: TransportLifecycleRuntimeRef;
+  runtime: TransportLifecycleContext;
   getState: () => TransportState;
   dispatchEvent: (event: TransportEvent) => void;
 };
@@ -47,7 +47,7 @@ export class TransportLifecycleService {
   private readonly reliability: TransportSocketReliabilityCoordinator;
   private readonly socketSession: TransportSocketSession;
   private reconnectTimer: TimerHandle = null;
-  private runtime: TransportLifecycleRuntimeRef;
+  private runtime: TransportLifecycleContext;
 
   constructor(deps: TransportLifecycleServiceDeps) {
     this.deps = deps;
@@ -71,7 +71,7 @@ export class TransportLifecycleService {
     });
   }
 
-  updateRuntime(nextRuntime: TransportLifecycleRuntimeRef): void {
+  updateRuntime(nextRuntime: TransportLifecycleContext): void {
     this.runtime = nextRuntime;
   }
 

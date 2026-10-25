@@ -1,6 +1,8 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { createRef, type Ref, useImperativeHandle } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { useRuntimeOrchestrator } from "../../../../../src/features/terminal/app/engine/runtime/runtime-orchestrator";
+import { loadXtermRuntime } from "../../../../../src/features/terminal/runtime/xterm-runtime";
 import type {
   TerminalRuntimeAddon,
   TerminalRuntimeMountElement,
@@ -66,7 +68,7 @@ type RuntimeProbeProps = {
 };
 
 function RuntimeProbe({ loadRuntime, onBootError }: RuntimeProbeProps) {
-  const runtime = useRuntimeOrchestrator({
+  const { terminalElementRef, terminalReady } = useRuntimeOrchestrator({
     documentRef: document,
     loadRuntime,
     initialFontSize: 11,
@@ -80,13 +82,85 @@ function RuntimeProbe({ loadRuntime, onBootError }: RuntimeProbeProps) {
 
   return (
     <section>
-      <div ref={runtime.terminalElementRef} />
-      <output data-testid="ready">{String(runtime.terminalReady)}</output>
+      <div ref={terminalElementRef} />
+      <output data-testid="ready">{String(terminalReady)}</output>
     </section>
   );
 }
 
+type RuntimeControl = Pick<
+  ReturnType<typeof useRuntimeOrchestrator>,
+  "terminalReady" | "writeOutput" | "resetTerminal" | "readTranscript"
+>;
+
+function RealRuntimeProbe({ ref }: { readonly ref: Ref<RuntimeControl> }) {
+  const {
+    terminalElementRef,
+    terminalReady,
+    writeOutput,
+    resetTerminal,
+    readTranscript,
+  } = useRuntimeOrchestrator({
+    documentRef: document,
+    loadRuntime: loadXtermRuntime,
+    initialFontSize: 11,
+    onInput: () => undefined,
+    onBootError: () => undefined,
+  });
+  useImperativeHandle(
+    ref,
+    () => ({ terminalReady, writeOutput, resetTerminal, readTranscript }),
+    [terminalReady, writeOutput, resetTerminal, readTranscript],
+  );
+  return <div ref={terminalElementRef} />;
+}
+
 describe("runtime orchestrator", () => {
+  it("resets real xterm output in order before a replay is parsed", async () => {
+    const probe = createRef<RuntimeControl>();
+    render(<RealRuntimeProbe ref={probe} />);
+    await waitFor(() => expect(probe.current?.terminalReady).toBe(true));
+    const runtime = probe.current;
+    if (!runtime) throw new Error("terminal did not mount");
+
+    act(() => {
+      runtime.writeOutput("old session\r\n\x1b[?1049halt screen");
+      runtime.resetTerminal();
+      runtime.writeOutput("replayed output\r\n");
+    });
+
+    await waitFor(() =>
+      expect(runtime.readTranscript()).toBe("replayed output"),
+    );
+  });
+
+  it("disposes a partially mounted terminal when fitting fails", async () => {
+    FakeTerminal.disposeCalls = 0;
+    class FailingFitAddon extends FakeFitAddon {
+      override fit(): void {
+        throw new Error("fit failed");
+      }
+    }
+    const onBootError = vi.fn();
+    const rendered = render(
+      <RuntimeProbe
+        loadRuntime={async () => ({
+          Terminal: FakeTerminal,
+          FitAddon: FailingFitAddon,
+          WebLinksAddon: FakeWebLinksAddon,
+        })}
+        onBootError={onBootError}
+      />,
+    );
+
+    await waitFor(() => expect(onBootError).toHaveBeenCalled());
+
+    expect(FakeTerminal.disposeCalls).toBe(1);
+    expect(screen.getByTestId("ready").textContent).toBe("false");
+    rendered.unmount();
+    expect(FakeTerminal.disposeCalls).toBe(1);
+  });
+
   it("boots runtime terminal lifecycle", async () => {
     render(
       <RuntimeProbe

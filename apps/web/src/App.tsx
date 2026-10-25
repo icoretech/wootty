@@ -1,3 +1,4 @@
+import { AppErrorBoundary } from "./AppErrorBoundary";
 import {
   TerminalApp,
   type TerminalAppEnvironment,
@@ -8,5 +9,9 @@ type AppProps = {
 };
 
 export default function App({ environment }: AppProps = {}) {
-  return <TerminalApp environment={environment} />;
+  return (
+    <AppErrorBoundary>
+      <TerminalApp environment={environment} />
+    </AppErrorBoundary>
+  );
 }

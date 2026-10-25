@@ -125,6 +125,7 @@ export function useControllerBindings({
   useShortcutBinding({
     windowRef,
     terminalReady,
+    terminalElementRef,
     runShortcutAction,
   });
 }

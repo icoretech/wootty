@@ -13,6 +13,53 @@ describe("App integration - connection lifecycle", () => {
     harness.cleanup();
   });
 
+  it("replaces prior output with the server replay after reconnecting", async () => {
+    const firstSocket = await harness.bootConnected("session-a");
+    const terminal = harness.runtime.terminals[0];
+    await act(async () =>
+      firstSocket.triggerMessage({
+        type: "output",
+        data: "retained output\r\n",
+      }),
+    );
+
+    await act(async () => firstSocket.close());
+    const nextSocket = await harness.waitForSocket(1);
+    await harness.openSocket(nextSocket);
+    await harness.markReady(nextSocket, "session-a");
+    await act(async () =>
+      nextSocket.triggerMessage({
+        type: "output",
+        data: "retained output\r\nnew output\r\n",
+      }),
+    );
+
+    expect(terminal.lines.map((line) => line.text).filter(Boolean)).toEqual([
+      "retained output",
+      "new output",
+    ]);
+    expect(screen.getByTestId("output-value").getAttribute("data-bytes")).toBe(
+      "29",
+    );
+  });
+
+  it("discards buffered control input when ready grants read-only access", async () => {
+    const firstSocket = await harness.bootConnected("session-a");
+    const terminal = harness.runtime.terminals[0];
+    await act(async () => {
+      firstSocket.close();
+      terminal.emitInput("queued-command\r");
+    });
+    const nextSocket = await harness.waitForSocket(1);
+    await harness.openSocket(nextSocket);
+
+    await harness.markReady(nextSocket, "session-a", true);
+
+    const sent = harness.socket.sentMessages(nextSocket);
+    expect(sent.filter((message) => message.type === "input")).toEqual([]);
+    expect(sent.filter((message) => message.type === "resize")).toEqual([]);
+  });
+
   // @trace FR-2 integration-store-ready-session
   it("connects and stores ready session id in tab and resume storage", async () => {
     await harness.renderTerminalApp();
@@ -150,7 +197,7 @@ describe("App integration - connection lifecycle", () => {
       "6",
     );
     const terminal = harness.runtime.terminals[0];
-    expect(terminal.clearCalls).toBe(0);
+    expect(terminal.clearCalls).toBe(1);
 
     await harness.openSessionMenu();
 
@@ -161,7 +208,7 @@ describe("App integration - connection lifecycle", () => {
     expect(screen.getByTestId("output-value").getAttribute("data-bytes")).toBe(
       "0",
     );
-    expect(terminal.clearCalls).toBe(1);
+    expect(terminal.clearCalls).toBe(2);
 
     const ws2 = await harness.waitForSocket(1);
     await harness.openSocket(ws2);

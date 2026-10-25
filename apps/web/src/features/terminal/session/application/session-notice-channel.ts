@@ -7,6 +7,7 @@ import {
 
 type UseSessionNoticeChannelArgs = {
   scheduler: Scheduler;
+  initialNotice?: string;
 };
 
 type PublishThrottledSessionNoticeArgs = {
@@ -27,9 +28,17 @@ type SessionNoticeChannel = {
 
 export function useSessionNoticeChannel({
   scheduler,
+  initialNotice = "",
 }: UseSessionNoticeChannelArgs): SessionNoticeChannel {
   const sessionNoticeTimerRef = useRef<SchedulerTimerHandle | null>(null);
-  const [sessionNotice, setSessionNotice] = useState<string>("");
+  const [sessionNotice, setSessionNotice] = useState<string>(initialNotice);
+
+  useEffect(() => {
+    if (!initialNotice) return;
+    const timer = scheduler.setTimeout(() => setSessionNotice(""), 4_000);
+    sessionNoticeTimerRef.current = timer;
+    return () => scheduler.clearTimeout(timer);
+  }, [initialNotice, scheduler]);
 
   const clearSessionNotice = useCallback(() => {
     if (sessionNoticeTimerRef.current !== null) {

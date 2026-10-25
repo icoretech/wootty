@@ -1,5 +1,5 @@
-import { ExternalLink, SquareTerminal } from "lucide-react";
-import { useEffect } from "react";
+import { ExternalLink, SquareTerminal, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { COMMAND_MANIFEST } from "../commands/definitions/command-manifest";
 
 type AboutDialogProps = {
@@ -40,21 +40,22 @@ function formatShortcutCompact(shortcutCode: string, isMac: boolean): string {
 }
 
 export function AboutDialog({ open, onClose, session }: AboutDialogProps) {
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
   useEffect(() => {
-    if (!open) {
+    const dialog = dialogRef.current;
+    if (!open || !dialog) {
       return;
     }
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
+    dialog.showModal();
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      dialog.close();
     };
-  }, [open, onClose]);
+  }, [open]);
+
+  const closeDialog = () => {
+    dialogRef.current?.close();
+    onClose();
+  };
 
   if (!open) {
     return null;
@@ -68,27 +69,29 @@ export function AboutDialog({ open, onClose, session }: AboutDialogProps) {
   const version = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "dev";
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: backdrop uses Escape key handler
-    // biome-ignore lint/a11y/useKeyWithClickEvents: Escape key provides keyboard equivalent
-    <div
+    <dialog
+      ref={dialogRef}
       className="about-dialog__backdrop"
-      data-testid="about-backdrop"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
+      aria-label="About WooTTY"
+      aria-modal="true"
+      onCancel={(event) => {
+        event.preventDefault();
+        closeDialog();
       }}
     >
-      <div
-        className="about-dialog"
-        role="dialog"
-        aria-label="About WooTTY"
-        data-testid="about-dialog"
-      >
+      <div className="about-dialog" data-testid="about-dialog">
         <div className="about-dialog__header">
           <SquareTerminal size={16} aria-hidden="true" />
           <span className="about-dialog__title">WooTTY</span>
           <span className="about-dialog__version">{version}</span>
+          <button
+            type="button"
+            className="controls-toggle about-dialog__close"
+            aria-label="Close about dialog"
+            onClick={closeDialog}
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
         </div>
 
         <div className="about-dialog__section">
@@ -162,6 +165,14 @@ export function AboutDialog({ open, onClose, session }: AboutDialogProps) {
           <span className="about-dialog__license">MIT</span>
         </div>
       </div>
-    </div>
+      <button
+        type="button"
+        className="about-dialog__dismiss"
+        data-testid="about-backdrop"
+        aria-label="Dismiss about dialog"
+        tabIndex={-1}
+        onClick={closeDialog}
+      />
+    </dialog>
   );
 }

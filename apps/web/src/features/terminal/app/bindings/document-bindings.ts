@@ -23,6 +23,29 @@ export function useSessionMenuDismissBinding({
       return;
     }
 
+    const menuElement = sessionMenuRef.current;
+    const previousFocus = documentRef.activeElement;
+    menuElement
+      ?.querySelector<HTMLInputElement>("input[type='search']")
+      ?.focus();
+
+    return () => {
+      if (
+        previousFocus instanceof HTMLElement &&
+        previousFocus.isConnected &&
+        (documentRef.activeElement === documentRef.body ||
+          menuElement?.contains(documentRef.activeElement))
+      ) {
+        previousFocus.focus();
+      }
+    };
+  }, [documentRef, sessionMenuOpen, sessionMenuRef]);
+
+  useEffect(() => {
+    if (!sessionMenuOpen || !documentRef) {
+      return;
+    }
+
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Node)) {
@@ -39,6 +62,7 @@ export function useSessionMenuDismissBinding({
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         closeSessionMenu();
       }
     };
@@ -65,6 +89,10 @@ type DocumentTitleBindingArgs = {
   status: ConnectionStatus;
 };
 
+function updateDocumentTitle(document: Document, title: string): void {
+  document.title = title;
+}
+
 export function useDocumentTitleBinding({
   documentRef,
   attachMode,
@@ -76,10 +104,9 @@ export function useDocumentTitleBinding({
       return;
     }
 
-    documentRef.title = buildDocumentTitle({
-      attachMode,
-      sessionId,
-      status,
-    });
+    updateDocumentTitle(
+      documentRef,
+      buildDocumentTitle({ attachMode, sessionId, status }),
+    );
   }, [attachMode, documentRef, sessionId, status]);
 }

@@ -245,6 +245,22 @@
 }
 
 @media (max-width: 640px) {
+  .statusbar-toggle,
+  .status-session .status-item--button {
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .status-session {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+
+  .status-session__rename-wrap,
+  .status-session__rename-input {
+    min-height: 44px;
+  }
+
   .statusbar {
     justify-content: flex-start;
     padding: 4px 6px;

@@ -1,5 +1,5 @@
 import type { MutableRefObject } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { AttachMode } from "../../../contracts/session/session";
 import {
   createOutbox,
@@ -34,20 +34,10 @@ export function useConnectionInputBackpressure({
   sendNow,
 }: UseConnectionInputBackpressureArgs): ConnectionInputBackpressure {
   const pendingResizeRef = useRef<{ cols: number; rows: number } | null>(null);
-  const outboxRef = useRef(createOutbox());
+  const [outbox] = useState(createOutbox);
   const runtimeFitSizeRef = useRef({ cols: 80, rows: 24 });
   const [queuedInputBytes, setQueuedInputBytes] = useState<number>(0);
   const [droppedInputBytes, setDroppedInputBytes] = useState<number>(0);
-
-  useEffect(() => {
-    if (attachMode !== "watch") {
-      return;
-    }
-    resetOutbox(outboxRef.current);
-    pendingResizeRef.current = null;
-    setQueuedInputBytes(0);
-    setDroppedInputBytes(0);
-  }, [attachMode]);
 
   const sendResize = useCallback(
     (cols: number, rows: number) => {
@@ -58,9 +48,7 @@ export function useConnectionInputBackpressure({
       }
 
       const sent = sendNow(createResizeMessage(cols, rows));
-      if (!sent) {
-        pendingResizeRef.current = { cols, rows };
-      }
+      pendingResizeRef.current = sent ? null : { cols, rows };
     },
     [attachMode, sendNow],
   );
@@ -82,39 +70,38 @@ export function useConnectionInputBackpressure({
         return;
       }
 
-      const sent = sendNow(createInputMessage(data));
-      if (sent) {
-        return;
+      flushOutbox(outbox, (chunk) => sendNow(createInputMessage(chunk)));
+      if (outbox.bytes > 0 || !sendNow(createInputMessage(data))) {
+        enqueueOutbox(outbox, data);
       }
-      enqueueOutbox(outboxRef.current, data);
-      setQueuedInputBytes(outboxRef.current.bytes);
-      setDroppedInputBytes(outboxRef.current.droppedBytes);
+      setQueuedInputBytes(outbox.bytes);
+      setDroppedInputBytes(outbox.droppedBytes);
     },
-    [attachMode, sendNow],
+    [attachMode, sendNow, outbox],
   );
 
   const flushQueuedInput = useCallback(() => {
     if (attachMode === "watch") {
-      resetOutbox(outboxRef.current);
+      resetOutbox(outbox);
       setQueuedInputBytes(0);
       setDroppedInputBytes(0);
       return;
     }
-    const sentBytes = flushOutbox(outboxRef.current, (chunk) => {
+    const sentBytes = flushOutbox(outbox, (chunk) => {
       return sendNow(createInputMessage(chunk));
     });
     if (sentBytes > 0) {
-      setQueuedInputBytes(outboxRef.current.bytes);
-      setDroppedInputBytes(outboxRef.current.droppedBytes);
+      setQueuedInputBytes(outbox.bytes);
+      setDroppedInputBytes(outbox.droppedBytes);
     }
-  }, [attachMode, sendNow]);
+  }, [attachMode, sendNow, outbox]);
 
   const resetQueuedBuffers = useCallback(() => {
-    resetOutbox(outboxRef.current);
+    resetOutbox(outbox);
     pendingResizeRef.current = null;
     setQueuedInputBytes(0);
     setDroppedInputBytes(0);
-  }, []);
+  }, [outbox]);
 
   return {
     runtimeFitSizeRef,

@@ -133,30 +133,27 @@ export function useTerminalDomainController({
     }
 
     const documentRef = platform.documentRef;
-    const urlApi = globalThis.URL;
     if (
       !documentRef ||
-      typeof urlApi.createObjectURL !== "function" ||
-      typeof urlApi.revokeObjectURL !== "function"
+      typeof URL.createObjectURL !== "function" ||
+      typeof URL.revokeObjectURL !== "function"
     ) {
       return;
     }
 
-    const downloadUrl = urlApi.createObjectURL(
+    const downloadUrl = URL.createObjectURL(
       new Blob([transcript], { type: "text/plain;charset=utf-8" }),
     );
+    // Keep the URL alive until the browser has consumed the click's download.
+    // Schedule cleanup before DOM work so failures cannot retain the Blob.
+    setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
     const link = documentRef.createElement("a");
     link.href = downloadUrl;
     link.download = buildTranscriptFilename(
       activeSession?.name ?? session.sessionState.sessionId,
     );
     link.rel = "noopener";
-
-    try {
-      link.click();
-    } finally {
-      urlApi.revokeObjectURL(downloadUrl);
-    }
+    link.click();
   }, [
     activeSession?.name,
     connection.runtime,

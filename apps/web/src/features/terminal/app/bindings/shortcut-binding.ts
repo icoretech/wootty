@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { type RefObject, useEffect } from "react";
 import type { ShortcutAction } from "../../commands/shortcut-actions";
 import { readShortcutAction } from "../../commands/shortcut-command-map";
 
 type ShortcutBindingArgs = {
   windowRef: Window | null;
   terminalReady: boolean;
+  terminalElementRef?: RefObject<HTMLDivElement | null>;
   runShortcutAction: (action: ShortcutAction) => void;
 };
 
@@ -31,6 +32,7 @@ function targetIsEditable(target: EventTarget | null): boolean {
 export function useShortcutBinding({
   windowRef,
   terminalReady,
+  terminalElementRef,
   runShortcutAction,
 }: ShortcutBindingArgs): void {
   useEffect(() => {
@@ -39,7 +41,13 @@ export function useShortcutBinding({
     }
 
     const keyHandler = (event: KeyboardEvent) => {
-      if (targetIsEditable(event.target)) {
+      const isTerminalInput =
+        event.target instanceof Node &&
+        terminalElementRef?.current?.contains(event.target);
+      if (
+        event.isComposing ||
+        (targetIsEditable(event.target) && !isTerminalInput)
+      ) {
         return;
       }
       const shortcutAction = readShortcutAction(event);
@@ -47,12 +55,13 @@ export function useShortcutBinding({
         return;
       }
       event.preventDefault();
+      event.stopPropagation();
       runShortcutAction(shortcutAction);
     };
 
-    windowRef.addEventListener("keydown", keyHandler);
+    windowRef.addEventListener("keydown", keyHandler, true);
     return () => {
-      windowRef.removeEventListener("keydown", keyHandler);
+      windowRef.removeEventListener("keydown", keyHandler, true);
     };
-  }, [runShortcutAction, terminalReady, windowRef]);
+  }, [runShortcutAction, terminalElementRef, terminalReady, windowRef]);
 }

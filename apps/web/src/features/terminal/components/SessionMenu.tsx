@@ -100,17 +100,14 @@ export function SessionMenu({ model, dispatch }: SessionMenuProps) {
           className="session-menu__search-input"
           data-testid="session-menu-search"
           type="search"
+          aria-label="Search sessions"
           value={searchQuery}
           placeholder="Search by name, id, command, or status"
           onChange={(event) => setSearchQuery(event.target.value)}
         />
       </label>
 
-      <div
-        className="session-menu__filters"
-        role="tablist"
-        aria-label="Session filters"
-      >
+      <fieldset className="session-menu__filters" aria-label="Session filters">
         {(
           [
             ["all", "All"],
@@ -131,7 +128,7 @@ export function SessionMenu({ model, dispatch }: SessionMenuProps) {
             {label}
           </button>
         ))}
-      </div>
+      </fieldset>
 
       <div className="session-menu__actions">
         <button

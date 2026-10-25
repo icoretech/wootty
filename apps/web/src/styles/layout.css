@@ -15,6 +15,30 @@
   gap: 4px;
 }
 
+.shell--bootstrap-failure {
+  grid-template-rows: auto;
+  place-content: center;
+}
+
+.shell--bootstrap-failure button {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--bg-0);
+  font: inherit;
+  cursor: pointer;
+}
+
+.shell--bootstrap-failure button:hover {
+  filter: brightness(1.1);
+}
+
+.shell--bootstrap-failure button:active {
+  filter: brightness(0.9);
+}
+
 .shell__background {
   position: absolute;
   inset: 0;

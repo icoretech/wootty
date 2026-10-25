@@ -3,6 +3,51 @@ import { describe, expect, it, vi } from "vitest";
 import { FloatingControls } from "../../../src/features/terminal/components/FloatingControls";
 
 describe("FloatingControls", () => {
+  it("removes closed controls from the accessible interaction surface", () => {
+    const { rerender } = render(
+      <FloatingControls
+        model={{
+          controlsOpen: false,
+          terminalReady: true,
+          fontSize: 12,
+          fontSizeMin: 11,
+          fontSizeMax: 22,
+          defaultFontSize: 11,
+          isFullscreen: false,
+        }}
+        dispatch={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Reconnect terminal session" }),
+    ).toBeNull();
+    expect(
+      screen.getByTestId("reconnect-button").closest("[inert]"),
+    ).not.toBeNull();
+
+    rerender(
+      <FloatingControls
+        model={{
+          controlsOpen: true,
+          terminalReady: true,
+          fontSize: 12,
+          fontSizeMin: 11,
+          fontSizeMax: 22,
+          defaultFontSize: 11,
+          isFullscreen: false,
+        }}
+        dispatch={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "Reconnect terminal session" }),
+    ).toBeDefined();
+    expect(
+      screen.getByTestId("reconnect-button").closest("[inert]"),
+    ).toBeNull();
+  });
+
   it("invokes action callbacks from control buttons", () => {
     const dispatch = vi.fn();
 

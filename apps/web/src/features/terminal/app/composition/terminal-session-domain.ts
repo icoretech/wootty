@@ -10,6 +10,7 @@ import {
 import type { StorageAccessFailure } from "../../contracts/storage-access";
 import type { TerminalAppEnvironment } from "../../environment/terminal-environment-contract";
 import { toBackendResolutionNotice } from "../../notifications/mappers/backend-resolution-notice";
+import { toStorageFailureNoticeDetails } from "../../notifications/mappers/storage-failure-notice";
 import type { NoticePublisher } from "../../notifications/notice-contract";
 import { toUserNotice } from "../../notifications/user-notice";
 import { clampFontSize } from "../../preferences/font-size-policy";
@@ -62,25 +63,10 @@ function readInitialFontSizeState(
 }
 
 function useControllerUiState(
+  initialFontSize: number,
   getLocalStorage: TerminalAppEnvironment["getLocalStorage"],
   onStorageFailure?: (failure: StorageAccessFailure) => void,
 ): ControllerUiState {
-  const initialFontSizeStateRef = useRef<InitialFontSizeState | null>(null);
-  if (initialFontSizeStateRef.current === null) {
-    initialFontSizeStateRef.current = readInitialFontSizeState(getLocalStorage);
-  }
-  const { initialFontSize, bootstrapStorageFailures } =
-    initialFontSizeStateRef.current;
-
-  useEffect(() => {
-    if (!onStorageFailure) {
-      return;
-    }
-    for (const failure of bootstrapStorageFailures) {
-      onStorageFailure(failure);
-    }
-  }, [bootstrapStorageFailures, onStorageFailure]);
-
   const fontSizeRef = useRef(initialFontSize);
   const [fontSize, setFontSize] = useState<number>(initialFontSize);
   const [controlsOpen, setControlsOpen] = useState<boolean>(true);
@@ -161,16 +147,24 @@ export function useTerminalSessionDomain({
   environment: TerminalAppEnvironment;
   platform: TerminalPlatformContext;
 }): TerminalSessionDomain {
+  const [{ initialFontSize, bootstrapStorageFailures }] = useState(() =>
+    readInitialFontSizeState(environment.getLocalStorage),
+  );
+  const initialFailure = bootstrapStorageFailures[0];
   const session = useSessionOrchestrator({
     fetchSessions: platform.fetchSessions,
     scheduler: platform.scheduler,
     getLocalStorage: environment.getLocalStorage,
     getSessionStorage: environment.getSessionStorage,
     formatNotice: toUserNotice,
+    initialNotice: initialFailure
+      ? toUserNotice(toStorageFailureNoticeDetails(initialFailure))
+      : "",
   });
   const sessionState = session.state;
   const sessionActions = session.actions;
   const uiState = useControllerUiState(
+    initialFontSize,
     environment.getLocalStorage,
     sessionActions.reportStorageFailure,
   );

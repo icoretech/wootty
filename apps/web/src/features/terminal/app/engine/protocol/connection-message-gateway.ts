@@ -19,7 +19,7 @@ type UseConnectionMessageGatewayArgs = {
   };
   runtime: {
     writeServerError: (message: string) => void;
-    flushAfterReady: () => void;
+    flushAfterReady: (readOnly: boolean) => void;
     writeOutputAndTrackBytes: (data: string) => void;
     writeExit: (code: number, signal: number) => void;
   };
@@ -101,7 +101,7 @@ export function useConnectionMessageGateway({
         onReady: ({ sessionId: readySessionId, readOnly }) => {
           applyReadySession(readySessionId, readOnly);
           setStatusFlag(null);
-          flushAfterReady();
+          flushAfterReady(readOnly);
           void requestTransportRefresh();
         },
         onOutput: ({ data }) => {

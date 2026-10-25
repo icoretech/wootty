@@ -39,6 +39,8 @@ export function FloatingControls({ model, dispatch }: FloatingControlsProps) {
     <aside
       className={`floating-controls ${model.controlsOpen ? "is-open" : ""}`}
       aria-label="Terminal controls"
+      aria-hidden={!model.controlsOpen}
+      inert={!model.controlsOpen}
     >
       {FLOATING_CONTROL_REGISTRY.map((descriptor) => {
         const metadata = floatingControlDescriptor(descriptor.metadataKey);

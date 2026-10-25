@@ -17,6 +17,25 @@ const scheduler: Scheduler = {
 };
 
 describe("session notice channel", () => {
+  it("shows its initial notice immediately and expires it on the notice timer", () => {
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() =>
+        useSessionNoticeChannel({
+          scheduler,
+          initialNotice: "storage unavailable",
+        }),
+      );
+      expect(result.current.sessionNotice).toBe("storage unavailable");
+
+      act(() => vi.advanceTimersByTime(4_000));
+
+      expect(result.current.sessionNotice).toBe("");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("publishes and clears notices", () => {
     vi.useFakeTimers();
     const { result } = renderHook(() => {

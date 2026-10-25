@@ -40,6 +40,7 @@ describe("connection runtime io bridge", () => {
     terminalElementRef: { current: null as HTMLDivElement | null },
     terminalReady: true,
     clearTerminal: vi.fn<() => void>(),
+    resetTerminal: vi.fn<() => void>(),
     readTranscript: vi.fn<() => string>(() => "buffer output"),
     writeOutput: vi.fn<(data: string) => number>(),
     writeExit: vi.fn<(code: number, signal: number) => void>(),
@@ -118,7 +119,7 @@ describe("connection runtime io bridge", () => {
     expect(backpressureState.sendResize).toHaveBeenCalledWith(132, 41);
 
     act(() => {
-      result.current.flushAfterReady();
+      result.current.flushAfterReady(false);
     });
     expect(backpressureState.flushQueuedInput).toHaveBeenCalledTimes(1);
     expect(backpressureState.flushPendingResize).toHaveBeenCalledTimes(1);
@@ -126,7 +127,7 @@ describe("connection runtime io bridge", () => {
     act(() => {
       result.current.resetRuntimeBuffers();
     });
-    expect(runtimeState.clearTerminal).toHaveBeenCalledTimes(1);
+    expect(runtimeState.resetTerminal).toHaveBeenCalledTimes(2);
     expect(backpressureState.resetQueuedBuffers).toHaveBeenCalledTimes(1);
     expect(result.current.outputBytes).toBe(0);
     expect(result.current.readTranscript()).toBe("buffer output");

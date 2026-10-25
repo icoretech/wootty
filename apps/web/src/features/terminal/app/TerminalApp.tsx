@@ -1,5 +1,5 @@
 import { SquareTerminal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createTerminalAppEnvironment } from "../bootstrap/terminal-environment";
 import { AboutDialog } from "../components/AboutDialog";
 import { FloatingControls } from "../components/FloatingControls";
@@ -19,12 +19,32 @@ function TerminalAppShell({
 }: {
   environment: TerminalAppEnvironment;
 }) {
-  const controller = useTerminalController(environment);
+  const {
+    aboutSession,
+    appViewportRef,
+    dispatchFloatingControls,
+    dispatchSessionMenu,
+    dispatchStatusBar,
+    floatingControlsModel,
+    helpOpen,
+    isFullscreen,
+    sessionButtonRef,
+    sessionMenuModel,
+    sessionMenuOpen,
+    sessionMenuRef,
+    setHelpOpen,
+    status,
+    statusAnnouncement,
+    statusBarModel,
+    statusText,
+    terminalElementRef,
+    terminalReady,
+  } = useTerminalController(environment);
 
   return (
     <main
-      className={`shell ${controller.isFullscreen ? "is-fullscreen" : ""}`}
-      ref={controller.appViewportRef}
+      className={`shell ${isFullscreen ? "is-fullscreen" : ""}`}
+      ref={appViewportRef}
     >
       <div className="shell__background" />
 
@@ -33,31 +53,27 @@ function TerminalAppShell({
         aria-live="polite"
         data-testid="status-announcement"
       >
-        {controller.statusAnnouncement}
+        {statusAnnouncement}
       </output>
 
       <section className="workspace">
         <section
           className="terminal-wrap"
-          ref={controller.terminalElementRef}
+          ref={terminalElementRef}
           data-testid="terminal-wrap"
-          aria-busy={!controller.terminalReady}
+          aria-busy={!terminalReady}
           aria-label="Terminal viewport"
         >
-          {controller.status !== "connected" && (
+          {status !== "connected" && (
             <div className="terminal-overlay" aria-live="polite">
               <div className="empty-state">
                 <div className="empty-state__icon" aria-hidden="true">
                   <SquareTerminal size={20} />
                 </div>
-                <p>
-                  {controller.terminalReady
-                    ? controller.statusText
-                    : "Loading terminal engine"}
-                </p>
+                <p>{terminalReady ? statusText : "Loading terminal engine"}</p>
                 <small>
-                  {controller.terminalReady
-                    ? controller.status === "reconnecting"
+                  {terminalReady
+                    ? status === "reconnecting"
                       ? "Connection lost. Restoring session and replaying output."
                       : "Preparing terminal transport."
                     : "Downloading terminal runtime and preparing renderer."}
@@ -68,33 +84,30 @@ function TerminalAppShell({
         </section>
 
         <FloatingControls
-          model={controller.floatingControlsModel}
-          dispatch={controller.dispatchFloatingControls}
+          model={floatingControlsModel}
+          dispatch={dispatchFloatingControls}
         />
 
-        {controller.sessionMenuOpen && (
-          <div
-            className="session-popover-layer"
-            ref={controller.sessionMenuRef}
-          >
+        {sessionMenuOpen && (
+          <div className="session-popover-layer" ref={sessionMenuRef}>
             <SessionMenu
-              model={controller.sessionMenuModel}
-              dispatch={controller.dispatchSessionMenu}
+              model={sessionMenuModel}
+              dispatch={dispatchSessionMenu}
             />
           </div>
         )}
       </section>
 
       <StatusBar
-        model={controller.statusBarModel}
-        sessionButtonRef={controller.sessionButtonRef}
-        dispatch={controller.dispatchStatusBar}
+        model={statusBarModel}
+        sessionButtonRef={sessionButtonRef}
+        dispatch={dispatchStatusBar}
       />
 
       <AboutDialog
-        open={controller.helpOpen}
-        onClose={() => controller.setHelpOpen(false)}
-        session={controller.aboutSession}
+        open={helpOpen}
+        onClose={() => setHelpOpen(false)}
+        session={aboutSession}
       />
     </main>
   );
@@ -127,23 +140,22 @@ function TerminalBootstrapState({ message }: { message: string }) {
 }
 
 export function TerminalApp({ environment }: TerminalAppProps = {}) {
-  const defaultEnvironmentRef = useRef<TerminalAppEnvironment | null>(null);
-  const effectiveEnvironment = (() => {
-    if (environment) {
-      return environment;
-    }
-    if (!defaultEnvironmentRef.current) {
-      defaultEnvironmentRef.current = createTerminalAppEnvironment();
-    }
-    return defaultEnvironmentRef.current;
-  })();
+  const [defaultEnvironment] = useState(
+    () => environment ?? createTerminalAppEnvironment(),
+  );
+  const effectiveEnvironment = environment ?? defaultEnvironment;
   const [authBootstrapState, setAuthBootstrapState] = useState<{
     status: "pending" | "ready" | "error";
     message: string;
+    environment: TerminalAppEnvironment;
   }>(() => {
     return effectiveEnvironment.bootstrapAuth
-      ? { status: "pending", message: "Establishing terminal authentication" }
-      : { status: "ready", message: "" };
+      ? {
+          status: "pending",
+          message: "Establishing terminal authentication",
+          environment: effectiveEnvironment,
+        }
+      : { status: "ready", message: "", environment: effectiveEnvironment };
   });
 
   useEffect(() => {
@@ -154,17 +166,17 @@ export function TerminalApp({ environment }: TerminalAppProps = {}) {
       };
     }
 
-    setAuthBootstrapState({
-      status: "pending",
-      message: "Establishing terminal authentication",
-    });
     void effectiveEnvironment
       .bootstrapAuth()
       .then(() => {
         if (!active) {
           return;
         }
-        setAuthBootstrapState({ status: "ready", message: "" });
+        setAuthBootstrapState({
+          status: "ready",
+          message: "",
+          environment: effectiveEnvironment,
+        });
       })
       .catch((error: unknown) => {
         if (!active) {
@@ -172,6 +184,7 @@ export function TerminalApp({ environment }: TerminalAppProps = {}) {
         }
         setAuthBootstrapState({
           status: "error",
+          environment: effectiveEnvironment,
           message:
             error instanceof Error && error.message.length > 0
               ? error.message
@@ -184,7 +197,19 @@ export function TerminalApp({ environment }: TerminalAppProps = {}) {
     };
   }, [effectiveEnvironment]);
 
-  if (authBootstrapState.status !== "ready") {
+  if (
+    effectiveEnvironment.bootstrapAuth &&
+    authBootstrapState.environment !== effectiveEnvironment
+  ) {
+    return (
+      <TerminalBootstrapState message="Establishing terminal authentication" />
+    );
+  }
+
+  if (
+    effectiveEnvironment.bootstrapAuth &&
+    authBootstrapState.status !== "ready"
+  ) {
     return <TerminalBootstrapState message={authBootstrapState.message} />;
   }
 

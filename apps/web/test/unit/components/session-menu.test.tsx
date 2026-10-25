@@ -32,9 +32,15 @@ describe("SessionMenu", () => {
     fireEvent.click(screen.getByTestId("session-menu-new"));
     fireEvent.click(screen.getByTestId("session-menu-resume-last"));
     fireEvent.click(screen.getByTestId("session-menu-watch-item"));
-    fireEvent.change(screen.getByTestId("session-menu-search"), {
-      target: { value: "old" },
-    });
+    expect(
+      screen.getByRole("group", { name: "Session filters" }),
+    ).toBeDefined();
+    fireEvent.change(
+      screen.getByRole("searchbox", { name: "Search sessions" }),
+      {
+        target: { value: "old" },
+      },
+    );
 
     expect(screen.queryByTestId("session-menu-watch-item")).toBeNull();
     expect(

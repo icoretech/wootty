@@ -95,6 +95,15 @@ export function useSessionRefreshCoordinator({
   const onInvalidEntriesRef = useRef(onInvalidEntries);
 
   useEffect(() => {
+    return () => {
+      latestRefreshRequestIdRef.current += 1;
+      pendingRefreshRef.current = null;
+      activeRefreshControllerRef.current?.abort();
+      activeRefreshControllerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     fetchSessionsRef.current = fetchSessions;
   }, [fetchSessions]);
 
@@ -111,7 +120,9 @@ export function useSessionRefreshCoordinator({
   }, [onInvalidEntries]);
 
   const requestSessionRefresh = useCallback(
-    async (request: SessionRefreshRequest): Promise<SessionRefreshResult> => {
+    async function refresh(
+      request: SessionRefreshRequest,
+    ): Promise<SessionRefreshResult> {
       const previousController = activeRefreshControllerRef.current;
       if (previousController && request.trigger !== "manual") {
         const activeRequestId = latestRefreshRequestIdRef.current;
@@ -161,13 +172,31 @@ export function useSessionRefreshCoordinator({
       let refreshTimeoutHandle: ReturnType<Scheduler["setTimeout"]> | null =
         null;
       const refreshTimeoutToken = Symbol("refresh_timeout");
+      const refreshAbortedToken = Symbol("refresh_aborted");
+      let onRefreshAbort: (() => void) | null = null;
       let timedOut = false;
-      try {
-        let responseOrTimeout: SessionsFetchResult | typeof refreshTimeoutToken;
+      return (async (): Promise<SessionRefreshResult> => {
+        let responseOrTimeout:
+          | SessionsFetchResult
+          | typeof refreshTimeoutToken
+          | typeof refreshAbortedToken;
         try {
+          if (refreshController.signal.aborted) {
+            return { ok: false, failure: REQUEST_ABORTED_FAILURE };
+          }
           responseOrTimeout = await Promise.race<
-            SessionsFetchResult | typeof refreshTimeoutToken
+            | SessionsFetchResult
+            | typeof refreshTimeoutToken
+            | typeof refreshAbortedToken
           >([
+            new Promise<typeof refreshAbortedToken>((resolve) => {
+              onRefreshAbort = () => resolve(refreshAbortedToken);
+              refreshController.signal.addEventListener(
+                "abort",
+                onRefreshAbort,
+                { once: true },
+              );
+            }),
             fetchSessionsRef.current({
               signal: refreshController.signal,
             }),
@@ -189,7 +218,7 @@ export function useSessionRefreshCoordinator({
             return { ok: false, failure: timeoutFailure };
           }
           if (
-            request.signal?.aborted ||
+            refreshController.signal.aborted ||
             (error instanceof DOMException && error.name === "AbortError")
           ) {
             return { ok: false, failure: REQUEST_ABORTED_FAILURE };
@@ -203,10 +232,19 @@ export function useSessionRefreshCoordinator({
           return { ok: false, failure };
         }
 
-        if (responseOrTimeout === refreshTimeoutToken) {
+        if (isStaleRequest()) {
+          return { ok: false, failure: REQUEST_SUPERSEDED_FAILURE };
+        }
+        if (timedOut || responseOrTimeout === refreshTimeoutToken) {
           const timeoutFailure = createRequestTimeoutFailure();
           onRefreshFailureRef.current(timeoutFailure);
           return { ok: false, failure: timeoutFailure };
+        }
+        if (
+          responseOrTimeout === refreshAbortedToken ||
+          refreshController.signal.aborted
+        ) {
+          return { ok: false, failure: REQUEST_ABORTED_FAILURE };
         }
 
         const response = responseOrTimeout;
@@ -249,7 +287,10 @@ export function useSessionRefreshCoordinator({
           onInvalidEntriesRef.current(parsedResponse.invalidEntries);
         }
         return { ok: true };
-      } finally {
+      })().finally(() => {
+        if (onRefreshAbort) {
+          refreshController.signal.removeEventListener("abort", onRefreshAbort);
+        }
         if (refreshTimeoutHandle !== null) {
           scheduler.clearTimeout(refreshTimeoutHandle);
         }
@@ -263,12 +304,12 @@ export function useSessionRefreshCoordinator({
           const pending = pendingRefreshRef.current;
           if (pending && pending.queuedForRequestId === requestId) {
             pendingRefreshRef.current = null;
-            void requestSessionRefresh({
+            void refresh({
               trigger: pending.trigger,
             });
           }
         }
-      }
+      });
     },
     [scheduler],
   );

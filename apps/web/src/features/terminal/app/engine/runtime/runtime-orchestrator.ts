@@ -26,6 +26,7 @@ type RuntimeOrchestrator = {
   terminalElementRef: RefObject<HTMLDivElement | null>;
   terminalReady: boolean;
   clearTerminal: () => void;
+  resetTerminal: () => void;
   readTranscript: () => string;
   writeOutput: (data: string) => number;
   writeExit: (code: number, signal: number) => void;
@@ -58,6 +59,11 @@ export function useRuntimeOrchestrator({
 
   const clearTerminal = useCallback(() => {
     termRef.current?.clear();
+  }, []);
+
+  const resetTerminal = useCallback(() => {
+    // Queue RIS with output so earlier asynchronous writes cannot survive the reset.
+    termRef.current?.write("\x1bc");
   }, []);
 
   const readTranscript = useCallback((): string => {
@@ -158,6 +164,16 @@ export function useRuntimeOrchestrator({
 
     let cancelled = false;
     let disposeInput: TerminalRuntimeDisposable | null = null;
+    let terminal: TerminalRuntimeTerminal | null = null;
+
+    const disposeRuntime = () => {
+      disposeInput?.dispose();
+      disposeInput = null;
+      terminal?.dispose();
+      terminal = null;
+      termRef.current = null;
+      fitAddonRef.current = null;
+    };
 
     const setup = async () => {
       try {
@@ -176,6 +192,7 @@ export function useRuntimeOrchestrator({
           fontSize: initialFontSize,
           theme: readTerminalTheme(documentRef),
         });
+        terminal = term;
         const fitAddon = new runtime.FitAddon();
         term.loadAddon(fitAddon);
         term.loadAddon(new runtime.WebLinksAddon());
@@ -183,12 +200,12 @@ export function useRuntimeOrchestrator({
         fitAddon.fit();
         termRef.current = term;
         fitAddonRef.current = fitAddon;
-        setTerminalReady(true);
-
         disposeInput = term.onData((data) => {
           onInputRef.current(data);
         });
+        setTerminalReady(true);
       } catch (error) {
+        disposeRuntime();
         if (cancelled) {
           return;
         }
@@ -208,10 +225,7 @@ export function useRuntimeOrchestrator({
     return () => {
       cancelled = true;
       setTerminalReady(false);
-      disposeInput?.dispose();
-      termRef.current?.dispose();
-      termRef.current = null;
-      fitAddonRef.current = null;
+      disposeRuntime();
     };
   }, [documentRef, initialFontSize, loadRuntime]);
 
@@ -219,6 +233,7 @@ export function useRuntimeOrchestrator({
     terminalElementRef,
     terminalReady,
     clearTerminal,
+    resetTerminal,
     readTranscript,
     writeOutput,
     writeExit,
