@@ -65,7 +65,7 @@ jobs:
           ref: ${{ steps.prepare.outputs.checkout_ref }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6
+        run: npm install --global --allow-scripts=pnpm "$(node -p 'require("./package.json").packageManager')"
 
       - name: Setup Node.js
         uses: actions/setup-node@v7
