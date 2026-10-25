@@ -205,10 +205,10 @@ export function useRuntimeOrchestrator({
         });
         setTerminalReady(true);
       } catch (error) {
-        disposeRuntime();
         if (cancelled) {
           return;
         }
+        disposeRuntime();
         const reason =
           error instanceof Error && error.message.length > 0
             ? error.message

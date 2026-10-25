@@ -93,7 +93,13 @@ type RuntimeControl = Pick<
   "terminalReady" | "writeOutput" | "resetTerminal" | "readTranscript"
 >;
 
-function RealRuntimeProbe({ ref }: { readonly ref: Ref<RuntimeControl> }) {
+function RealRuntimeProbe({
+  ref,
+  loadRuntime = loadXtermRuntime,
+}: {
+  readonly ref: Ref<RuntimeControl>;
+  readonly loadRuntime?: typeof loadXtermRuntime;
+}) {
   const {
     terminalElementRef,
     terminalReady,
@@ -102,7 +108,7 @@ function RealRuntimeProbe({ ref }: { readonly ref: Ref<RuntimeControl> }) {
     readTranscript,
   } = useRuntimeOrchestrator({
     documentRef: document,
-    loadRuntime: loadXtermRuntime,
+    loadRuntime,
     initialFontSize: 11,
     onInput: () => undefined,
     onBootError: () => undefined,
@@ -116,6 +122,32 @@ function RealRuntimeProbe({ ref }: { readonly ref: Ref<RuntimeControl> }) {
 }
 
 describe("runtime orchestrator", () => {
+  it("keeps the replacement terminal usable when a superseded loader rejects", async () => {
+    let rejectInitial: (error: Error) => void = () => {
+      throw new Error("loader promise was not initialized");
+    };
+    const pending = new Promise<Awaited<ReturnType<typeof loadXtermRuntime>>>(
+      (_resolve, reject) => {
+        rejectInitial = reject;
+      },
+    );
+    const probe = createRef<RuntimeControl>();
+    const view = render(
+      <RealRuntimeProbe ref={probe} loadRuntime={() => pending} />,
+    );
+    view.rerender(<RealRuntimeProbe ref={probe} />);
+    await waitFor(() => expect(probe.current?.terminalReady).toBe(true));
+
+    await act(async () => {
+      rejectInitial(new Error("superseded loader failed"));
+    });
+
+    expect(probe.current?.writeOutput("replacement\r\n")).toBe(13);
+    await waitFor(() =>
+      expect(probe.current?.readTranscript()).toBe("replacement"),
+    );
+  });
+
   it("resets real xterm output in order before a replay is parsed", async () => {
     const probe = createRef<RuntimeControl>();
     render(<RealRuntimeProbe ref={probe} />);
