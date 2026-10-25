@@ -1,6 +1,9 @@
 package session
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 type HistoryBuffer struct {
 	maxBytes int
@@ -19,14 +22,25 @@ func NewHistoryBuffer(maxBytes int) *HistoryBuffer {
 }
 
 func (h *HistoryBuffer) Append(chunk string) {
-	chunkBytes := len([]byte(chunk))
+	if chunk == "" {
+		return
+	}
+	if len(chunk) > h.maxBytes {
+		chunk = chunk[len(chunk)-h.maxBytes:]
+		for len(chunk) > 0 && !utf8.RuneStart(chunk[0]) {
+			chunk = chunk[1:]
+		}
+		chunk = strings.Clone(chunk)
+	}
+	chunkBytes := len(chunk)
 	h.chunks = append(h.chunks, chunk)
 	h.bytes += chunkBytes
 
 	for h.bytes > h.maxBytes && len(h.chunks) > 0 {
 		removed := h.chunks[0]
+		h.chunks[0] = ""
 		h.chunks = h.chunks[1:]
-		h.bytes -= len([]byte(removed))
+		h.bytes -= len(removed)
 	}
 }
 

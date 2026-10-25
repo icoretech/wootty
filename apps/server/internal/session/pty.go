@@ -2,10 +2,12 @@ package session
 
 import (
 	"errors"
-	"io"
 	"os"
 	"os/exec"
+	"sync"
 	"syscall"
+	"time"
+	"unicode/utf8"
 
 	"github.com/creack/pty"
 )
@@ -25,10 +27,14 @@ type ProcessOptions struct {
 }
 
 type PtyProcess struct {
-	cmd    *exec.Cmd
-	pty    *os.File
-	dataCh chan string
-	exitCh chan ExitInfo
+	cmd       *exec.Cmd
+	pty       *os.File
+	dataCh    chan string
+	exitCh    chan ExitInfo
+	done      chan struct{}
+	readDone  chan struct{}
+	closeOnce sync.Once
+	closeErr  error
 }
 
 func NewPtyProcess(options ProcessOptions) (*PtyProcess, error) {
@@ -47,12 +53,33 @@ func NewPtyProcess(options ProcessOptions) (*PtyProcess, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Rewrap a nonblocking descriptor so os.NewFile registers it with the
+	// runtime poller on macOS too. Fd calls during resize then preserve its mode.
+	fd, err := syscall.Dup(int(ptmx.Fd()))
+	if err == nil {
+		syscall.CloseOnExec(fd)
+		err = syscall.SetNonblock(fd, true)
+		if err != nil {
+			_ = syscall.Close(fd)
+		}
+	}
+	if err != nil {
+		_ = cmd.Process.Kill()
+		_ = ptmx.Close()
+		_ = cmd.Wait()
+		return nil, err
+	}
+	pollablePTY := os.NewFile(uintptr(fd), ptmx.Name())
+	_ = ptmx.Close()
+	ptmx = pollablePTY
 
 	proc := &PtyProcess{
-		cmd:    cmd,
-		pty:    ptmx,
-		dataCh: make(chan string, 256),
-		exitCh: make(chan ExitInfo, 1),
+		cmd:      cmd,
+		pty:      ptmx,
+		dataCh:   make(chan string, 256),
+		exitCh:   make(chan ExitInfo, 1),
+		done:     make(chan struct{}),
+		readDone: make(chan struct{}),
 	}
 
 	go proc.readLoop()
@@ -85,28 +112,50 @@ func (p *PtyProcess) Kill(sig syscall.Signal) error {
 	if p.cmd.Process == nil {
 		return nil
 	}
-	return p.cmd.Process.Signal(sig)
+	// StartWithSize creates a session/process group. Signal its children too.
+	err := syscall.Kill(-p.cmd.Process.Pid, sig)
+	if errors.Is(err, syscall.ESRCH) {
+		return nil
+	}
+	return err
 }
 
 func (p *PtyProcess) Close() error {
-	return p.pty.Close()
+	p.closeOnce.Do(func() {
+		close(p.done)
+		// Closing a terminal alone is insufficient for children that ignore
+		// hangup/termination. A closed session must not leave its process group.
+		_ = p.Kill(syscall.SIGKILL)
+		p.closeErr = p.pty.Close()
+	})
+	return p.closeErr
 }
 
 func (p *PtyProcess) readLoop() {
-	buffer := make([]byte, 4096)
+	defer close(p.readDone)
+	defer close(p.dataCh)
+	buffer := make([]byte, 4096+utf8.UTFMax)
+	pending := 0
 	for {
-		n, err := p.pty.Read(buffer)
-		if n > 0 {
-			p.dataCh <- string(buffer[:n])
+		n, err := p.pty.Read(buffer[pending:])
+		n += pending
+		end := 0
+		for end < n && (err != nil || utf8.FullRune(buffer[end:n])) {
+			_, size := utf8.DecodeRune(buffer[end:n])
+			end += size
+		}
+		if end > 0 {
+			select {
+			case p.dataCh <- string(buffer[:end]):
+			case <-p.done:
+				return
+			}
 		}
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			break
+			return
 		}
+		pending = copy(buffer, buffer[end:n])
 	}
-	close(p.dataCh)
 }
 
 func (p *PtyProcess) waitLoop() {
@@ -127,7 +176,12 @@ func (p *PtyProcess) waitLoop() {
 		exitInfo.Code = 1
 	}
 
-	_ = p.pty.Close()
+	// Drain bytes already written before announcing exit. A background child
+	// can retain the slave indefinitely, so bound this final drain.
+	drainTimer := time.AfterFunc(time.Second, func() { _ = p.Close() })
+	<-p.readDone
+	drainTimer.Stop()
+	_ = p.Close()
 	p.exitCh <- exitInfo
 	close(p.exitCh)
 }

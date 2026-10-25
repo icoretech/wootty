@@ -688,12 +688,11 @@ func TestAttachRejectsIncompatibleWireVersion(t *testing.T) {
 	}
 }
 
-func TestCleanPathRejectsTraversal(t *testing.T) {
-	baseDir := filepath.Join(t.TempDir(), "static")
-	if got := cleanPath(baseDir, "/../secret.txt"); got != "" {
+func TestCleanAssetPathRejectsTraversal(t *testing.T) {
+	if got := cleanEmbeddedPath("/../secret.txt"); got != "" {
 		t.Fatalf("expected traversal path to be rejected, got %q", got)
 	}
-	if got := cleanPath(baseDir, "/index.html"); got == "" {
+	if got := cleanEmbeddedPath("/index.html"); got == "" {
 		t.Fatal("expected valid path to resolve")
 	}
 }

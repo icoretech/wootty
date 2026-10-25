@@ -1,6 +1,7 @@
 package session
 
 import (
+	"os"
 	"strings"
 	"sync"
 	"syscall"
@@ -12,15 +13,18 @@ type FakeProcess struct {
 	exitCh     chan ExitInfo
 	lineBuffer strings.Builder
 	exited     bool
+	done       chan struct{}
+	stopOnce   sync.Once
 }
 
 func NewFakeProcess(options ProcessOptions) *FakeProcess {
 	process := &FakeProcess{
 		dataCh: make(chan string, 256),
 		exitCh: make(chan ExitInfo, 1),
+		done:   make(chan struct{}),
 	}
 
-	go process.emitData("WooTTY fake terminal ready (" + options.Command + " " + strings.Join(options.Args, " ") + ")\r\n$ ")
+	process.dataCh <- "WooTTY fake terminal ready (" + options.Command + " " + strings.Join(options.Args, " ") + ")\r\n$ "
 
 	return process
 }
@@ -38,10 +42,15 @@ func (p *FakeProcess) Write(data string) error {
 	defer p.mu.Unlock()
 
 	if p.exited {
-		return nil
+		return os.ErrClosed
 	}
 
 	for _, char := range data {
+		select {
+		case <-p.done:
+			return os.ErrClosed
+		default:
+		}
 		if char == '\r' || char == '\n' {
 			p.emitDataLocked("\r\n")
 			trimmed := strings.TrimSpace(p.lineBuffer.String())
@@ -68,16 +77,11 @@ func (p *FakeProcess) Resize(_, _ int) error {
 }
 
 func (p *FakeProcess) Kill(_ syscall.Signal) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if p.exited {
-		return nil
-	}
-	p.emitExitLocked(ExitInfo{Code: 0, Signal: 15})
-	return nil
+	return p.Close()
 }
 
 func (p *FakeProcess) Close() error {
+	p.stopOnce.Do(func() { close(p.done) })
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if p.exited {
@@ -85,19 +89,16 @@ func (p *FakeProcess) Close() error {
 	}
 	p.emitExitLocked(ExitInfo{Code: 0, Signal: 15})
 	return nil
-}
-
-func (p *FakeProcess) emitData(data string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	p.emitDataLocked(data)
 }
 
 func (p *FakeProcess) emitDataLocked(data string) {
 	if p.exited {
 		return
 	}
-	p.dataCh <- data
+	select {
+	case p.dataCh <- data:
+	case <-p.done:
+	}
 }
 
 func (p *FakeProcess) emitExitLocked(exit ExitInfo) {
