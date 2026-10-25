@@ -15,7 +15,7 @@ jobs:
   publish-binaries:
     name: Build and Attach Multi-Arch Binaries
     if: github.ref_name == 'main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Prepare metadata
