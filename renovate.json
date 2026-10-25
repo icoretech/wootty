@@ -17,6 +17,12 @@
   "ignoreDeps": ["node"],
   "packageRules": [
     {
+      "description": "Respect OpenTelemetry 2 peer requirements until React Doctor upgrades its Sentry dependency",
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@opentelemetry/api"],
+      "allowedVersions": "<1.10.0"
+    },
+    {
       "description": "Delay npm updates for pnpm minimum release age",
       "matchDatasources": ["npm"],
       "minimumReleaseAge": "1 day"
