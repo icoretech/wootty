@@ -15,8 +15,14 @@
 ## WHERE TO LOOK
 | Task | Location | Notes |
 | --- | --- | --- |
-| auth token / origin policy | `server/server.go` + `config/config.go` | keep request checks aligned |
-| attach/watch/read-only semantics | `session/manager.go` | core session authority |
+| HTTP assembly / shutdown | `server/server.go` | routes and connection/resource lifetime |
+| auth token / host / origin policy | `server/auth.go` + `config/config.go` | keep request checks aligned |
+| terminal WebSocket dispatch | `server/terminal.go` | connection attach, input, resize, and rename |
+| static filesystem boundary | `server/static.go` | rooted file access and embedded fallback |
+| session actions / listing | `session/manager.go` | shared types and basic Manager operations |
+| attach/watch/replay handshake | `session/attach.go` | ready and replay serialize before live output |
+| detach/output/exit/shutdown | `session/lifecycle.go` | TTL and process lifetime authority |
+| serialized WebSocket writers | `session/connection.go` | shared connection helpers |
 | PTY vs fake PTY | `session/pty.go` + `session/fake.go` | deterministic test mode matters |
 | inbound client message parsing | `protocol/protocol.go` | keep in sync with shared contracts |
 | embedded asset behavior | `webassets/assets.go` | affects packaged server builds |

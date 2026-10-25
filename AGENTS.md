@@ -1,7 +1,6 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-04-14
-**Commit:** `4388bef`
+**Reviewed:** 2026-10-25
 **Branch:** `main`
 
 ## OVERVIEW
@@ -32,9 +31,12 @@ wootty/
 | root commands / CI parity | `package.json` | canonical `dev`, `lint`, `test`, `build`, `ci` |
 | shared protocol schema | `contracts/*.json` | generated into TS and Go; edit source here |
 | frontend bootstrap | `apps/web/src/main.tsx` | dynamic App import + bootstrap failure UI |
-| frontend architecture map | `README.md` + `docs/governance/terminal-governance-map.json` | strongest ownership map in repo |
+| frontend architecture map | `docs/architecture.md` + `docs/governance/terminal-governance-map.json` | strongest ownership map in repo |
 | backend bootstrap | `apps/server/cmd/woottyd/main.go` | reads config then starts server |
-| auth / websocket / static serving | `apps/server/internal/server/server.go` | API + websocket + asset routing |
+| HTTP assembly / lifecycle | `apps/server/internal/server/server.go` | routes, session listing, and shutdown |
+| authentication / origin policy | `apps/server/internal/server/auth.go` | cookie bootstrap and trusted-host checks |
+| terminal WebSocket | `apps/server/internal/server/terminal.go` | attach, input, resize, and connection lifecycle |
+| static serving | `apps/server/internal/server/static.go` | rooted filesystem and embedded asset delivery |
 | dev port orchestration | `scripts/dev.mjs` | auto-falls forward from busy `8080` |
 | governance/doc checks | `scripts/generate-terminal-governance-docs.mjs` | also powers `verify:governance` |
 
@@ -43,6 +45,9 @@ wootty/
 | --- | --- | --- | --- |
 | `main` | Go function | `apps/server/cmd/woottyd/main.go` | server process entrypoint |
 | `New` | Go function | `apps/server/internal/server/server.go` | HTTP/WebSocket server assembly |
+| `handleTerminal` | Go method | `apps/server/internal/server/terminal.go` | terminal WebSocket protocol handler |
+| `isTrustedHost` | Go method | `apps/server/internal/server/auth.go` | tokenless loopback request-host policy |
+| `registerStaticRoutes` | Go method | `apps/server/internal/server/static.go` | filesystem and embedded asset routing |
 | `NewManager` | Go function | `apps/server/internal/session/manager.go` | PTY session lifecycle owner |
 | `ParseRunConfig` | Go function | `apps/server/internal/config/config.go` | CLI/env/runtime config authority |
 | `TerminalApp` | React component | `apps/web/src/features/terminal/app/TerminalApp.tsx` | terminal feature shell |
@@ -51,8 +56,9 @@ wootty/
 | `parseServerMessageWithReason` | TS function | `apps/web/src/features/terminal/protocol/terminal-protocol.ts` | inbound message parsing authority |
 
 ## CONVENTIONS
-- Root `pnpm lint` is intentionally mutating: Biome write mode, `go fix`, docs path verification, governance verification, then typecheck
+- Root `pnpm lint` is intentionally mutating: Biome write mode, Go fixes/formatting, docs/governance/toolchain/contracts verification, the full-project React Doctor gate, then typecheck
 - `pnpm lint:ci` is the non-mutating CI path; do not substitute it for local fix-up work
+- `pnpm lint:react` scans the full web package and fails on warnings or errors; it runs in both local lint and CI lint
 - `pnpm run ci` is the local parity sequence: lint:ci -> test -> build -> e2e
 - The repo does not use a shared package/library layer; cross-runtime truth flows through `contracts/*.json` plus generator scripts
 - Governance is enforced, not aspirational: ownership and traceability manifests under `docs/governance/` must stay in sync with docs and executable tests
@@ -65,7 +71,7 @@ wootty/
 - Do not assume sessions persist across server restarts or can be silently stolen by another tab
 
 ## UNIQUE STYLES
-- Root README is partially generated: module ownership and traceability sections are derived from governance manifests
+- `docs/architecture.md` module ownership and `docs/web-ui-traceability.md` are generated from governance manifests; the root README links to these guides
 - E2E bootstraps the Go server directly instead of a Vite dev server and forces `WOOTTY_FAKE_PTY=1`
 - Default CI browser coverage is Chromium-only; Firefox/WebKit are opt-in via `pnpm test:e2e:cross`
 
@@ -75,6 +81,7 @@ pnpm install
 pnpm dev
 pnpm lint
 pnpm lint:ci
+pnpm lint:react
 pnpm test
 pnpm build
 pnpm test:e2e

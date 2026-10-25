@@ -35,7 +35,7 @@ const governancePath = path.join(
   repoRoot,
   "docs/governance/terminal-governance-map.json",
 );
-const readmePath = path.join(repoRoot, "README.md");
+const architecturePath = path.join(repoRoot, "docs/architecture.md");
 const traceabilityAssertionsPath = path.join(
   repoRoot,
   "docs/governance/terminal-traceability-assertions.json",
@@ -129,13 +129,13 @@ describe("terminal governance map", () => {
     }
   });
 
-  it("keeps README ownership block generated from governance map", async () => {
+  it("keeps architecture ownership block generated from governance map", async () => {
     const governance = await readGovernanceMap();
-    const readmeSource = await fs.readFile(readmePath, "utf8");
+    const architectureSource = await fs.readFile(architecturePath, "utf8");
     const startMarker = "<!-- governance:module-ownership:start -->";
     const endMarker = "<!-- governance:module-ownership:end -->";
-    const startIndex = readmeSource.indexOf(startMarker);
-    const endIndex = readmeSource.indexOf(endMarker);
+    const startIndex = architectureSource.indexOf(startMarker);
+    const endIndex = architectureSource.indexOf(endMarker);
 
     expect(startIndex).toBeGreaterThanOrEqual(0);
     expect(endIndex).toBeGreaterThan(startIndex);
@@ -144,7 +144,7 @@ describe("terminal governance map", () => {
       .map((entry) => `- \`${entry.path}\`: ${entry.description}`)
       .join("\n");
     const expectedBlock = [startMarker, ownershipSection, endMarker].join("\n");
-    const actualBlock = readmeSource.slice(
+    const actualBlock = architectureSource.slice(
       startIndex,
       endIndex + endMarker.length,
     );

@@ -23,6 +23,8 @@ apps/web/
 | Task | Location | Notes |
 | --- | --- | --- |
 | dev proxy / React compiler | `config/build/vite.config.ts` | `/api` proxies to Go server |
+| Vite discovery entrypoint | `vite.config.ts` | delegates to the shared build config for dev, builds, and tooling |
+| build/test configuration types | `tsconfig.config.json` | included in root typecheck through `typecheck:config` |
 | unit/integration runner | `config/test/vitest.config.ts` | `jsdom` + shared setup file |
 | e2e runner | `config/e2e/playwright.config.ts` | Chromium + mobile by default |
 | e2e server boot | `config/e2e/e2e-env.ts` | launches Go server with fake PTY |
@@ -33,6 +35,9 @@ apps/web/
 ## CONVENTIONS
 - `build` is `tsc --noEmit` before `vite build`; keep type health clean before bundling
 - `typecheck:contracts` is separate from normal app typecheck; contract-facing files/tests must satisfy both lanes
+- `typecheck:config` checks Vite, Vitest, and Playwright configuration; keep the top-level Vite wrapper and shared build configuration aligned
+- React Compiler runs through `@rolldown/plugin-babel` and `reactCompilerPreset`; do not restore the obsolete `react({ babel: ... })` configuration
+- Root `pnpm lint:react` runs React Doctor over the full package and fails on warnings or errors; both lint paths include it
 - Keep React components in PascalCase and utility modules in lowercase/kebab style when consistent with surrounding code
 - Browser bootstrap is defensive; preserve fallback behavior when changing startup wiring
 

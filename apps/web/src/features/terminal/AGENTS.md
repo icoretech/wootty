@@ -44,5 +44,5 @@
 - Do not add feature logic to top-level `App.tsx`; keep it inside the terminal domain
 
 ## NOTES
-- The repo README already contains a generated terminal module-ownership block; keep local AGENT rules focused on editing behavior, not restating that whole list
+- `docs/architecture.md` contains the generated terminal module-ownership block; keep local AGENT rules focused on editing behavior, not restating that whole list
 - Transport close codes, heartbeat policy, and reconnect behavior have dedicated policy/state files; preserve those central definitions

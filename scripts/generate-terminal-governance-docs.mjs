@@ -6,7 +6,7 @@ const governancePath = path.join(
   repoRoot,
   "docs/governance/terminal-governance-map.json",
 );
-const readmePath = path.join(repoRoot, "README.md");
+const architecturePath = path.join(repoRoot, "docs/architecture.md");
 const traceabilityPath = path.join(repoRoot, "docs/web-ui-traceability.md");
 const traceabilityAssertionsPath = path.join(
   repoRoot,
@@ -29,7 +29,8 @@ function extractBacktickPaths(value) {
 
 function isTraceabilityTestFile(linkedPath) {
   return (
-    /\.(test|spec)\.[jt]sx?$/.test(linkedPath) || linkedPath.endsWith("_test.go")
+    /\.(test|spec)\.[jt]sx?$/.test(linkedPath) ||
+    linkedPath.endsWith("_test.go")
   );
 }
 
@@ -256,35 +257,35 @@ const traceabilityContent = [
 
 await assertGovernancePathsExist();
 
-const readmeSource = await fs.readFile(readmePath, "utf8");
+const architectureSource = await fs.readFile(architecturePath, "utf8");
 const startMarker = "<!-- governance:module-ownership:start -->";
 const endMarker = "<!-- governance:module-ownership:end -->";
-const startIndex = readmeSource.indexOf(startMarker);
-const endIndex = readmeSource.indexOf(endMarker);
+const startIndex = architectureSource.indexOf(startMarker);
+const endIndex = architectureSource.indexOf(endMarker);
 if (startIndex < 0 || endIndex < 0 || endIndex <= startIndex) {
-  throw new Error("README governance ownership markers are missing or invalid.");
+  throw new Error(
+    "Architecture governance ownership markers are missing or invalid.",
+  );
 }
 
-const replacementBlock = [
-  startMarker,
-  ownershipSection,
-  endMarker,
-].join("\n");
-const readmeNext =
-  readmeSource.slice(0, startIndex) +
+const replacementBlock = [startMarker, ownershipSection, endMarker].join("\n");
+const architectureNext =
+  architectureSource.slice(0, startIndex) +
   replacementBlock +
-  readmeSource.slice(endIndex + endMarker.length);
+  architectureSource.slice(endIndex + endMarker.length);
 
 if (checkOnly) {
   const currentTraceability = await fs.readFile(traceabilityPath, "utf8");
-  const readmeChanged = readmeNext !== readmeSource;
+  const architectureChanged = architectureNext !== architectureSource;
   const traceabilityChanged = traceabilityContent !== currentTraceability;
-  if (readmeChanged || traceabilityChanged) {
-    if (readmeChanged) {
-      console.error("README.md is out of date with governance map.");
+  if (architectureChanged || traceabilityChanged) {
+    if (architectureChanged) {
+      console.error("docs/architecture.md is out of date with governance map.");
     }
     if (traceabilityChanged) {
-      console.error("docs/web-ui-traceability.md is out of date with governance map.");
+      console.error(
+        "docs/web-ui-traceability.md is out of date with governance map.",
+      );
     }
     process.exit(1);
   }
@@ -292,6 +293,8 @@ if (checkOnly) {
   process.exit(0);
 }
 
-await fs.writeFile(readmePath, readmeNext);
+await fs.writeFile(architecturePath, architectureNext);
 await fs.writeFile(traceabilityPath, traceabilityContent);
-console.log("Governance docs regenerated from docs/governance/terminal-governance-map.json.");
+console.log(
+  "Governance docs regenerated from docs/governance/terminal-governance-map.json.",
+);
