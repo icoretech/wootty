@@ -45,6 +45,7 @@ apps/web/
 - `pnpm --filter @icoretech/wootty-web test` runs Vitest only
 - Keep browser tests isolated in the `browser-unit` project; `test/config/**` belongs to the native `tooling-contracts` project because Vite/Rolldown and Playwright require native Node module boundaries
 - `pnpm --filter @icoretech/wootty-web test:e2e` rebuilds the repo first, then runs Playwright
+- `pnpm test:e2e:prebuilt` runs the same browser suite with `WOOTTY_E2E_PREBUILT=1` against `apps/server/woottyd`; it never rebuilds or reuses an existing server, so CI tests the binary artifact produced by the quality job
 - `pnpm --filter @icoretech/wootty-web test:e2e:cross` adds Firefox and WebKit via `WOOTTY_E2E_CROSS=1`
 - Unit/integration tests live under `test/**`; browser specs live under `e2e/**`
 

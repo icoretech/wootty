@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json --noEmit && vite build",
     "test": "NODE_OPTIONS=--no-experimental-webstorage vitest run --config config/test/vitest.config.ts",
     "test:e2e": "pnpm --dir ../.. build && env -u NO_COLOR playwright test --config config/e2e/playwright.config.ts",
+    "test:e2e:prebuilt": "WOOTTY_E2E_PREBUILT=1 env -u NO_COLOR playwright test --config config/e2e/playwright.config.ts",
     "test:e2e:cross": "pnpm --dir ../.. build && WOOTTY_E2E_CROSS=1 env -u NO_COLOR playwright test --config config/e2e/playwright.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "typecheck:contracts": "tsc -p tsconfig.contract-tests.json --noEmit",

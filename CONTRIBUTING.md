@@ -35,10 +35,13 @@ Use narrower commands while developing:
 | `cd apps/server && go test ./...` | Backend tests |
 | `cd apps/server && go test -race ./...` | Backend race detector |
 | `pnpm test:e2e` | Chromium desktop and mobile |
+| `pnpm test:e2e:prebuilt` | Chromium desktop and mobile against `apps/server/woottyd`, without rebuilding |
 | `pnpm test:e2e:cross` | Chromium, Firefox, and WebKit |
 | `pnpm build:binary` | Standalone server with embedded UI |
 
 Install all three browsers before the cross-browser suite with `pnpm --filter @icoretech/wootty-web exec playwright install chromium firefox webkit`.
+
+CI builds the standalone binary once in the quality job and transfers it to the browser job. `pnpm test:e2e:prebuilt` requires that executable at `apps/server/woottyd`; a missing binary or occupied test port fails instead of rebuilding or reusing a different server. Keep generated `apps/web/dist` absent when validating embedded assets. For local source changes, use the normal `pnpm test:e2e` command, which rebuilds first.
 
 Vite discovers `apps/web/vite.config.ts`, which delegates to `apps/web/config/build/vite.config.ts`. Keep proxy and build settings in that shared configuration. The React Compiler runs through the supported Rolldown Babel plugin and React compiler preset; the configuration is checked by `pnpm typecheck` as well as exercised by production builds.
 

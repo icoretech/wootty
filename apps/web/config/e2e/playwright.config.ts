@@ -47,6 +47,6 @@ export default defineConfig({
     },
     url: e2eConfig.healthUrl,
     timeout: 120_000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: e2eConfig.reuseExistingServer,
   },
 });

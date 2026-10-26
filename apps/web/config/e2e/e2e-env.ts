@@ -13,6 +13,7 @@ type E2eRuntimeConfig = {
   readonly baseURL: string;
   readonly healthUrl: string;
   readonly crossBrowser: boolean;
+  readonly reuseExistingServer: boolean;
   readonly webServer: E2eServerLaunch;
 };
 
@@ -34,11 +35,9 @@ export function resolveE2ePort(envPort: string | undefined): number {
   return DEFAULT_E2E_PORT;
 }
 
-function createServerLaunch(port: number): E2eServerLaunch {
+function createServerLaunch(port: number, prebuilt: boolean): E2eServerLaunch {
   const args = [
-    "go",
-    "run",
-    "./cmd/woottyd",
+    ...(prebuilt ? ["./woottyd"] : ["go", "run", "./cmd/woottyd"]),
     "run",
     "--host",
     "127.0.0.1",
@@ -60,12 +59,14 @@ export function resolveE2eRuntime(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): E2eRuntimeConfig {
   const port = resolveE2ePort(env.WOOTTY_E2E_PORT);
+  const prebuilt = env.WOOTTY_E2E_PREBUILT === "1";
   const baseURL = `http://127.0.0.1:${port}`;
   return {
     port,
     baseURL,
     healthUrl: `${baseURL}/api/health`,
     crossBrowser: env.WOOTTY_E2E_CROSS === "1",
-    webServer: createServerLaunch(port),
+    reuseExistingServer: !env.CI && !prebuilt,
+    webServer: createServerLaunch(port, prebuilt),
   };
 }
