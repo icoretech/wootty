@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0](https://github.com/icoretech/wootty/compare/wootty-v0.2.22...wootty-v0.3.0) (2026-10-26)
+
+
+### Bug Fixes
+
+* **build:** embed release UI and activate React Compiler ([293975a](https://github.com/icoretech/wootty/commit/293975ade65e6830cd54d8475df68bb0e0957533))
+* **config:** reject invalid terminal runtime settings ([0160ad1](https://github.com/icoretech/wootty/commit/0160ad19ada3f12529b9328dac463d8d1e69a46b))
+* **server:** serialize session replay and close terminal resources ([7ec8c75](https://github.com/icoretech/wootty/commit/7ec8c750dda026cd5ee0f14a30229339acb88b6b))
+* **web:** ignore stale runtime loader failures ([a11c2c9](https://github.com/icoretech/wootty/commit/a11c2c972a49e6fe166af251b6764259c0d65288))
+* **web:** preserve terminal state and keyboard navigation ([48f9829](https://github.com/icoretech/wootty/commit/48f98298c5f9527ad4c4dcf36bf362f82ad4708c))
+
+
+### Performance Improvements
+
+* **build:** retain dependency layers across source changes ([30c41de](https://github.com/icoretech/wootty/commit/30c41ded215d9d8bd3236c1c7acaf06fa011efd2))
+* **test:** reuse jsdom imports in isolated VM workers ([9df9359](https://github.com/icoretech/wootty/commit/9df9359f2624a36b65b8a3a62cacd6ef984dd459))
+
+
+### Dependencies
+
+* update dependency @biomejs/biome to ^2.6.3 ([#292](https://github.com/icoretech/wootty/issues/292)) ([59c3f61](https://github.com/icoretech/wootty/commit/59c3f61d396d14f2bde97162e7b9a73971fc4dc0))
+* update OpenTelemetry API within the supported peer range ([106a358](https://github.com/icoretech/wootty/commit/106a358711cbee838df4ca2fa3a1afb05d977bf8))
+* update pnpm to v12.15.0 ([#290](https://github.com/icoretech/wootty/issues/290)) ([d16814d](https://github.com/icoretech/wootty/commit/d16814dbfb1180b33e1a83faac30d7b373c38370))
+
+
+### Miscellaneous Chores
+
+* release 0.3.0 ([263e15e](https://github.com/icoretech/wootty/commit/263e15ebe97c5cbc296ff92c5fb5cec9d1cd2c4d))
+
 ## [0.2.22](https://github.com/icoretech/wootty/compare/wootty-v0.2.21...wootty-v0.2.22) (2026-10-21)
 
 
