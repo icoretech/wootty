@@ -5,10 +5,13 @@ ENV PATH=$PNPM_HOME:$PATH
 
 WORKDIR /app
 
-COPY . .
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
 
 RUN npm install --global --allow-scripts=pnpm "$(node -p 'require("./package.json").packageManager')" \
   && pnpm install --frozen-lockfile
+
+COPY . .
 
 RUN pnpm --filter @icoretech/wootty-web build
 

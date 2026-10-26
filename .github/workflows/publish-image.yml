@@ -142,5 +142,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.prepare.outputs.push == 'true' && steps.meta.outputs.annotations || '' }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=image-${{ matrix.variant }}
+          cache-to: type=gha,mode=max,scope=image-${{ matrix.variant }}
