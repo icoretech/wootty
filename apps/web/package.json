@@ -23,7 +23,7 @@
     "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@babel/core": "8.0.9",
+    "@babel/core": "8.0.10",
     "@playwright/test": "^1.64.1",
     "@rolldown/plugin-babel": "0.2.4",
     "@testing-library/react": "^16.3.3",
