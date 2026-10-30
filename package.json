@@ -36,7 +36,7 @@
     "lint:react": "node scripts/lint-react.mjs"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.6.3",
+    "@biomejs/biome": "^2.6.4",
     "react-doctor": "0.9.18"
   }
 }
