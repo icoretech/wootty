@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1](https://github.com/icoretech/wootty/compare/wootty-v0.3.0...wootty-v0.3.1) (2026-10-31)
+
+
+### Dependencies
+
+* update dependency @babel/core to v8.0.10 ([#302](https://github.com/icoretech/wootty/issues/302)) ([4e599e6](https://github.com/icoretech/wootty/commit/4e599e623108198f1bfbba3a8978c8de725b70e6))
+* update dependency @biomejs/biome to ^2.6.4 ([#299](https://github.com/icoretech/wootty/issues/299)) ([a0a40fc](https://github.com/icoretech/wootty/commit/a0a40fcbf3413aa61a91103651d03485bc807bf3))
+* update dependency @types/node to ^26.6.6 ([#298](https://github.com/icoretech/wootty/issues/298)) ([84accb8](https://github.com/icoretech/wootty/commit/84accb85aae442367aed78abefa3fd29825530d6))
+* update dependency lucide-react to ^1.62.0 ([#294](https://github.com/icoretech/wootty/issues/294)) ([4682cd1](https://github.com/icoretech/wootty/commit/4682cd107a65a5ba5ec4e8ddb10f691a80cb5c4c))
+* update dependency lucide-react to ^1.63.0 ([#297](https://github.com/icoretech/wootty/issues/297)) ([1e1840d](https://github.com/icoretech/wootty/commit/1e1840df6cba87245ddc360eed82a2872bf02655))
+* update dependency lucide-react to ^1.64.0 ([#301](https://github.com/icoretech/wootty/issues/301)) ([142c3af](https://github.com/icoretech/wootty/commit/142c3af6d607644f7141c79397a31a8062da5462))
+* update dependency lucide-react to ^1.65.0 ([#303](https://github.com/icoretech/wootty/issues/303)) ([b669922](https://github.com/icoretech/wootty/commit/b6699228c04625701bc795c7b140c1eb25a73430))
+* update pnpm to v12.16.1 ([#296](https://github.com/icoretech/wootty/issues/296)) ([65f12ea](https://github.com/icoretech/wootty/commit/65f12ea89a52fd8422d2626bf1281b1e6ef06eab))
+
 ## [0.3.0](https://github.com/icoretech/wootty/compare/wootty-v0.2.22...wootty-v0.3.0) (2026-10-26)
 
 
