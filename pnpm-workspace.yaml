@@ -17,6 +17,18 @@ minimumReleaseAgeExclude:
   - "@biomejs/cli-win32-arm64@2.6.2"
   - "@biomejs/cli-win32-x64@2.6.2"
   - vite@8.3.5
+  - "@babel/core@8.1.0"
+  - "@babel/generator@8.1.0"
+  - "@babel/helpers@8.1.0"
+  - "@babel/parser@8.1.0"
+  - "@babel/traverse@8.1.0"
+  - "@babel/types@8.1.0"
+  - "@vitejs/plugin-react@6.2.1"
+  - "@vitest/mocker@5.1.0"
+  - "@vitest/spy@5.1.0"
+  - oxlint-plugin-react-doctor@0.9.22
+  - react-doctor@0.9.22
+  - vitest@5.1.0
 # OpenTelemetry 2.x used by React Doctor's Sentry 10 requires API <1.10.
 overrides:
   "@opentelemetry/api": 1.9.1

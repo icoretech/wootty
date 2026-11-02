@@ -37,6 +37,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.6.4",
-    "react-doctor": "0.9.18"
+    "react-doctor": "0.9.22"
   }
 }
