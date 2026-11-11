@@ -15,7 +15,7 @@ COPY . .
 
 RUN pnpm --filter @icoretech/wootty-web build
 
-FROM golang:1.27.3-trixie AS server-builder
+FROM golang:1.27.4-trixie AS server-builder
 
 WORKDIR /src
 
