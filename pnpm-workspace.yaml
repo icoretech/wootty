@@ -4,7 +4,10 @@ strictPeerDependencies: true
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - lucide-react@1.27.0 || 1.61.0
+  - lucide-react@1.73.0
+  - "@playwright/test@1.65.1"
+  - playwright@1.65.1
+  - playwright-core@1.65.1
   - "@biomejs/biome@2.6.2"
   - "@biomejs/cli-android-arm64@2.6.2"
   - "@biomejs/cli-android-x64@2.6.2"

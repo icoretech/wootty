@@ -2,7 +2,7 @@
 
 ## Setup
 
-Use Linux or macOS for the PTY server, or WSL on Windows. Install Node.js 26+, the pnpm version in [`package.json`](package.json), and the Go version in [`apps/server/go.mod`](apps/server/go.mod).
+Use Linux or macOS for the PTY server, or WSL on Windows. Install Node.js 26+ (development and CI pin `26.13.1` in [`.node-version`](.node-version)), pnpm `12.21.0` as pinned in [`package.json`](package.json), and the Go version in [`apps/server/go.mod`](apps/server/go.mod).
 
 ```bash
 pnpm install --frozen-lockfile
