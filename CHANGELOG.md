@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3](https://github.com/icoretech/wootty/compare/wootty-v0.3.2...wootty-v0.3.3) (2026-11-21)
+
+
+### Dependencies
+
+* update dependency @biomejs/biome to ^2.6.8 ([#326](https://github.com/icoretech/wootty/issues/326)) ([0eab70e](https://github.com/icoretech/wootty/commit/0eab70e18c5d426ae1288136bf7793c31a4c8a84))
+* update dependency lucide-react to ^1.74.0 ([#328](https://github.com/icoretech/wootty/issues/328)) ([df58bc6](https://github.com/icoretech/wootty/commit/df58bc6e2a2c6c6c25656fbd0c184f6811acd974))
+* update dependency lucide-react to ^1.75.0 ([#330](https://github.com/icoretech/wootty/issues/330)) ([0954e00](https://github.com/icoretech/wootty/commit/0954e00aad3e4ef9cf076467cc5aeb357c2bdadc))
+* update dependency lucide-react to ^1.76.0 ([#331](https://github.com/icoretech/wootty/issues/331)) ([c06c559](https://github.com/icoretech/wootty/commit/c06c5594d5c1ead6af9852467791bdbf606cb7ed))
+* update dependency lucide-react to ^1.77.0 ([#332](https://github.com/icoretech/wootty/issues/332)) ([23d4bc0](https://github.com/icoretech/wootty/commit/23d4bc04eca75d3a69d3bb764b9a24fdfb4614b8))
+* update dependency vitest to ^5.1.1 ([#329](https://github.com/icoretech/wootty/issues/329)) ([7a02b93](https://github.com/icoretech/wootty/commit/7a02b93123bcfbbf57966aa15ec31b7260d6f19d))
+
 ## [0.3.2](https://github.com/icoretech/wootty/compare/wootty-v0.3.1...wootty-v0.3.2) (2026-11-14)
 
 
