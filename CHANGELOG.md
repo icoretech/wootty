@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3](https://github.com/icoretech/wootty/compare/wootty-v0.3.2...wootty-v0.3.3) (2026-11-28)
+
+
+### Dependencies
+
+* update dependency @babel/core to v8.1.3 ([#333](https://github.com/icoretech/wootty/issues/333)) ([bedd147](https://github.com/icoretech/wootty/commit/bedd147d073e7aece39fd942694bcb555b2aca08))
+* update dependency @biomejs/biome to ^2.6.8 ([#326](https://github.com/icoretech/wootty/issues/326)) ([0eab70e](https://github.com/icoretech/wootty/commit/0eab70e18c5d426ae1288136bf7793c31a4c8a84))
+* update dependency @biomejs/biome to ^2.6.9 ([#336](https://github.com/icoretech/wootty/issues/336)) ([8e6323b](https://github.com/icoretech/wootty/commit/8e6323b57d178116bd3b9131524b17245cc1f21a))
+* update dependency @rolldown/plugin-babel to v0.3.2 ([#348](https://github.com/icoretech/wootty/issues/348)) ([0abe2e1](https://github.com/icoretech/wootty/commit/0abe2e1dfa08d153feb3e76b255763eee65a3ddd))
+* update dependency @types/node to ^26.6.10 ([#340](https://github.com/icoretech/wootty/issues/340)) ([da6fd77](https://github.com/icoretech/wootty/commit/da6fd779235d00df96e9cde4a4233d84731d2075))
+* update dependency @types/node to ^26.6.11 ([#344](https://github.com/icoretech/wootty/issues/344)) ([9748cf2](https://github.com/icoretech/wootty/commit/9748cf2903f83cbac7a5c85c04db2cbfafe275c3))
+* update dependency @types/node to ^26.6.7 ([#339](https://github.com/icoretech/wootty/issues/339)) ([35345a7](https://github.com/icoretech/wootty/commit/35345a7d77963379d4c8de0503099e6749be2eda))
+* update dependency @types/react to ^19.3.1 ([#337](https://github.com/icoretech/wootty/issues/337)) ([f8954ec](https://github.com/icoretech/wootty/commit/f8954ecb94a0b40080749a0268bfe83143b03434))
+* update dependency @types/react to ^19.3.3 ([#341](https://github.com/icoretech/wootty/issues/341)) ([0d160d1](https://github.com/icoretech/wootty/commit/0d160d1fa4379aff602668678e31a5e5cbf4788c))
+* update dependency lucide-react to ^1.74.0 ([#328](https://github.com/icoretech/wootty/issues/328)) ([df58bc6](https://github.com/icoretech/wootty/commit/df58bc6e2a2c6c6c25656fbd0c184f6811acd974))
+* update dependency lucide-react to ^1.75.0 ([#330](https://github.com/icoretech/wootty/issues/330)) ([0954e00](https://github.com/icoretech/wootty/commit/0954e00aad3e4ef9cf076467cc5aeb357c2bdadc))
+* update dependency lucide-react to ^1.76.0 ([#331](https://github.com/icoretech/wootty/issues/331)) ([c06c559](https://github.com/icoretech/wootty/commit/c06c5594d5c1ead6af9852467791bdbf606cb7ed))
+* update dependency lucide-react to ^1.77.0 ([#332](https://github.com/icoretech/wootty/issues/332)) ([23d4bc0](https://github.com/icoretech/wootty/commit/23d4bc04eca75d3a69d3bb764b9a24fdfb4614b8))
+* update dependency lucide-react to ^1.78.0 ([#335](https://github.com/icoretech/wootty/issues/335)) ([dd3b11e](https://github.com/icoretech/wootty/commit/dd3b11eb6c4732aa020685a7174322247f44dab5))
+* update dependency lucide-react to ^1.79.0 ([#338](https://github.com/icoretech/wootty/issues/338)) ([0b8caf0](https://github.com/icoretech/wootty/commit/0b8caf0556bccc33f402a64e4702e24ae061d37a))
+* update dependency lucide-react to ^1.80.0 ([#342](https://github.com/icoretech/wootty/issues/342)) ([cf9b813](https://github.com/icoretech/wootty/commit/cf9b813ebf6b21b84df73ddf19ef57c4b117dc81))
+* update dependency lucide-react to ^1.81.0 ([#345](https://github.com/icoretech/wootty/issues/345)) ([e582f1e](https://github.com/icoretech/wootty/commit/e582f1e8fa55b5b879d54f8a9b49c0b77fe97790))
+* update dependency lucide-react to ^1.82.0 ([#347](https://github.com/icoretech/wootty/issues/347)) ([7d2701d](https://github.com/icoretech/wootty/commit/7d2701db9f44a6db04d9d791c1e50f4f2e07cbe4))
+* update dependency vite to ^8.4.0 ([#346](https://github.com/icoretech/wootty/issues/346)) ([9462a4c](https://github.com/icoretech/wootty/commit/9462a4c50729fda0e5ae09442b77824cbd584a7a))
+* update dependency vitest to ^5.1.1 ([#329](https://github.com/icoretech/wootty/issues/329)) ([7a02b93](https://github.com/icoretech/wootty/commit/7a02b93123bcfbbf57966aa15ec31b7260d6f19d))
+* update dependency vitest to ^5.1.2 ([#343](https://github.com/icoretech/wootty/issues/343)) ([9e44b95](https://github.com/icoretech/wootty/commit/9e44b955e2fd6e9f33e93f98196c381d3d886f74))
+* update pnpm to v12.23.0 ([#334](https://github.com/icoretech/wootty/issues/334)) ([761301a](https://github.com/icoretech/wootty/commit/761301a082bfeff2c5fea705c4e4d2bd3d0be0dc))
+
 ## [0.3.2](https://github.com/icoretech/wootty/compare/wootty-v0.3.1...wootty-v0.3.2) (2026-11-14)
 
 
